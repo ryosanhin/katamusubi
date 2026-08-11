@@ -44,8 +44,8 @@ static func create_instance_registration(
 
 ## クラスを登録
 static func create_class_registration(
-    type: Script,
-    lifecycle_type: Lifecycle.Type,
+	type: Script,
+	lifecycle_type: Lifecycle.Type,
 ) -> InjectionProfile:
 	var registration := InjectionProfile.new()
 	registration._service_type = type
