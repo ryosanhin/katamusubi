@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dpvk1ey2hh6ba"]
+
+[ext_resource type="Script" uid="uid://c7e14eftfyloj" path="res://tscn_crawler/add_group_test.gd" id="2_4bo3w"]
+
+[node name="Test" type="Node" unique_id=575421069 groups=["test_group"]]
+script = ExtResource("2_4bo3w")

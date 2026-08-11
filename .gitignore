@@ -22,6 +22,7 @@ mono_crash.*.json
 
 # addons
 addons/*
+!addons/tscn_scanner
 
 # vscode
 .vscode/*
