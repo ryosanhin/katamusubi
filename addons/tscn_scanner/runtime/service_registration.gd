@@ -1,50 +1,37 @@
 extends RefCounted
 class_name ServiceRegistration
 
-var _service_type: Script
 ## 実際に生成するインスタンスのクラスのスクリプト
-var service_type: Script:
-	get:
-		return _service_type
+var implementation_type: Script
 
-var _implementation_type: Script
 ## 注入先から参照される公開クラスのスクリプト
-var implementation_type: Script:
-	get:
-		return _implementation_type
+var service_type: Script
 
 ## 注入先から参照される契約型のクラス名
-var implementation_name: StringName:
+var service_name: StringName:
 	get:
-		return _implementation_type.get_global_name()
+		return service_type.get_global_name()
 
-var _id: StringName = &""
 ## 同じ契約型を複数登録するときに利用する任意のID[br]
 ## 注入時に引数名として使う
-var id: StringName:
-	get:
-		return _id
+var key: StringName = &""
 
-var _lifecycle: Lifecycle.Type = Lifecycle.Type.SINGLETON
 ## インスタンスの生成規則
-var lifecycle: Lifecycle.Type:
-	get:
-		return _lifecycle
+var lifecycle: Lifecycle.Type = Lifecycle.Type.SINGLETON
 
-var _instance: Variant
 ## 外部インスタンス
-var instance: Variant:
-	get:
-		return instance
+var instance: Variant
 
-## インスタンスを登録
+## シーンに存在するインスタンスを登録
 static func create_instance_registration(
+	provided_instance: Variant,
 	type: Script,
 ) -> ServiceRegistration:
 	var registration := ServiceRegistration.new()
-	registration._service_type = type
-	registration._implementation_type = type
-	registration._lifecycle = Lifecycle.Type.SINGLETON
+	registration.instance = provided_instance
+	registration.implementation_type = type
+	registration.service_type = type
+	registration.lifecycle = Lifecycle.Type.SINGLETON
 	return registration
 
 
@@ -54,20 +41,20 @@ static func create_class_registration(
 	lifecycle_type: Lifecycle.Type,
 ) -> ServiceRegistration:
 	var registration := ServiceRegistration.new()
-	registration._service_type = type
-	registration._implementation_type = type
-	registration._lifecycle = lifecycle_type
+	registration.implementation_type = type
+	registration.service_type = type
+	registration.lifecycle = lifecycle_type
 	return registration
 
 ## インスタンスのクラスを別の抽象型・基底型として公開
-func convert_as(type: Script) -> ServiceRegistration:
-	_implementation_type = type
+func as_type(type: Script) -> ServiceRegistration:
+	service_type = type
 	return self
 
 
 ## 登録へ任意のIDを付与
-func with_id(new_id: StringName) -> ServiceRegistration:
-	_id = new_id
+func withkey(newkey: StringName) -> ServiceRegistration:
+	key = newkey
 	return self
 
 
@@ -75,28 +62,28 @@ func with_id(new_id: StringName) -> ServiceRegistration:
 func validate() -> PackedStringArray:
 	var errors := PackedStringArray()
 
-	if _service_type == null:
+	if implementation_type == null:
 		errors.append("生成するクラスが指定されていません。")
 		return errors
 
-	if _implementation_type == null:
+	if service_type == null:
 		errors.append("公開するクラスが指定されていません。")
 		return errors
 
-	if not Lifecycle.is_valid(_lifecycle):
-		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(_lifecycle))
+	if not Lifecycle.is_valid(lifecycle):
+		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(lifecycle))
 
-	if _service_type.get_global_name().is_empty():
-		errors.append("生成するクラスにはclass_nameが必要です: %s" % _service_type.resource_path)
+	if implementation_type.get_global_name().is_empty():
+		errors.append("生成するクラスにはclass_nameが必要です: %s" % implementation_type.resource_path)
 
-	if _implementation_type.get_global_name().is_empty():
-		errors.append("公開するクラスにはclass_nameが必要です: %s" % _implementation_type.resource_path)
+	if service_type.get_global_name().is_empty():
+		errors.append("公開するクラスにはclass_nameが必要です: %s" % service_type.resource_path)
 
-	if not check_inheritance(_service_type, _implementation_type):
+	if not check_inheritance(implementation_type, service_type):
 		errors.append(
 			"生成するクラス %s は公開するクラス %s を継承していません。" % [
-				_service_type.get_global_name(),
-				_implementation_type.get_global_name(),
+				implementation_type.get_global_name(),
+				service_type.get_global_name(),
 			]
 		)
 

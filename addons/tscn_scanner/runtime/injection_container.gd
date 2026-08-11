@@ -15,17 +15,17 @@ func _init(parent: InjectionContainer) -> void:
 ## 登録情報をローカルスコープへ追加
 func register(profile: ServiceRegistration) -> void:
 	# 同じ契約型とIDの組み合わせは一意である必要
-	var key := _make_key(profile.implementation_name, profile.id)
+	var key := _make_key(profile.service_name, profile.key)
 	if _entries.has(key):
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
-				profile.implementation_name,
-				_display_id(profile.id),
+				profile.service_name,
+				_display_id(profile.key),
 			]
 		)
 		return
 
-	_entries[key] = profile.implementation_type
+	_entries[key] = profile.service_type
 
 
 ## Singleton参照とローカル登録を解放します。
