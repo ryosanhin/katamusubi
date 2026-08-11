@@ -6,22 +6,16 @@ class_name TscnScanner
 ## [param property]: コンテナとスコープの情報
 static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 	var errors: PackedStringArray = []
-	var fs := EditorInterface.get_resource_filesystem()
-	const packed_scene_string := "PackedScene"
-	const script_string_name := &"script"
-	
-	var scene_path := ResourceUID.get_id_path(
-			ResourceUID.text_to_id(property.scene_path)
-	)
-	
-	# シーンの存在確認
-	if fs.get_file_type(scene_path) != packed_scene_string:
-		errors.append("%sは%sではありません。" % [scene_path, packed_scene_string])
-		return errors
+	const PACKED_SCENE_STRING := "PackedScene"
+	const SCRIPT_STRING_NAME := &"script"
 	
 	# シーンを取得
-	var packed_scene := load(scene_path) as PackedScene
+	var packed_scene := load(property.scene_uid) as PackedScene
 	
+	if packed_scene == null:
+		errors.append("シーンが存在しません。")
+		return errors
+
 	# シーン内容を取り出し
 	var scene_state := packed_scene.get_state()
 	
@@ -32,7 +26,7 @@ static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 		
 		# 該当するノードのプロパティを総ざらい
 		for prop_index in scene_state.get_node_property_count(node_index):
-			if scene_state.get_node_property_name(node_index, prop_index) != script_string_name:
+			if scene_state.get_node_property_name(node_index, prop_index) != SCRIPT_STRING_NAME:
 				continue
 
 			# スクリプトがあればそれを読み込み
@@ -52,12 +46,15 @@ static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 				errors.append("%sは適切なクラスを継承していません。" % property.node_path)
 			
 			# スクリプトは一つだけのはずなのでここで終了
+			errors.append("%sに適切なスクリプトが見つかりませんでした。" % property.node_path)
 			break
-		
-		# 何事もなくここまで通過した場合はスクリプトがなかった場合
-		errors.append("スクリプトが見つかりません。")
-		break
-		
+	
+	var scene_path := ResourceUID.get_id_path(
+			ResourceUID.text_to_id(property.scene_path)
+	)
+
+	errors.append("%sに対象のノードが見つかりませんでした。" % scene_path)
+
 	return errors
 
 static func check_inheritance(script: Script) -> bool:

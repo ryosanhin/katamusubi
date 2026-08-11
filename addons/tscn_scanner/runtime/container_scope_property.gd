@@ -2,10 +2,10 @@
 extends Resource
 class_name ContainerScopeProperty
 
-@export_file("*.tscn") var _scene_path: String
-var scene_path: String:
+@export_file("*.tscn") var _scene_uid: String
+var scene_uid: String:
 	get:
-		return _scene_path
+		return _scene_uid
 
 @export var _node_path: NodePath
 var node_path: NodePath:
