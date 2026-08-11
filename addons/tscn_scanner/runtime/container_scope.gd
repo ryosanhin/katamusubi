@@ -36,15 +36,22 @@ var scope_uid: StringName:
 		return _scope_uid
 
 @export var _perent_scope_id: StringName
+var parent_scope_id: StringName:
+	get:
+		return _perent_scope_id
 
 ## 注入対象
 @export var _inject_target: Array[Node] = []
 
 func _enter_tree() -> void:
+	var is_in_group := is_in_group(CONTAINER_GROUP)
+
+	if not is_in_group:
+			add_to_group(CONTAINER_GROUP, true)
+
 	# エディタのみで実行
 	if Engine.is_editor_hint():
-		if not is_in_group(CONTAINER_GROUP):
-			add_to_group(CONTAINER_GROUP, true)
+		if not is_in_group:
 			EditorInterface.mark_scene_as_unsaved()
 		return
 

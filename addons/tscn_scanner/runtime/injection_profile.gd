@@ -31,6 +31,12 @@ var lifecycle: Lifecycle.Type:
 	get:
 		return _lifecycle
 
+var _instance: Variant
+## 外部インスタンス
+var instance: Variant:
+	get:
+		return instance
+
 ## インスタンスを登録
 static func create_instance_registration(
 	type: Script,
