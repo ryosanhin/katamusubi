@@ -24,6 +24,12 @@ const CONTAINER_GROUP := &"test_group"
 ## コンテナIDの長さ
 const UID_LENGTH := 8
 
+@export var _scope_id: StringName
+
+@export_storage var _scope_uid: StringName
+
+## 注入対象
+@export var _inject_target: Array[Node] = []
 
 func _enter_tree() -> void:
 	if Engine.is_editor_hint():
