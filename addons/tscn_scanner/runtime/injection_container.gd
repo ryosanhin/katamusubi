@@ -7,16 +7,13 @@ var _parent: InjectionContainer
 ## 「公開型class_name + ID」をキーにしたローカル登録
 var _entries: Dictionary = {}
 
-## 登録時に検出した問題です。エディタ警告と実行時エラーに利用
-var _registration_errors := PackedStringArray()
-
 ## 任意の親コンテナを指定してスコープを生成
 func _init(parent: InjectionContainer) -> void:
 	_parent = parent
 
 
 ## 登録情報をローカルスコープへ追加
-func register(profile: InjectionProfile) -> void:
+func register(profile: ServiceRegistration) -> void:
 	# 同じ契約型とIDの組み合わせは一意である必要
 	var key := _make_key(profile.implementation_name, profile.id)
 	if _entries.has(key):

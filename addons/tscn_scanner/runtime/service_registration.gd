@@ -1,5 +1,5 @@
 extends RefCounted
-class_name InjectionProfile
+class_name ServiceRegistration
 
 var _service_type: Script
 ## 実際に生成するインスタンスのクラスのスクリプト
@@ -40,8 +40,8 @@ var instance: Variant:
 ## インスタンスを登録
 static func create_instance_registration(
 	type: Script,
-) -> InjectionProfile:
-	var registration := InjectionProfile.new()
+) -> ServiceRegistration:
+	var registration := ServiceRegistration.new()
 	registration._service_type = type
 	registration._implementation_type = type
 	registration._lifecycle = Lifecycle.Type.SINGLETON
@@ -52,21 +52,21 @@ static func create_instance_registration(
 static func create_class_registration(
 	type: Script,
 	lifecycle_type: Lifecycle.Type,
-) -> InjectionProfile:
-	var registration := InjectionProfile.new()
+) -> ServiceRegistration:
+	var registration := ServiceRegistration.new()
 	registration._service_type = type
 	registration._implementation_type = type
 	registration._lifecycle = lifecycle_type
 	return registration
 
 ## インスタンスのクラスを別の抽象型・基底型として公開
-func convert_as(type: Script) -> InjectionProfile:
+func convert_as(type: Script) -> ServiceRegistration:
 	_implementation_type = type
 	return self
 
 
 ## 登録へ任意のIDを付与
-func with_id(new_id: StringName) -> InjectionProfile:
+func with_id(new_id: StringName) -> ServiceRegistration:
 	_id = new_id
 	return self
 
