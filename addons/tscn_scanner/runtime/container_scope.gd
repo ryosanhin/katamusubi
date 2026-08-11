@@ -20,28 +20,33 @@ var _state: State = State.NOT_INITIALIZED
 const CONTAINER_LIST := preload("res://addons/tscn_scanner/container_list.tres")
 
 ## コンテナ用グループ名
-const CONTAINER_GROUP := &"_gd_injection_container_scopes"
+const CONTAINER_GROUP := &"test_group"
 
 ## コンテナIDの長さ
 const UID_LENGTH := 8
 
-## 他のスコープから参照する論理ID
-@export var scope_id: StringName
+@export var _scope_id: StringName
+var scope_id: StringName:
+	get:
+		return _scope_id
 
-## 要求する親スコープの論理ID
-@export var parent_scope_id: StringName
+@export_storage var _scope_uid: StringName
+var scope_uid: StringName:
+	get:
+		return _scope_uid
 
-## エディタが生成する一意な内部ID
-@export_storage var scope_uid: StringName
+@export var _perent_scope_id: StringName
 
 ## 注入対象
 @export var _inject_target: Array[Node] = []
 
 func _enter_tree() -> void:
+	# エディタのみで実行
 	if Engine.is_editor_hint():
+		if not is_in_group(CONTAINER_GROUP):
+			add_to_group(CONTAINER_GROUP, true)
+			EditorInterface.mark_scene_as_unsaved()
 		return
-	if not is_in_group(CONTAINER_GROUP):
-		add_to_group(CONTAINER_GROUP)
 
 
 func _ready() -> void:
@@ -53,7 +58,6 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if Engine.is_editor_hint():
 		return
-
 	_stop_initialization_retry()
 
 	if _container != null:
@@ -65,22 +69,26 @@ func _exit_tree() -> void:
 
 ## 論理IDが一致する親スコープを取得
 func _find_parent_scope() -> ContainerScope:
-	if parent_scope_id.is_empty():
+	if _perent_scope_id.is_empty():
 		return null
 
 	var matched: Array[ContainerScope] = []
+
 	for node in get_tree().get_nodes_in_group(CONTAINER_GROUP):
 		var scope := node as ContainerScope
-		if scope != null and scope != self and scope.scope_id == parent_scope_id:
+		
+		if scope != null \
+				and scope != self \
+				and scope.scope_id == _perent_scope_id:
 			matched.append(scope)
 
 	if matched.size() != 1:
 		push_error(
-			"親スコープ '%s' は1個必要ですが、%d個見つかりました。"
-			% [parent_scope_id, matched.size()]
+				"親スコープ '%s' は1個必要ですが、%d個見つかりました。"
+				% [_perent_scope_id, matched.size()]
 		)
 		return null
-
+	
 	return matched[0]
 
 
@@ -95,7 +103,8 @@ func _ensure_initialized() -> void:
 	_state = State.INITIALIZING
 
 	var parent_scope := _find_parent_scope()
-	if not parent_scope_id.is_empty() and parent_scope == null:
+	
+	if not _perent_scope_id.is_empty() and parent_scope == null:
 		_state = State.NOT_INITIALIZED
 		_start_initialization_retry()
 		return
@@ -110,19 +119,22 @@ func _ensure_initialized() -> void:
 		parent_container = parent_scope._container
 
 	_container = InjectionContainer.new(parent_container)
+	
 	_register_instance(_container)
-	_inject_all_targets()
+	
 	_state = State.INITIALIZED
+	
 	_stop_initialization_retry()
 
 
-## 後から追加される親スコープを待つ
+# 後から追加されたのが親スコープかもしれないのでツリーへの追加を監視
 func _start_initialization_retry() -> void:
 	var node_added := get_tree().node_added
 	if not node_added.is_connected(_on_node_added):
 		node_added.connect(_on_node_added)
 
 
+# 親スコープを確認できたのでツリー監視の必要はもうない
 func _stop_initialization_retry() -> void:
 	var node_added := get_tree().node_added
 	if node_added.is_connected(_on_node_added):
@@ -130,8 +142,10 @@ func _stop_initialization_retry() -> void:
 
 
 func _on_node_added(_node: Node) -> void:
-	# node_added の発火中では候補の _enter_tree() が完了していない場合がある。
+	# node_added の発火中では候補の _enter_tree() が完了していない場合がある
+	# node_added が全部終わってから、ツリーへの追加が終わってから実行する
 	_ensure_initialized.call_deferred()
+
 
 ## 具体コンテナが登録内容を定義
 @abstract
