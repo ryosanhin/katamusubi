@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ScanConfig" format=3 uid="uid://b2u0lk8mwr6e0"]
+
+[ext_resource type="Script" uid="uid://trvwoxsjd3dg" path="res://addons/tscn_scanner/scan_config.gd" id="1_jrmrl"]
+
+[resource]
+script = ExtResource("1_jrmrl")
+group_name = "test_group"
+dirs = Array[String](["res://"])
