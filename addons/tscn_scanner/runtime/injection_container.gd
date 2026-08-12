@@ -5,7 +5,7 @@ class_name InjectionContainer
 var _parent: InjectionContainer
 
 ## 「公開型class_name + ID」をキーにしたローカル登録
-var _entries: Dictionary = {}
+var _entries: Dictionary[String, ResolveEntry] = {}
 
 ## 任意の親コンテナを指定してスコープを生成
 func _init(parent: InjectionContainer) -> void:
@@ -14,6 +14,12 @@ func _init(parent: InjectionContainer) -> void:
 
 ## 登録情報をローカルスコープへ追加
 func register(profile: ServiceRegistration) -> void:
+	var validation_errors := profile.validate()
+	if not validation_errors.is_empty():
+		for error in validation_errors:
+			push_error("登録情報が不正です: %s" % error)
+		return
+
 	# 同じ契約型とIDの組み合わせは一意である必要
 	var key := _make_key(profile.service_name, profile.key)
 	if _entries.has(key):
@@ -25,13 +31,13 @@ func register(profile: ServiceRegistration) -> void:
 		)
 		return
 
-	_entries[key] = profile.service_type
+	_entries[key] = ResolveEntry.new(profile)
 
 
 ## Singleton参照とローカル登録を解放します。
 func clear() -> void:
-	for entry in _entries.values():
-		(entry as ResolveEntry).clear()
+	for entry: ResolveEntry in _entries.values():
+		entry.clear()
 	_entries.clear()
 	_parent = null
 
