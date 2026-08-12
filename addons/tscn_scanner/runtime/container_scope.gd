@@ -8,6 +8,7 @@ enum State {
 	NOT_INITIALIZED,
 	INITIALIZING,
 	INITIALIZED,
+	CIRCULAR,
 }
 
 ## このシーンスコープで利用する依存コンテナ
@@ -105,6 +106,8 @@ func _ensure_initialized() -> void:
 		return
 	if _state == State.INITIALIZING:
 		push_error("コンテナの親子関係が循環しています: %s" % scope_id)
+		_state = State.CIRCULAR
+		_stop_initialization_retry()
 		return
 
 	_state = State.INITIALIZING
