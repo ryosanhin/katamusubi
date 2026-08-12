@@ -35,7 +35,10 @@ func register(registration: ServiceRegistration) -> void:
 
 
 ## 公開型とIDに対応するインスタンスを解決
-func resolve(service_type: Script, key: StringName = &""):
+func resolve(
+	service_type: Script,
+	key: StringName = &""
+) -> Variant:
 	var service_name := service_type.get_global_name()
 	var entry_key := _make_key(service_name, key)
 	if _entries.has(entry_key):

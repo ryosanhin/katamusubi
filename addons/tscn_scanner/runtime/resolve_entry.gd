@@ -10,7 +10,7 @@ func _init(
 	_registration = registration
 
 ## ライフサイクルに従ってインスタンスを返す
-func resolve():
+func resolve() -> Variant:
 	if _registration.instance != null:
 		return _registration.instance
 
