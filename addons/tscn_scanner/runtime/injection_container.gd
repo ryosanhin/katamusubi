@@ -13,25 +13,25 @@ func _init(parent: InjectionContainer) -> void:
 
 
 ## 登録情報をローカルスコープへ追加
-func register(profile: ServiceRegistration) -> void:
-	var validation_errors := profile.validate()
+func register(registration: ServiceRegistration) -> void:
+	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
-		for error in validation_errors:
-			push_error("登録情報が不正です: %s" % error)
+		var errors := "\n".join(validation_errors)
+		push_error("登録情報が不正です:\n%s" % errors)
 		return
 
 	# 同じ契約型とIDの組み合わせは一意である必要
-	var key := _make_key(profile.service_name, profile.key)
+	var key := _make_key(registration.service_name, registration.key)
 	if _entries.has(key):
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
-				profile.service_name,
-				_display_id(profile.key),
+				registration.service_name,
+				_display_id(registration.key),
 			]
 		)
 		return
 
-	_entries[key] = ResolveEntry.new(profile)
+	_entries[key] = ResolveEntry.new(registration)
 
 
 ## Singleton参照とローカル登録を解放します。
