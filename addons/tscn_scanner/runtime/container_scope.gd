@@ -132,6 +132,7 @@ func _ensure_initialized() -> void:
 	
 	_register_instance(_container)
 
+	# 登録完了後、指定されたすべてのノードへ依存を注入
 	if not _inject_dependencies():
 		_container.clear()
 		_container = null
@@ -143,94 +144,14 @@ func _ensure_initialized() -> void:
 	_stop_initialization_retry()
 
 
-## 登録完了後、指定されたすべてのノードへ依存を注入
 func _inject_dependencies() -> bool:
+	var injector := InstanceInjector.new(_container, _scope_id)
+
 	for target in _inject_target:
-		if target == null:
-			push_error(
-					"依存注入対象が null です: 対象=<null>, 引数=<none>, 要求型=<none>, スコープID=%s"
-					% scope_id
-			)
+		if not injector.try_inject_arguments(target):
 			return false
-		if not is_instance_valid(target):
-			push_error(
-					"依存注入対象は既に解放されています: 対象=<freed>, 引数=<none>, 要求型=<none>, スコープID=%s"
-					% scope_id
-			)
-			return false
-		if not target.is_inside_tree():
-			push_error(
-					"依存注入対象はツリーから削除されています: 対象=%s, 引数=<none>, 要求型=<none>, スコープID=%s"
-					% [target.name, scope_id]
-			)
-			return false
-		if target.get_script() == null:
-			push_error(
-					"依存注入対象にスクリプトがありません: 対象=%s, 引数=<none>, 要求型=<none>, スコープID=%s"
-					% [target.get_path(), scope_id]
-			)
-			return false
-		if not _inject_target_node(target):
-			return false
-
+	
 	return true
-
-
-## 1ノード分の引数を宣言順に解決し、すべて揃った場合だけ注入メソッドを呼ぶ
-func _inject_target_node(target: Node) -> bool:
-	var script := target.get_script() as Script
-	var arguments := MethodReader.get_injection_arguments(script)
-	var resolved_arguments: Array = []
-
-	for argument in arguments:
-		var service_script := _find_global_class_script(argument.arg_class)
-		if service_script == null:
-			_push_injection_error(
-					target,
-					argument,
-					"要求型に対応するグローバルクラスが見つかりません"
-			)
-			return false
-
-		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
-		var resolved_service: Variant = _container.resolve(
-				service_script,
-				argument.arg_name
-		)
-		if resolved_service == null:
-			_push_injection_error(target, argument, "サービスを解決できませんでした")
-			return false
-		resolved_arguments.append(resolved_service)
-
-	var injection_method := Callable(target, MethodReader.METHOD_NAME)
-	if not injection_method.is_valid():
-		push_error(
-				"依存注入メソッドを呼び出せません: 対象=%s, 引数=<none>, 要求型=<none>, スコープID=%s"
-				% [target.get_path(), scope_id]
-		)
-		return false
-
-	target.callv(MethodReader.METHOD_NAME, resolved_arguments)
-	return true
-
-
-## class_name からコンテナの解決に必要な Script を取得
-func _find_global_class_script(class_name_to_find: StringName) -> Script:
-	for class_data: Dictionary in ProjectSettings.get_global_class_list():
-		if StringName(class_data.get("class", "")) == class_name_to_find:
-			return load(class_data.get("path", "")) as Script
-	return null
-
-
-func _push_injection_error(
-	target: Node,
-	argument: ArgumentData,
-	reason: String,
-) -> void:
-	push_error(
-			"依存注入に失敗しました（%s）: 対象=%s, 引数=%s, 要求型=%s, スコープID=%s"
-			% [reason, target.get_path(), argument.arg_name, argument.arg_class, scope_id]
-	)
 
 
 # 後から追加されたのが親スコープかもしれないのでツリーへの追加を監視
