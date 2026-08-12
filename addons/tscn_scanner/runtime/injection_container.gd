@@ -40,10 +40,19 @@ func resolve(
 	key: StringName = &""
 ) -> Variant:
 	var service_name := service_type.get_global_name()
-	var entry_key := _make_key(service_name, key)
-	if _entries.has(entry_key):
-		return _entries[entry_key].resolve()
 
+	# 引数名などで明示されたKeyを最優先する
+	if not key.is_empty():
+		var keyed_entry_key := _make_key(service_name, key)
+		if _entries.has(keyed_entry_key):
+			return _entries[keyed_entry_key].resolve()
+
+	# Key付き登録がなければ、このコンテナのデフォルト登録を利用する
+	var default_entry_key := _make_key(service_name, &"")
+	if _entries.has(default_entry_key):
+		return _entries[default_entry_key].resolve()
+
+	# ローカル登録を使い切った後に、同じ解決条件を親へ引き継ぐ
 	if _parent != null:
 		return _parent.resolve(service_type, key)
 

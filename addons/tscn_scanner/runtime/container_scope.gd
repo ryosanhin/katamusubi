@@ -192,7 +192,11 @@ func _inject_target_node(target: Node) -> bool:
 			)
 			return false
 
-		var resolved_service: Variant = _container.resolve(service_script)
+		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
+		var resolved_service: Variant = _container.resolve(
+				service_script,
+				argument.arg_name
+		)
 		if resolved_service == null:
 			_push_injection_error(target, argument, "サービスを解決できませんでした")
 			return false
