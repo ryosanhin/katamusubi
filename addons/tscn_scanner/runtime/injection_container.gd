@@ -31,7 +31,7 @@ func register(profile: ServiceRegistration) -> void:
 ## Singleton参照とローカル登録を解放します。
 func clear() -> void:
 	for entry in _entries.values():
-		(entry as ServiceEntry).clear()
+		(entry as ResolveEntry).clear()
 	_entries.clear()
 	_parent = null
 

@@ -47,14 +47,14 @@ static func create_class_registration(
 	return registration
 
 ## インスタンスのクラスを別の抽象型・基底型として公開
-func as_type(type: Script) -> ServiceRegistration:
-	service_type = type
+func as_type(new_service_type: Script) -> ServiceRegistration:
+	service_type = new_service_type
 	return self
 
 
 ## 登録へ任意のIDを付与
-func withkey(newkey: StringName) -> ServiceRegistration:
-	key = newkey
+func withkey(new_key: StringName) -> ServiceRegistration:
+	key = new_key
 	return self
 
 
