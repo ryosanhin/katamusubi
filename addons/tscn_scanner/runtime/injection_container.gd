@@ -34,6 +34,25 @@ func register(registration: ServiceRegistration) -> void:
 	_entries[key] = ResolveEntry.new(registration)
 
 
+## 公開型とIDに対応するインスタンスを解決
+func resolve(service_type: Script, key: StringName = &""):
+	var service_name := service_type.get_global_name()
+	var entry_key := _make_key(service_name, key)
+	if _entries.has(entry_key):
+		return _entries[entry_key].resolve()
+
+	if _parent != null:
+		return _parent.resolve(service_type, key)
+
+	push_error(
+		"登録が見つかりません: 型=%s, id=%s" % [
+			service_name,
+			_display_id(key),
+		]
+	)
+	return null
+
+
 ## Singleton参照とローカル登録を解放します。
 func clear() -> void:
 	for entry: ResolveEntry in _entries.values():
