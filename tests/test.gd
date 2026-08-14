@@ -18,9 +18,11 @@ func _init() -> void:
 func _call_method(test_root_user, test_child_user) -> void:
 	var exit_code := 0
 
+	print(test_root_user.call_injected_instance())
 	if test_root_user.call_injected_instance() != "call from test root user":
 		exit_code += 1<<0
 
+	print(test_child_user.call_injected_instance())
 	if test_child_user.call_injected_instance() != "call from test child user":
 		exit_code += 1<<1
 
