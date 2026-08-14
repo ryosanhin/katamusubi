@@ -131,10 +131,27 @@ func _ensure_initialized() -> void:
 	_container = InjectionContainer.new(parent_container)
 	
 	_register_instance(_container)
-	
+
+	# 登録完了後、指定されたすべてのノードへ依存を注入
+	if not _inject_dependencies():
+		_container.clear()
+		_container = null
+		_state = State.NOT_INITIALIZED
+		return
+
 	_state = State.INITIALIZED
 	
 	_stop_initialization_retry()
+
+
+func _inject_dependencies() -> bool:
+	var injector := InstanceInjector.new(_container, _scope_id)
+
+	for target in _inject_target:
+		if not injector.try_inject_arguments(target):
+			return false
+	
+	return true
 
 
 # 後から追加されたのが親スコープかもしれないのでツリーへの追加を監視
