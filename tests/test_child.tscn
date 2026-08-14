@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://csglhfff2wyeg"]
+
+[ext_resource type="Script" uid="uid://d0n44ar176sfo" path="res://tests/child_container.gd" id="1_aq8yr"]
+[ext_resource type="Script" uid="uid://8dyb5hd1gqqu" path="res://tests/user_test_child.gd" id="2_42px6"]
+
+[node name="TestChild" type="Node" unique_id=417321390]
+
+[node name="ChildContainer" type="Node" parent="." unique_id=1379404796 node_paths=PackedStringArray("_inject_target")]
+script = ExtResource("1_aq8yr")
+_scope_id = &"Child"
+_perent_scope_id = &"Root"
+_inject_target = [NodePath("../UserTestChild")]
+
+[node name="UserTestChild" type="Node" parent="." unique_id=1793292354]
+script = ExtResource("2_42px6")
