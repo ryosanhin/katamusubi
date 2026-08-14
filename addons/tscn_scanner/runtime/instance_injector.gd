@@ -10,7 +10,7 @@ func _init(
 	scope_id: StringName,
 ) -> void:
 	_container = container
-	_scope_id = _scope_id
+	_scope_id = scope_id
 
 
 ## 1ノード分の引数を宣言順に解決し、すべて揃った場合だけ注入メソッドを呼ぶ
