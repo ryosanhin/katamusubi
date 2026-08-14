@@ -30,10 +30,9 @@ func try_inject_arguments(target: Node) -> bool:
 		)
 		
 		if resolved_service == null:
-			_push_injection_error(
-						target,
-						argument,
-						"サービスを解決できませんでした",
+			push_error(
+					"サービスを解決できませんでした: 対象=%s, 引数=%s, 要求型=%s, スコープID=%s"
+					% [target.get_path(), argument.arg_name, argument.arg_class, _scope_id]
 			)
 			return false
 		
@@ -42,7 +41,7 @@ func try_inject_arguments(target: Node) -> bool:
 	var injection_method := Callable(target, MethodReader.METHOD_NAME)
 	if not injection_method.is_valid():
 		push_error(
-				"依存注入メソッドを呼び出せません: 対象=%s, 引数=<none>, 要求型=<none>, スコープID=%s"
+				"依存注入メソッドを呼び出せません: 対象=%s, スコープID=%s"
 				% [target.get_path(), _scope_id]
 		)
 		return false
@@ -69,15 +68,3 @@ func _is_injectable(target: Node) -> bool:
 		return false
 
 	return true
-
-
-## 注入時失敗エラーメッセージのテンプレート
-func _push_injection_error(
-	target: Node,
-	argument: ArgumentData,
-	reason: String,
-) -> void:
-	push_error(
-			"依存注入に失敗しました（%s）: 対象=%s, 引数=%s, 要求型=%s, スコープID=%s"
-			% [reason, target.get_path(), argument.arg_name, argument.arg_class, _scope_id]
-	)

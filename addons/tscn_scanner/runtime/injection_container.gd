@@ -36,7 +36,7 @@ func register(registration: ServiceRegistration) -> void:
 
 func resolve_with_string_name(
 	service_name: StringName,
-	key: StringName = &"",
+	key: StringName,
 ) -> Variant:
 	# 引数名などで明示されたKeyを最優先する
 	if not key.is_empty():
