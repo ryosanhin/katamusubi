@@ -7,4 +7,4 @@ func inject_dependency(manager: AbstactTestManager) -> void:
 
 
 func call_injected_instance() -> String:
-	return _manager.test_method("call from test child user")
+	return _manager.test_method("call from test root user")
