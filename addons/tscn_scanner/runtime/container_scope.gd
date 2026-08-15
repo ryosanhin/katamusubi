@@ -36,10 +36,10 @@ var scope_uid: StringName:
 	get:
 		return _scope_uid
 
-@export var _perent_scope_id: StringName
+@export var _parent_scope_id: StringName
 var parent_scope_id: StringName:
 	get:
-		return _perent_scope_id
+		return _parent_scope_id
 
 ## 注入対象
 @export var _inject_target: Array[Node] = []
@@ -77,7 +77,7 @@ func _exit_tree() -> void:
 
 ## 論理IDが一致する親スコープを取得
 func _find_parent_scope() -> ContainerScope:
-	if _perent_scope_id.is_empty():
+	if _parent_scope_id.is_empty():
 		return null
 
 	var matched: Array[ContainerScope] = []
@@ -87,13 +87,13 @@ func _find_parent_scope() -> ContainerScope:
 		
 		if scope != null \
 				and scope != self \
-				and scope.scope_id == _perent_scope_id:
+				and scope.scope_id == _parent_scope_id:
 			matched.append(scope)
 
 	if matched.size() != 1:
 		push_error(
 				"親スコープ '%s' は1個必要ですが、%d個見つかりました。"
-				% [_perent_scope_id, matched.size()]
+				% [_parent_scope_id, matched.size()]
 		)
 		return null
 	
@@ -114,7 +114,7 @@ func _ensure_initialized() -> void:
 
 	var parent_scope := _find_parent_scope()
 	
-	if not _perent_scope_id.is_empty() and parent_scope == null:
+	if not _parent_scope_id.is_empty() and parent_scope == null:
 		_state = State.NOT_INITIALIZED
 		_start_initialization_retry()
 		return

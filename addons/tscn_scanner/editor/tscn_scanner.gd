@@ -2,7 +2,7 @@
 extends RefCounted
 class_name TscnScanner
 
-## シーン内を走査しコンテナが存在するか確認する
+## シーン内を走査しコンテナスコープが存在するか確認する
 ## [param property]: コンテナとスコープの情報
 static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 	var errors: PackedStringArray = []
@@ -40,6 +40,7 @@ static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 				errors.append("スクリプトの読み込みに失敗しました。")
 				return errors
 			
+			# 読み込んだスクリプトがコンテナスコープスクリプトを継承しているか確認
 			if check_inheritance(script):
 				return errors
 			else:
@@ -53,13 +54,13 @@ static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 			ResourceUID.text_to_id(property.scene_path)
 	)
 
-	errors.append("%sに対象のノードが見つかりませんでした。" % scene_path)
+	errors.append("シーン %s に対象のノードが見つかりませんでした。" % scene_path)
 
 	return errors
 
 static func check_inheritance(script: Script) -> bool:
 	while script != null:
-		if script == AddGroupTest:
+		if script == ContainerScope:
 			return true
 		script = script.get_base_script()
 	return false
