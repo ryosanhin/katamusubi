@@ -1,8 +1,8 @@
 extends Node
 
-var _manager: AbstactTestManager
+var _manager: AbstractTestManager
 
-func inject_dependency(manager: AbstactTestManager) -> void:
+func inject_dependency(manager: AbstractTestManager) -> void:
 	_manager = manager
 
 
