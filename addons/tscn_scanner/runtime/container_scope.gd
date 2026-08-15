@@ -48,7 +48,7 @@ func _enter_tree() -> void:
 	var is_in_group := is_in_group(CONTAINER_GROUP)
 
 	if not is_in_group:
-			add_to_group(CONTAINER_GROUP, true)
+		add_to_group(CONTAINER_GROUP, true)
 
 	# エディタのみで実行
 	if Engine.is_editor_hint():

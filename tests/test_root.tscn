@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://m01k3x2tdojt"]
+
+[ext_resource type="Script" uid="uid://bfd4tcjs5neik" path="res://tests/root_container.gd" id="1_e3cl2"]
+[ext_resource type="Script" uid="uid://bo5bwhdldsstn" path="res://tests/concrete_test_manager.gd" id="2_w2270"]
+[ext_resource type="Script" uid="uid://c6pnv85iolgrx" path="res://tests/user_test_root.gd" id="3_yi6xw"]
+
+[node name="TestRoot" type="Node" unique_id=1593149147]
+
+[node name="RootContainer" type="Node" parent="." unique_id=1260558516 node_paths=PackedStringArray("test_manager", "_inject_target")]
+script = ExtResource("1_e3cl2")
+test_manager = NodePath("../TestManager")
+_scope_id = &"Root"
+_inject_target = [NodePath("../UserTestRoot")]
+
+[node name="TestManager" type="Node" parent="." unique_id=584245172]
+script = ExtResource("2_w2270")
+
+[node name="UserTestRoot" type="Node" parent="." unique_id=546739021]
+script = ExtResource("3_yi6xw")
