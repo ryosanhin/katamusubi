@@ -5,27 +5,27 @@ extends Resource
 
 
 ## コンテナスコープUIDの一覧を取得
-func get_scope_uids() -> Array[StringName]:
-	return _get_current_uid_list()
+func get_scope_ids() -> Array[StringName]:
+	return _get_current_id_list()
 
 
-## コンテナスコープの名前とコンテナスコープUIDのセットを取得
-func get_uid_pairs() -> Dictionary[StringName, StringName]:
+## コンテナスコープの名前とスコープIDのセットを取得
+func get_id_pairs() -> Dictionary[StringName, StringName]:
 	var dict: Dictionary[StringName, StringName] = {}
 	for container in _container_list:
-		dict[container.scope_id] = container.scope_uid
+		dict[container.scope_name] = container.scope_id
 	return dict
 
 
-## コンテナスコープUIDからコンテナスコープのプロパティを取得
-func get_container_scope_property_with_scope_uid(
-	scope_uid: StringName
+## スコープIDからコンテナスコープのプロパティを取得
+func get_container_scope_property_with_scope_id(
+	scope_id: StringName
 ) -> ContainerScopeProperty:
-	if scope_uid.is_empty():
+	if scope_id.is_empty():
 		return null
 
 	for prop in _container_list:
-		if prop.scope_uid == scope_uid:
+		if prop.scope_id == scope_id:
 			return prop
 	
 	return null
@@ -44,15 +44,15 @@ func remove_container(
 	_container_list.erase(prop)
 
 
-## 新規コンテナスコープUIDを取得
-func get_new_uid() -> StringName:
-	var current_uid_list := _get_current_uid_list()
+## 新規スコープIDを取得
+func get_new_id() -> StringName:
+	var current_id_list := _get_current_id_list()
 
 	var uid := RandomID.get_random_id()
 	var loop_count := 0
 	const MAX_LOOP_COUNT := 100
 
-	while current_uid_list.has(uid):
+	while current_id_list.has(uid):
 		uid = RandomID.get_random_id()
 		loop_count += 1
 		if loop_count > MAX_LOOP_COUNT:
@@ -62,11 +62,11 @@ func get_new_uid() -> StringName:
 	return uid
 
 
-## コンテナスコープUIDの一覧を生成
-func _get_current_uid_list() -> Array[StringName]:
-	var current_uid_list: Array[StringName] = []
+## スコープIDの一覧を生成
+func _get_current_id_list() -> Array[StringName]:
+	var current_id_list: Array[StringName] = []
 	var tmp_list := _container_list.map(
-			func(prop: ContainerScopeProperty) -> StringName: return prop.scope_uid
+			func(prop: ContainerScopeProperty) -> StringName: return prop.scope_id
 	)
-	current_uid_list.assign(tmp_list)
-	return current_uid_list
+	current_id_list.assign(tmp_list)
+	return current_id_list

@@ -2,15 +2,15 @@ extends RefCounted
 ## インスタンス注入だけを担当
 class_name InstanceInjector
 
-var _scope_id: StringName
+var _scope_name: StringName
 var _container: InjectionContainer
 
 func _init(
 	container: InjectionContainer,
-	scope_id: StringName,
+	scope_name: StringName,
 ) -> void:
 	_container = container
-	_scope_id = scope_id
+	_scope_name = scope_name
 
 
 ## 1ノード分の引数を宣言順に解決し、すべて揃った場合だけ注入メソッドを呼ぶ
@@ -32,7 +32,7 @@ func try_inject_arguments(target: Node) -> bool:
 		if resolved_service == null:
 			push_error(
 					"サービスを解決できませんでした: 対象=%s, 引数=%s, 要求型=%s, スコープID=%s"
-					% [target.get_path(), argument.arg_name, argument.arg_class, _scope_id]
+					% [target.get_path(), argument.arg_name, argument.arg_class, _scope_name]
 			)
 			return false
 		
@@ -42,7 +42,7 @@ func try_inject_arguments(target: Node) -> bool:
 	if not injection_method.is_valid():
 		push_error(
 				"依存注入メソッドを呼び出せません: 対象=%s, スコープID=%s"
-				% [target.get_path(), _scope_id]
+				% [target.get_path(), _scope_name]
 		)
 		return false
 
@@ -52,19 +52,19 @@ func try_inject_arguments(target: Node) -> bool:
 
 func _is_injectable(target: Node) -> bool:
 	if target == null:
-		push_error("対象が null です: スコープID=%s" % _scope_id)
+		push_error("対象が null です: スコープID=%s" % _scope_name)
 		return false
 
 	if not is_instance_valid(target):
-		push_error("対象は既に解放されています: スコープID=%s" % _scope_id)
+		push_error("対象は既に解放されています: スコープID=%s" % _scope_name)
 		return false
 	
 	if not target.is_inside_tree():
-		push_error("対象はツリーに存在しません: 対象=%s, スコープID=%s"% [target.name, _scope_id])
+		push_error("対象はツリーに存在しません: 対象=%s, スコープID=%s"% [target.name, _scope_name])
 		return false
 	
 	if target.get_script() == null:
-		push_error("対象にスクリプトがありません: 対象=%s, スコープID=%s"% [target.get_path(), _scope_id])
+		push_error("対象にスクリプトがありません: 対象=%s, スコープID=%s"% [target.get_path(), _scope_name])
 		return false
 
 	return true
