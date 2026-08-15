@@ -3,12 +3,5 @@
 [ext_resource type="Script" uid="uid://cydi7jyr1tte6" path="res://addons/tscn_scanner/runtime/container_scope_property.gd" id="1_6c5k7"]
 [ext_resource type="Script" uid="uid://duarhscov4x6r" path="res://addons/tscn_scanner/runtime/container_list.gd" id="2_6jo0g"]
 
-[sub_resource type="Resource" id="Resource_rjevm"]
-script = ExtResource("1_6c5k7")
-_scene_uid = "uid://dpvk1ey2hh6ba"
-_node_path = NodePath(".")
-metadata/_custom_type_script = "uid://cydi7jyr1tte6"
-
 [resource]
 script = ExtResource("2_6jo0g")
-_container_list = Array[ExtResource("1_6c5k7")]([SubResource("Resource_rjevm")])

@@ -23,9 +23,6 @@ const CONTAINER_LIST := preload("res://addons/tscn_scanner/container_list.tres")
 ## コンテナ用グループ名
 const CONTAINER_GROUP := &"test_group"
 
-## コンテナIDの長さ
-const UID_LENGTH := 8
-
 @export var _scope_id: StringName
 var scope_id: StringName:
 	get:

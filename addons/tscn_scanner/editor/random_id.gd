@@ -2,13 +2,15 @@
 extends RefCounted
 class_name RandomID
 
-const chars := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const CHARS := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-static func get_random_id(length: int) -> String:
+const UID_LENGTH := 8
+
+static func get_random_id() -> String:
 	var str_list: PackedStringArray = []
-	var max_index := chars.length()-1
-	for i in length:
+	var max_index := CHARS.length()-1
+	for i in UID_LENGTH:
 		var index := randi_range(0, max_index)
-		str_list.append(chars[index])
+		str_list.append(CHARS[index])
 	
 	return "".join(str_list)
