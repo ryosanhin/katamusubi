@@ -3,6 +3,13 @@ extends Resource
 
 @export var _container_list: Array[ContainerScopeProperty] = []
 
+func get_uid_pairs() -> Dictionary[StringName, StringName]:
+	var dict: Dictionary[StringName, StringName] = {}
+	for container in _container_list:
+		dict[container.scope_id] = container.scope_uid
+	return dict
+
+
 func get_new_uid(length: int) -> StringName:
 	var current_uid_list: Array[StringName] = []
 	var tmp_list := _container_list.map(
