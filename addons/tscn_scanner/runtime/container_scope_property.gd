@@ -12,6 +12,11 @@ var node_path: NodePath:
 	get:
 		return _node_path
 
+@export var _scope_id: StringName
+var scope_id: StringName:
+	get:
+		return _scope_id
+
 @export var _parent_scope_id: StringName
 var parent_scope_id: StringName:
 	get:

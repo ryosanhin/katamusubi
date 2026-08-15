@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-const CONTAINER_LIST := preload("res://addons/tscn_scanner/CONTAINER_LIST.tres")
+const CONTAINER_LIST := preload("res://addons/tscn_scanner/container_list.tres")
 
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 

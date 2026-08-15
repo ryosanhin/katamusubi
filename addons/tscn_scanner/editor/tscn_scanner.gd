@@ -51,7 +51,7 @@ static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 			break
 	
 	var scene_path := ResourceUID.get_id_path(
-			ResourceUID.text_to_id(property.scene_path)
+			ResourceUID.text_to_id(property.scene_uid)
 	)
 
 	errors.append("シーン %s に対象のノードが見つかりませんでした。" % scene_path)
