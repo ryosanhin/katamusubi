@@ -1,8 +1,8 @@
 @tool
 extends EditorInspectorPlugin
 
-const CONTAINER_LIST_PATH := "res://addons/tscn_scanner/container_list.tres"
-const CONTAINER_LIST := preload(CONTAINER_LIST_PATH) 
+const DEFINITION_LIST_PATH := "res://addons/tscn_scanner/scope_definition_list.tres"
+const DEFINITION_LIST := preload(DEFINITION_LIST_PATH) 
 
 const ENUM_PROP_NAME := "_parent_scope_id"
 
@@ -45,18 +45,18 @@ func _parse_begin(object: Object) -> void:
 			0,
 			&"",
 	)
-	for scope_prop in CONTAINER_LIST.scope_definitions:
-		if scope_prop.scope_id == target.scope_id:
+	for scope_definition in DEFINITION_LIST.scope_definitions:
+		if scope_definition.scope_id == target.scope_id:
 			continue
-		var scene_id := ResourceUID.text_to_id(scope_prop.scene_uid)
+		var scene_id := ResourceUID.text_to_id(scope_definition.scene_uid)
 		var scene_path := ResourceUID.get_id_path(scene_id)
 		var scene_name := scene_path.get_file()
 
-		pulldown_menu.add_item("%s::%s" % [scene_name, scope_prop.scope_name])
+		pulldown_menu.add_item("%s::%s" % [scene_name, scope_definition.scope_name])
 		var index := pulldown_menu.item_count - 1
 		pulldown_menu.set_item_metadata(
 				index,
-				scope_prop.scope_id,
+				scope_definition.scope_id,
 		)
 	pulldown_menu.item_selected.connect(
 			_select_parent_scope.bind(target)
@@ -68,11 +68,11 @@ func _parse_begin(object: Object) -> void:
 
 	# 初期値を確認
 	var predicate := (
-			func(scope_prop: ScopeDefinition) -> bool:
-				return scope_prop.scope_id == target.parent_scope_id
+			func(scope_definition: ScopeDefinition) -> bool:
+				return scope_definition.scope_id == target.get_parent_scope_id()
 	)
-	var tmp_index := CONTAINER_LIST.scope_definitions.find_custom(predicate.bind())
-	if tmp_index < 0 or tmp_index > CONTAINER_LIST.scope_definitions.size():
+	var tmp_index := DEFINITION_LIST.scope_definitions.find_custom(predicate.bind())
+	if tmp_index < 0 or tmp_index > DEFINITION_LIST.scope_definitions.size():
 		pulldown_menu.select(0)
 		return
 	pulldown_menu.select(tmp_index + 1)
@@ -93,25 +93,27 @@ func _apply_or_update(target: ContainerScope) -> void:
 		push_error("シーンのUIDを取得できませんでした: %s" % scene_path)
 		return
 
-	var property := CONTAINER_LIST.get_scope_definition(target.scope_id)
+	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
 
-	if property == null:
-		var new_id := CONTAINER_LIST.get_new_id()
+	if definition == null:
+		# 新規登録
+		var new_id := DEFINITION_LIST.get_new_id()
 		target.scope_id = new_id
 		EditorInterface.mark_scene_as_unsaved()
-		property = ScopeDefinition.create_new_definition(
+		definition = ScopeDefinition.create_new_definition(
 				scene_uid,
 				scene_root.get_path_to(target),
 				target.scope_name,
 				new_id,
-				target.parent_scope_id,
+				target.get_parent_scope_id(),
 		)
-		CONTAINER_LIST.add_container(property)
+		DEFINITION_LIST.add_scope_definitions(definition)
 	else:
-		property.scene_uid = scene_uid
-		property.node_path = scene_root.get_path_to(target)
-		property.scope_name = target.scope_name
-		property.parent_scope_id = target.parent_scope_id
+		# アップデート処理
+		definition.scene_uid = scene_uid
+		definition.node_path = scene_root.get_path_to(target)
+		definition.scope_name = target.scope_name
+		definition.parent_scope_id = target.get_parent_scope_id()
 
 	_try_save_container_list()
 
@@ -120,9 +122,9 @@ func _delete(target: ContainerScope) -> void:
 	if target.scope_id.is_empty():
 		return
 
-	var property := CONTAINER_LIST.get_scope_definition(target.scope_id)
-	if property != null:
-		CONTAINER_LIST.remove_container(property)
+	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
+	if definition != null:
+		DEFINITION_LIST.remove_scope_definitions(definition)
 		_try_save_container_list()
 
 	target.scope_id = &""
@@ -132,37 +134,31 @@ func _delete(target: ContainerScope) -> void:
 func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	if index == 0:
 		# 登録されている情報を削除
-		var current_parent_scope := CONTAINER_LIST.get_scope_definition(target.parent_scope_id)
+		var current_parent_scope := DEFINITION_LIST.get_scope_definition(
+				target.get_parent_scope_id()
+		)
 		current_parent_scope.parent_scope_id =&""
-
-		# 実際のスコープの情報も削除
-		target.parent_scope_name = &""
-		target.parent_scope_id = &""
 		EditorInterface.mark_scene_as_unsaved()
 		return
 	
 	# Noneを除外するために -1 する
 	index -= 1
-	var container_list := CONTAINER_LIST.scope_definitions
+	var container_list := DEFINITION_LIST.scope_definitions
 	var parent_scope_id := container_list[index].scope_id
 	
 	if parent_scope_id == target.scope_id:
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 	
-	var parent_scope := CONTAINER_LIST.get_scope_definition(parent_scope_id)
+	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
 
 	if parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
 	
-	# スコープに参照先親スコープを登録
-	target.parent_scope_name = parent_scope.scope_name
-	target.parent_scope_id = parent_scope_id
-
 	# スコープの登録情報にも参照先親スコープを登録
-	var target_scope_prop := CONTAINER_LIST.get_scope_definition(target.scope_id)
-	target_scope_prop.parent_scope_id = parent_scope_id
+	var target_scope_definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
+	target_scope_definition.parent_scope_id = parent_scope_id
 	_try_save_container_list()
 
 	EditorInterface.mark_scene_as_unsaved()
@@ -180,7 +176,7 @@ func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> boo
 
 
 func _try_save_container_list() -> bool:
-	var error := ResourceSaver.save(CONTAINER_LIST, CONTAINER_LIST_PATH)
+	var error := ResourceSaver.save(DEFINITION_LIST, DEFINITION_LIST_PATH)
 	if error != OK:
 		push_error("failed save list: %s" % error_string(error))
 		return false
