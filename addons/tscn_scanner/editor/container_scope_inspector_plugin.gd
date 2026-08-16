@@ -133,12 +133,16 @@ func _delete(target: ContainerScope) -> void:
 
 func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	if index == 0:
-		# 登録されている情報を削除
-		var current_parent_scope := DEFINITION_LIST.get_scope_definition(
-				target.get_parent_scope_id()
+		# 対象スコープに登録されている親スコープ情報を削除
+		var target_scope_definition := DEFINITION_LIST.get_scope_definition(
+				target.scope_id
 		)
-		current_parent_scope.parent_scope_id =&""
-		EditorInterface.mark_scene_as_unsaved()
+		if target_scope_definition == null:
+			push_error("対象のスコープ定義が登録されていません: %s" % target.scope_id)
+			return
+
+		target_scope_definition.parent_scope_id = &""
+		_try_save_container_list()
 		return
 	
 	# Noneを除外するために -1 する
