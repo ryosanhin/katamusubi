@@ -115,16 +115,23 @@ func _ensure_initialized() -> void:
 	var parent_container: InjectionContainer = null
 	if not definition.parent_scope_id.is_empty():
 		var parent_scope := _find_parent_scope()
+		
+		# 親スコープが未設定の場合		
 		if parent_scope == null:
 			state = State.NOT_INITIALIZED
 			_start_initialization_retry()
 			return
 
+		# 先に親スコープを初期化
 		parent_scope._ensure_initialized()
+
+		# 親スコープが初期化されていなかった場合
 		if parent_scope.state != State.INITIALIZED:
+			# このスコープは初期化できないので再度初期化できるタイミングを待つ
 			state = State.NOT_INITIALIZED
 			_start_initialization_retry()
 			return
+		# 親スコープのコンテナを取得
 		parent_container = parent_scope._container
 
 	_container = InjectionContainer.new(parent_container)
