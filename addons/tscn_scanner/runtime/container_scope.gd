@@ -15,12 +15,12 @@ enum State {
 var _container: InjectionContainer
 
 ## 重複初期化と親子間の再帰初期化を防ぐ状態
-var _state: State = State.NOT_INITIALIZED
+var state: State = State.NOT_INITIALIZED
 
 ## プロジェクト内のコンテナ情報のリスト
-const CONTAINER_LIST := preload("res://addons/tscn_scanner/container_list.tres")
+const DEFINITION_LIST := preload("res://addons/tscn_scanner/scope_definition_list.tres")
 
-## コンテナ用グループ名
+## スコープ用グループ名
 const CONTAINER_GROUP := &"test_group"
 
 var scope_name: StringName:
@@ -28,10 +28,6 @@ var scope_name: StringName:
 		return name
 
 @export_storage var scope_id: StringName
-
-@export_storage var parent_scope_name: StringName
-
-@export_storage var parent_scope_id: StringName
 
 ## 注入対象
 @export var _inject_target: Array[Node] = []
@@ -64,11 +60,14 @@ func _exit_tree() -> void:
 		_container.clear()
 
 	_container = null
-	_state = State.NOT_INITIALIZED
+	state = State.NOT_INITIALIZED
 
 
 ## 論理IDが一致する親スコープを取得
 func _find_parent_scope() -> ContainerScope:
+	var parent_scope_id := get_parent_scope_id()
+	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
+
 	if parent_scope_id.is_empty():
 		return null
 
@@ -87,7 +86,7 @@ func _find_parent_scope() -> ContainerScope:
 	if matched.size() != 1:
 		push_error(
 				"親スコープ '%s' は1個必要ですが、%d個見つかりました。"
-				% [parent_scope_name, matched.size()]
+				% [parent_scope.scope_name, matched.size()]
 		)
 		return null
 	
@@ -96,32 +95,32 @@ func _find_parent_scope() -> ContainerScope:
 
 ## 親コンテナを先に構築し、このスコープを一度だけ初期化
 func _ensure_initialized() -> void:
-	if _state == State.INITIALIZED:
+	if state == State.INITIALIZED:
 		return
-	if _state == State.INITIALIZING:
+	if state == State.INITIALIZING:
 		push_error("コンテナの親子関係が循環しています: %s" % scope_name)
-		_state = State.CIRCULAR
+		state = State.CIRCULAR
 		_stop_initialization_retry()
 		return
 
-	_state = State.INITIALIZING
+	state = State.INITIALIZING
 
 	var parent_scope := _find_parent_scope()
-	
-	if not parent_scope_name.is_empty() and parent_scope == null:
-		_state = State.NOT_INITIALIZED
+	print(name, "0")
+	if parent_scope == null:
+		state = State.NOT_INITIALIZED
 		_start_initialization_retry()
 		return
-
+	print(name, "1")
 	var parent_container: InjectionContainer = null
 	if parent_scope != null:
 		parent_scope._ensure_initialized()
-		if parent_scope._state != State.INITIALIZED:
-			_state = State.NOT_INITIALIZED
+		if parent_scope.state != State.INITIALIZED:
+			state = State.NOT_INITIALIZED
 			_start_initialization_retry()
 			return
 		parent_container = parent_scope._container
-
+	print("2")
 	_container = InjectionContainer.new(parent_container)
 	
 	_register_instance(_container)
@@ -130,10 +129,10 @@ func _ensure_initialized() -> void:
 	if not _inject_dependencies():
 		_container.clear()
 		_container = null
-		_state = State.NOT_INITIALIZED
+		state = State.NOT_INITIALIZED
 		return
-
-	_state = State.INITIALIZED
+	print("3")
+	state = State.INITIALIZED
 	
 	_stop_initialization_retry()
 
@@ -166,6 +165,19 @@ func _on_node_added(_node: Node) -> void:
 	# node_added の発火中では候補の _enter_tree() が完了していない場合がある
 	# node_added が全部終わってから、ツリーへの追加が終わってから実行する
 	_ensure_initialized.call_deferred()
+
+
+## 自身のスコープ定義を取得
+func get_scope_definition() -> ScopeDefinition:
+	return DEFINITION_LIST.get_scope_definition(scope_id)
+
+
+## 親スコープのIDを取得
+func get_parent_scope_id() -> StringName:
+	var definition := get_scope_definition()
+	if definition == null:
+		return &""
+	return definition.parent_scope_id
 
 
 ## 具体コンテナが登録内容を定義
