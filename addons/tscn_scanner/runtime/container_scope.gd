@@ -105,22 +105,35 @@ func _ensure_initialized() -> void:
 
 	state = State.INITIALIZING
 
-	var parent_scope := _find_parent_scope()
-	print(name, "0")
-	if parent_scope == null:
+	var definition := get_scope_definition()
+	if definition == null:
+		push_error("スコープID '%s' に対応する定義がありません。" % scope_id)
 		state = State.NOT_INITIALIZED
-		_start_initialization_retry()
+		_stop_initialization_retry()
 		return
-	print(name, "1")
+
 	var parent_container: InjectionContainer = null
-	if parent_scope != null:
-		parent_scope._ensure_initialized()
-		if parent_scope.state != State.INITIALIZED:
+	if not definition.parent_scope_id.is_empty():
+		var parent_scope := _find_parent_scope()
+		
+		# 親スコープが未設定の場合		
+		if parent_scope == null:
 			state = State.NOT_INITIALIZED
 			_start_initialization_retry()
 			return
+
+		# 先に親スコープを初期化
+		parent_scope._ensure_initialized()
+
+		# 親スコープが初期化されていなかった場合
+		if parent_scope.state != State.INITIALIZED:
+			# このスコープは初期化できないので再度初期化できるタイミングを待つ
+			state = State.NOT_INITIALIZED
+			_start_initialization_retry()
+			return
+		# 親スコープのコンテナを取得
 		parent_container = parent_scope._container
-	print("2")
+
 	_container = InjectionContainer.new(parent_container)
 	
 	_register_instance(_container)
@@ -131,7 +144,6 @@ func _ensure_initialized() -> void:
 		_container = null
 		state = State.NOT_INITIALIZED
 		return
-	print("3")
 	state = State.INITIALIZED
 	
 	_stop_initialization_retry()
