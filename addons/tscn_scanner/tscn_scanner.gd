@@ -1,13 +1,13 @@
 @tool
 extends EditorPlugin
 
-const CONTAINER_LIST := preload("res://addons/tscn_scanner/CONTAINER_LIST.tres")
+const CONTAINER_LIST := preload("res://addons/tscn_scanner/container_list.tres")
 
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 
 func _build() -> bool:
 	var errors: PackedStringArray = []
-	for container_property in CONTAINER_LIST._container_list:
+	for container_property in CONTAINER_LIST.container_list:
 		errors.append_array(TscnScanner.scan(container_property))
 
 	print("エラー %d 件：\n%s" % [errors.size(), "\n".join(errors)])

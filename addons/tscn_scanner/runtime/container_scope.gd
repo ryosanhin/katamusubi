@@ -23,23 +23,15 @@ const CONTAINER_LIST := preload("res://addons/tscn_scanner/container_list.tres")
 ## コンテナ用グループ名
 const CONTAINER_GROUP := &"test_group"
 
-## コンテナIDの長さ
-const UID_LENGTH := 8
-
-@export var _scope_id: StringName
-var scope_id: StringName:
+var scope_name: StringName:
 	get:
-		return _scope_id
+		return name
 
-@export_storage var _scope_uid: StringName
-var scope_uid: StringName:
-	get:
-		return _scope_uid
+@export_storage var scope_id: StringName
 
-@export var _parent_scope_id: StringName
-var parent_scope_id: StringName:
-	get:
-		return _parent_scope_id
+@export_storage var parent_scope_name: StringName
+
+@export_storage var parent_scope_id: StringName
 
 ## 注入対象
 @export var _inject_target: Array[Node] = []
@@ -77,7 +69,7 @@ func _exit_tree() -> void:
 
 ## 論理IDが一致する親スコープを取得
 func _find_parent_scope() -> ContainerScope:
-	if _parent_scope_id.is_empty():
+	if parent_scope_id.is_empty():
 		return null
 
 	var matched: Array[ContainerScope] = []
@@ -85,15 +77,17 @@ func _find_parent_scope() -> ContainerScope:
 	for node in get_tree().get_nodes_in_group(CONTAINER_GROUP):
 		var scope := node as ContainerScope
 		
-		if scope != null \
-				and scope != self \
-				and scope.scope_id == _parent_scope_id:
+		if (
+				scope != null
+				and scope != self
+				and scope.scope_id == parent_scope_id
+		):
 			matched.append(scope)
 
 	if matched.size() != 1:
 		push_error(
 				"親スコープ '%s' は1個必要ですが、%d個見つかりました。"
-				% [_parent_scope_id, matched.size()]
+				% [parent_scope_name, matched.size()]
 		)
 		return null
 	
@@ -105,7 +99,7 @@ func _ensure_initialized() -> void:
 	if _state == State.INITIALIZED:
 		return
 	if _state == State.INITIALIZING:
-		push_error("コンテナの親子関係が循環しています: %s" % scope_id)
+		push_error("コンテナの親子関係が循環しています: %s" % scope_name)
 		_state = State.CIRCULAR
 		_stop_initialization_retry()
 		return
@@ -114,7 +108,7 @@ func _ensure_initialized() -> void:
 
 	var parent_scope := _find_parent_scope()
 	
-	if not _parent_scope_id.is_empty() and parent_scope == null:
+	if not parent_scope_name.is_empty() and parent_scope == null:
 		_state = State.NOT_INITIALIZED
 		_start_initialization_retry()
 		return
@@ -145,7 +139,7 @@ func _ensure_initialized() -> void:
 
 
 func _inject_dependencies() -> bool:
-	var injector := InstanceInjector.new(_container, _scope_id)
+	var injector := InstanceInjector.new(_container, scope_name)
 
 	for target in _inject_target:
 		if not injector.try_inject_arguments(target):
