@@ -45,7 +45,7 @@ func _parse_begin(object: Object) -> void:
 			0,
 			&"",
 	)
-	for scope_prop in CONTAINER_LIST.container_list:
+	for scope_prop in CONTAINER_LIST.scope_definitions:
 		if scope_prop.scope_id == target.scope_id:
 			continue
 		var scene_id := ResourceUID.text_to_id(scope_prop.scene_uid)
@@ -71,8 +71,8 @@ func _parse_begin(object: Object) -> void:
 			func(scope_prop: ScopeDefinition) -> bool:
 				return scope_prop.scope_id == target.parent_scope_id
 	)
-	var tmp_index := CONTAINER_LIST.container_list.find_custom(predicate.bind())
-	if tmp_index < 0 or tmp_index > CONTAINER_LIST.container_list.size():
+	var tmp_index := CONTAINER_LIST.scope_definitions.find_custom(predicate.bind())
+	if tmp_index < 0 or tmp_index > CONTAINER_LIST.scope_definitions.size():
 		pulldown_menu.select(0)
 		return
 	pulldown_menu.select(tmp_index + 1)
@@ -93,13 +93,13 @@ func _apply_or_update(target: ContainerScope) -> void:
 		push_error("シーンのUIDを取得できませんでした: %s" % scene_path)
 		return
 
-	var property := CONTAINER_LIST.get_scope_property(target.scope_id)
+	var property := CONTAINER_LIST.get_scope_definition(target.scope_id)
 
 	if property == null:
 		var new_id := CONTAINER_LIST.get_new_id()
 		target.scope_id = new_id
 		EditorInterface.mark_scene_as_unsaved()
-		property = ScopeDefinition.create_new_property(
+		property = ScopeDefinition.create_new_definition(
 				scene_uid,
 				scene_root.get_path_to(target),
 				target.scope_name,
@@ -120,7 +120,7 @@ func _delete(target: ContainerScope) -> void:
 	if target.scope_id.is_empty():
 		return
 
-	var property := CONTAINER_LIST.get_scope_property(target.scope_id)
+	var property := CONTAINER_LIST.get_scope_definition(target.scope_id)
 	if property != null:
 		CONTAINER_LIST.remove_container(property)
 		_try_save_container_list()
@@ -132,7 +132,7 @@ func _delete(target: ContainerScope) -> void:
 func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	if index == 0:
 		# 登録されている情報を削除
-		var current_parent_scope := CONTAINER_LIST.get_scope_property(target.parent_scope_id)
+		var current_parent_scope := CONTAINER_LIST.get_scope_definition(target.parent_scope_id)
 		current_parent_scope.parent_scope_id =&""
 
 		# 実際のスコープの情報も削除
@@ -143,14 +143,14 @@ func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	
 	# Noneを除外するために -1 する
 	index -= 1
-	var container_list := CONTAINER_LIST.container_list
+	var container_list := CONTAINER_LIST.scope_definitions
 	var parent_scope_id := container_list[index].scope_id
 	
 	if parent_scope_id == target.scope_id:
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 	
-	var parent_scope := CONTAINER_LIST.get_scope_property(parent_scope_id)
+	var parent_scope := CONTAINER_LIST.get_scope_definition(parent_scope_id)
 
 	if parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
@@ -161,7 +161,7 @@ func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	target.parent_scope_id = parent_scope_id
 
 	# スコープの登録情報にも参照先親スコープを登録
-	var target_scope_prop := CONTAINER_LIST.get_scope_property(target.scope_id)
+	var target_scope_prop := CONTAINER_LIST.get_scope_definition(target.scope_id)
 	target_scope_prop.parent_scope_id = parent_scope_id
 	_try_save_container_list()
 
