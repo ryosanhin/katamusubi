@@ -48,8 +48,7 @@ func _parse_begin(object: Object) -> void:
 	for scope_definition in DEFINITION_LIST.scope_definitions:
 		if scope_definition.scope_id == target.scope_id:
 			continue
-		var scene_id := ResourceUID.text_to_id(scope_definition.scene_uid)
-		var scene_path := ResourceUID.get_id_path(scene_id)
+		var scene_path := ResourceUID.uid_to_path(scope_definition.scene_uid)
 		var scene_name := scene_path.get_file()
 
 		pulldown_menu.add_item("%s::%s" % [scene_name, scope_definition.scope_name])
@@ -98,6 +97,9 @@ func _apply_or_update(target: ContainerScope) -> void:
 	if definition == null:
 		# 新規登録
 		var new_id := DEFINITION_LIST.get_new_id()
+		if new_id.is_empty():
+			push_error("空のスコープIDでは登録できません")
+			return
 		target.scope_id = new_id
 		EditorInterface.mark_scene_as_unsaved()
 		definition = ScopeDefinition.create_new_definition(

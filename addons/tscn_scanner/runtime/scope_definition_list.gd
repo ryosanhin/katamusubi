@@ -9,6 +9,9 @@ extends Resource
 func add_scope_definitions(
 	definition: ScopeDefinition
 ) -> void:
+	if definition.scope_id.is_empty():
+		push_error("空のスコープIDでは登録できません: %s" % definition)
+		return
 	scope_definitions.append(definition)
 
 
@@ -20,12 +23,13 @@ func remove_scope_definitions(
 	scope_definitions.erase(definition)
 
 
-## 新規スコープIDを取得
+## 新規スコープIDを取得[br]
+## 100回生成して新規IDが生成できなかった場合は[code]&""[/code]を返す
 func get_new_id() -> StringName:
 	var current_id_list := _get_current_id_list()
 
 	var id := RandomID.get_random_id()
-	var loop_count := 0
+	var loop_count := 1
 	const MAX_LOOP_COUNT := 100
 
 	while current_id_list.has(id):
