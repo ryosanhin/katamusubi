@@ -1,6 +1,6 @@
 [gd_resource type="Resource" format=3 uid="uid://yw1m03cfmwg6"]
 
-[ext_resource type="Script" uid="uid://cydi7jyr1tte6" path="res://addons/tscn_scanner/runtime/container_scope_property.gd" id="1_6c5k7"]
+[ext_resource type="Script" uid="uid://cydi7jyr1tte6" path="res://addons/tscn_scanner/runtime/scope_definition.gd" id="1_6c5k7"]
 [ext_resource type="Script" uid="uid://duarhscov4x6r" path="res://addons/tscn_scanner/runtime/container_list.gd" id="2_6jo0g"]
 
 [sub_resource type="Resource" id="Resource_6c5k7"]
