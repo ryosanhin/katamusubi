@@ -4,16 +4,17 @@ extends Resource
 @export var scope_definitions: Array[ScopeDefinition] = []
 
 
-## スコーププロパティを追加
-func add_container(
+## スコープ定義を追加
+## [param definition]: 追加するスコープ定義
+func add_scope_definitions(
 	definition: ScopeDefinition
 ) -> void:
 	scope_definitions.append(definition)
 
 
-## 登録されているスコープリストから削除する[br]
-## 削除するスコープのプロパティ
-func remove_container(
+## 登録されているスコープ定義リストから削除する[br]
+## [param definition]: 削除するスコープ定義
+func remove_scope_definitions(
 	definition: ScopeDefinition
 ) -> void:
 	scope_definitions.erase(definition)
