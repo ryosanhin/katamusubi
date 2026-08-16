@@ -27,12 +27,9 @@ var scope_name: StringName:
 	get:
 		return name
 
-@export_storage var _scope_uid: StringName
-var scope_uid: StringName:
-	get:
-		return _scope_uid
+@export_storage var scope_id: StringName
 
-@export var parent_scope_name: StringName
+@export_storage var parent_scope_name: StringName
 
 @export_storage var parent_scope_id: StringName
 

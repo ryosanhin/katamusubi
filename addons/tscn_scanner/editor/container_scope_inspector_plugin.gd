@@ -46,6 +46,8 @@ func _parse_begin(object: Object) -> void:
 			&"",
 	)
 	for scope_prop in CONTAINER_LIST.container_list:
+		if scope_prop.scope_id == target.scope_id:
+			continue
 		var scene_id := ResourceUID.text_to_id(scope_prop.scene_uid)
 		var scene_path := ResourceUID.get_id_path(scene_id)
 		var scene_name := scene_path.get_file()
@@ -61,7 +63,19 @@ func _parse_begin(object: Object) -> void:
 	)
 	inspector_container.add_child(pulldown_menu)
 
+	# UI全体を登録
 	add_custom_control(inspector_container)
+
+	# 初期値を確認
+	var predicate := (
+			func(scope_prop: ContainerScopeProperty) -> bool:
+				return scope_prop.scope_id == target.parent_scope_id
+	)
+	var tmp_index := CONTAINER_LIST.container_list.find_custom(predicate.bind())
+	if tmp_index < 0 or tmp_index > CONTAINER_LIST.container_list.size():
+		pulldown_menu.select(0)
+		return
+	pulldown_menu.select(tmp_index + 1)
 
 
 func _apply_or_update(target: ContainerScope) -> void:
@@ -79,17 +93,17 @@ func _apply_or_update(target: ContainerScope) -> void:
 		push_error("シーンのUIDを取得できませんでした: %s" % scene_path)
 		return
 
-	var property := CONTAINER_LIST.get_container_scope_property_with_scope_id(target.scope_uid)
+	var property := CONTAINER_LIST.get_scope_property(target.scope_id)
 
 	if property == null:
-		var new_uid := CONTAINER_LIST.get_new_id()
-		target._scope_uid = new_uid
+		var new_id := CONTAINER_LIST.get_new_id()
+		target.scope_id = new_id
 		EditorInterface.mark_scene_as_unsaved()
 		property = ContainerScopeProperty.create_new_property(
 				scene_uid,
 				scene_root.get_path_to(target),
 				target.scope_name,
-				new_uid,
+				new_id,
 				target.parent_scope_id,
 		)
 		CONTAINER_LIST.add_container(property)
@@ -103,15 +117,15 @@ func _apply_or_update(target: ContainerScope) -> void:
 
 
 func _delete(target: ContainerScope) -> void:
-	if target.scope_uid.is_empty():
+	if target.scope_id.is_empty():
 		return
 
-	var property := CONTAINER_LIST.get_container_scope_property_with_scope_id(target.scope_uid)
+	var property := CONTAINER_LIST.get_scope_property(target.scope_id)
 	if property != null:
 		CONTAINER_LIST.remove_container(property)
 		_save_container_list()
 
-	target._scope_uid = &""
+	target.scope_id = &""
 	EditorInterface.mark_scene_as_unsaved()
 
 
@@ -126,15 +140,26 @@ func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	index -= 1
 	var container_list := CONTAINER_LIST.container_list
 	var parent_scope_id := container_list[index].scope_id
-	print(parent_scope_id)
+	
+	if parent_scope_id == target.scope_id:
+		push_error("自身のスコープを親スコープにすることはできません。")
+		return
+	
 	var parent_scope := CONTAINER_LIST.get_scope_property(parent_scope_id)
 
 	if parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
 	
+	# スコープに参照先親スコープを登録
 	target.parent_scope_name = parent_scope.scope_name
 	target.parent_scope_id = parent_scope_id
+
+	# スコープの登録情報にも参照先親スコープを登録
+	var target_scope_prop := CONTAINER_LIST.get_scope_property(target.scope_id)
+	target_scope_prop.parent_scope_id = parent_scope_id
+	_save_container_list()
+
 	EditorInterface.mark_scene_as_unsaved()
 
 
@@ -152,5 +177,5 @@ func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> boo
 func _save_container_list() -> void:
 	var error := ResourceSaver.save(CONTAINER_LIST, CONTAINER_LIST_PATH)
 	if error != OK:
-		push_error("コンテナリストの保存に失敗しました: %s" % error_string(error))
-	print("successfully saved")
+		push_error("failed save list: %s" % error_string(error))
+	print("successfully saved list")

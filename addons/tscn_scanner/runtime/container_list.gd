@@ -4,40 +4,15 @@ extends Resource
 @export var container_list: Array[ContainerScopeProperty] = []
 
 
-## コンテナスコープUIDの一覧を取得
-func get_scope_ids() -> Array[StringName]:
-	return _get_current_id_list()
-
-
-## コンテナスコープの名前とスコープIDのセットを取得
-func get_id_pairs() -> Dictionary[StringName, StringName]:
-	var dict: Dictionary[StringName, StringName] = {}
-	for container in container_list:
-		dict[container.scope_name] = container.scope_id
-	return dict
-
-
-## スコープIDからコンテナスコープのプロパティを取得
-func get_container_scope_property_with_scope_id(
-	scope_id: StringName
-) -> ContainerScopeProperty:
-	if scope_id.is_empty():
-		return null
-
-	for prop in container_list:
-		if prop.scope_id == scope_id:
-			return prop
-	
-	return null
-
+## スコーププロパティを追加
 func add_container(
 	prop: ContainerScopeProperty
 ) -> void:
 	container_list.append(prop)
 
 
-## 登録されているコンテナスコープリストから削除する[br]
-## 削除するコンテナスコープのプロパティ
+## 登録されているスコープリストから削除する[br]
+## 削除するスコープのプロパティ
 func remove_container(
 	prop: ContainerScopeProperty
 ) -> void:
@@ -72,6 +47,8 @@ func _get_current_id_list() -> Array[StringName]:
 	return current_id_list
 
 
+## スコープIDから該当するスコーププロパティを取得[br]
+## 存在しない場合は[code]null[/code]を返す
 func get_scope_property(id: StringName) -> ContainerScopeProperty:
 	for prop in container_list:
 		if prop.scope_id == id:
