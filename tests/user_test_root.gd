@@ -3,6 +3,7 @@ extends Node
 var _manager: AbstractTestManager
 
 func inject_dependency(manager: AbstractTestManager) -> void:
+	print("call injection at root user")
 	_manager = manager
 
 
