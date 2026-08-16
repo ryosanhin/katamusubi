@@ -4,7 +4,7 @@ class_name TscnScanner
 
 ## シーン内を走査しコンテナスコープが存在するか確認する
 ## [param property]: コンテナとスコープの情報
-static func scan(property: ContainerScopeProperty) -> PackedStringArray:
+static func scan(property: ScopeDefinition) -> PackedStringArray:
 	var errors: PackedStringArray = []
 	const PACKED_SCENE_STRING := "PackedScene"
 	const SCRIPT_STRING_NAME := &"script"

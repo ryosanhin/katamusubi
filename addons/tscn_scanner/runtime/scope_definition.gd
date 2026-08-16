@@ -1,9 +1,11 @@
 @tool
 extends Resource
-class_name ContainerScopeProperty
+class_name ScopeDefinition
 
+## スコープのノードが存在するシーンのuid
 @export var scene_uid: StringName
 
+## スコープのノードのツリーでの場所
 @export var node_path: NodePath
 
 ## スコープのノードの名前
@@ -27,8 +29,8 @@ static func create_new_property(
 	init_scope_name: StringName,
 	init_scope_id: StringName,
 	init_parent_scope_id: StringName,
-) -> ContainerScopeProperty:
-	var property := ContainerScopeProperty.new()
+) -> ScopeDefinition:
+	var property := ScopeDefinition.new()
 	property.scene_uid = init_scene_uid
 	property.node_path = init_node_path
 	property.scope_name = init_scope_name

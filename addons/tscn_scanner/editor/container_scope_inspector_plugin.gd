@@ -68,7 +68,7 @@ func _parse_begin(object: Object) -> void:
 
 	# 初期値を確認
 	var predicate := (
-			func(scope_prop: ContainerScopeProperty) -> bool:
+			func(scope_prop: ScopeDefinition) -> bool:
 				return scope_prop.scope_id == target.parent_scope_id
 	)
 	var tmp_index := CONTAINER_LIST.container_list.find_custom(predicate.bind())
@@ -99,7 +99,7 @@ func _apply_or_update(target: ContainerScope) -> void:
 		var new_id := CONTAINER_LIST.get_new_id()
 		target.scope_id = new_id
 		EditorInterface.mark_scene_as_unsaved()
-		property = ContainerScopeProperty.create_new_property(
+		property = ScopeDefinition.create_new_property(
 				scene_uid,
 				scene_root.get_path_to(target),
 				target.scope_name,

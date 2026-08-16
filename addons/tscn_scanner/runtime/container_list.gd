@@ -1,12 +1,12 @@
 @tool
 extends Resource
 
-@export var container_list: Array[ContainerScopeProperty] = []
+@export var container_list: Array[ScopeDefinition] = []
 
 
 ## スコーププロパティを追加
 func add_container(
-	prop: ContainerScopeProperty
+	prop: ScopeDefinition
 ) -> void:
 	container_list.append(prop)
 
@@ -14,7 +14,7 @@ func add_container(
 ## 登録されているスコープリストから削除する[br]
 ## 削除するスコープのプロパティ
 func remove_container(
-	prop: ContainerScopeProperty
+	prop: ScopeDefinition
 ) -> void:
 	container_list.erase(prop)
 
@@ -41,7 +41,7 @@ func get_new_id() -> StringName:
 func _get_current_id_list() -> Array[StringName]:
 	var current_id_list: Array[StringName] = []
 	var tmp_list := container_list.map(
-			func(prop: ContainerScopeProperty) -> StringName: return prop.scope_id
+			func(prop: ScopeDefinition) -> StringName: return prop.scope_id
 	)
 	current_id_list.assign(tmp_list)
 	return current_id_list
@@ -49,7 +49,7 @@ func _get_current_id_list() -> Array[StringName]:
 
 ## スコープIDから該当するスコーププロパティを取得[br]
 ## 存在しない場合は[code]null[/code]を返す
-func get_scope_property(id: StringName) -> ContainerScopeProperty:
+func get_scope_property(id: StringName) -> ScopeDefinition:
 	for prop in container_list:
 		if prop.scope_id == id:
 			return prop
