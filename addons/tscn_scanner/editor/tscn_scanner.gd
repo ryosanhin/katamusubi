@@ -4,7 +4,7 @@ class_name TscnScanner
 
 ## シーン内を走査しコンテナスコープが存在するか確認する
 ## [param property]: コンテナとスコープの情報
-static func scan(property: ContainerScopeProperty) -> PackedStringArray:
+static func scan(property: ScopeDefinition) -> PackedStringArray:
 	var errors: PackedStringArray = []
 	const PACKED_SCENE_STRING := "PackedScene"
 	const SCRIPT_STRING_NAME := &"script"
@@ -51,7 +51,7 @@ static func scan(property: ContainerScopeProperty) -> PackedStringArray:
 			break
 	
 	var scene_path := ResourceUID.get_id_path(
-			ResourceUID.text_to_id(property.scene_path)
+			ResourceUID.text_to_id(property.scene_uid)
 	)
 
 	errors.append("シーン %s に対象のノードが見つかりませんでした。" % scene_path)
