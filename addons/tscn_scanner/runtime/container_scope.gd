@@ -69,7 +69,7 @@ func _exit_tree() -> void:
 
 ## 論理IDが一致する親スコープを取得
 func _find_parent_scope() -> ContainerScope:
-	if parent_scope_name.is_empty():
+	if parent_scope_id.is_empty():
 		return null
 
 	var matched: Array[ContainerScope] = []
@@ -77,9 +77,11 @@ func _find_parent_scope() -> ContainerScope:
 	for node in get_tree().get_nodes_in_group(CONTAINER_GROUP):
 		var scope := node as ContainerScope
 		
-		if scope != null \
-				and scope != self \
-				and scope.scope_name == parent_scope_name:
+		if (
+				scope != null
+				and scope != self
+				and scope.scope_id == parent_scope_id
+		):
 			matched.append(scope)
 
 	if matched.size() != 1:

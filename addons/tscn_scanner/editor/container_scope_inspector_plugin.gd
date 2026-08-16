@@ -113,7 +113,7 @@ func _apply_or_update(target: ContainerScope) -> void:
 		property.scope_name = target.scope_name
 		property.parent_scope_id = target.parent_scope_id
 
-	_save_container_list()
+	_try_save_container_list()
 
 
 func _delete(target: ContainerScope) -> void:
@@ -123,7 +123,7 @@ func _delete(target: ContainerScope) -> void:
 	var property := CONTAINER_LIST.get_scope_property(target.scope_id)
 	if property != null:
 		CONTAINER_LIST.remove_container(property)
-		_save_container_list()
+		_try_save_container_list()
 
 	target.scope_id = &""
 	EditorInterface.mark_scene_as_unsaved()
@@ -131,6 +131,11 @@ func _delete(target: ContainerScope) -> void:
 
 func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	if index == 0:
+		# 登録されている情報を削除
+		var current_parent_scope := CONTAINER_LIST.get_scope_property(target.parent_scope_id)
+		current_parent_scope.parent_scope_id =&""
+
+		# 実際のスコープの情報も削除
 		target.parent_scope_name = &""
 		target.parent_scope_id = &""
 		EditorInterface.mark_scene_as_unsaved()
@@ -158,7 +163,7 @@ func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	# スコープの登録情報にも参照先親スコープを登録
 	var target_scope_prop := CONTAINER_LIST.get_scope_property(target.scope_id)
 	target_scope_prop.parent_scope_id = parent_scope_id
-	_save_container_list()
+	_try_save_container_list()
 
 	EditorInterface.mark_scene_as_unsaved()
 
@@ -174,8 +179,10 @@ func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> boo
 	return true
 
 
-func _save_container_list() -> void:
+func _try_save_container_list() -> bool:
 	var error := ResourceSaver.save(CONTAINER_LIST, CONTAINER_LIST_PATH)
 	if error != OK:
 		push_error("failed save list: %s" % error_string(error))
+		return false
 	print("successfully saved list")
+	return true
