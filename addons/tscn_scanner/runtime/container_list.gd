@@ -1,7 +1,7 @@
 @tool
 extends Resource
 
-@export var _container_list: Array[ContainerScopeProperty] = []
+@export var container_list: Array[ContainerScopeProperty] = []
 
 
 ## コンテナスコープUIDの一覧を取得
@@ -12,7 +12,7 @@ func get_scope_ids() -> Array[StringName]:
 ## コンテナスコープの名前とスコープIDのセットを取得
 func get_id_pairs() -> Dictionary[StringName, StringName]:
 	var dict: Dictionary[StringName, StringName] = {}
-	for container in _container_list:
+	for container in container_list:
 		dict[container.scope_name] = container.scope_id
 	return dict
 
@@ -24,7 +24,7 @@ func get_container_scope_property_with_scope_id(
 	if scope_id.is_empty():
 		return null
 
-	for prop in _container_list:
+	for prop in container_list:
 		if prop.scope_id == scope_id:
 			return prop
 	
@@ -33,7 +33,7 @@ func get_container_scope_property_with_scope_id(
 func add_container(
 	prop: ContainerScopeProperty
 ) -> void:
-	_container_list.append(prop)
+	container_list.append(prop)
 
 
 ## 登録されているコンテナスコープリストから削除する[br]
@@ -41,7 +41,7 @@ func add_container(
 func remove_container(
 	prop: ContainerScopeProperty
 ) -> void:
-	_container_list.erase(prop)
+	container_list.erase(prop)
 
 
 ## 新規スコープIDを取得
@@ -65,8 +65,15 @@ func get_new_id() -> StringName:
 ## スコープIDの一覧を生成
 func _get_current_id_list() -> Array[StringName]:
 	var current_id_list: Array[StringName] = []
-	var tmp_list := _container_list.map(
+	var tmp_list := container_list.map(
 			func(prop: ContainerScopeProperty) -> StringName: return prop.scope_id
 	)
 	current_id_list.assign(tmp_list)
 	return current_id_list
+
+
+func get_scope_property(id: StringName) -> ContainerScopeProperty:
+	for prop in container_list:
+		if prop.scope_id == id:
+			return prop
+	return null

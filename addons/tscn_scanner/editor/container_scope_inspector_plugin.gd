@@ -39,19 +39,22 @@ func _parse_begin(object: Object) -> void:
 
 	# 親スコープ選択プルダウンメニュー
 	var pulldown_menu := OptionButton.new()
-	var id_pairs := CONTAINER_LIST.get_id_pairs()
 	# デフォルトの値を設定
 	pulldown_menu.add_item("None")
 	pulldown_menu.set_item_metadata(
 			0,
 			&"",
 	)
-	for scope_name in CONTAINER_LIST.get_id_pairs():
-		pulldown_menu.add_item(scope_name)
+	for scope_prop in CONTAINER_LIST.container_list:
+		var scene_id := ResourceUID.text_to_id(scope_prop.scene_uid)
+		var scene_path := ResourceUID.get_id_path(scene_id)
+		var scene_name := scene_path.get_file()
+
+		pulldown_menu.add_item("%s::%s" % [scene_name, scope_prop.scope_name])
 		var index := pulldown_menu.item_count - 1
 		pulldown_menu.set_item_metadata(
 				index,
-				id_pairs[scope_name],
+				scope_prop.scope_id,
 		)
 	pulldown_menu.item_selected.connect(
 			_select_parent_scope.bind(target)
@@ -81,19 +84,20 @@ func _apply_or_update(target: ContainerScope) -> void:
 	if property == null:
 		var new_uid := CONTAINER_LIST.get_new_id()
 		target._scope_uid = new_uid
+		EditorInterface.mark_scene_as_unsaved()
 		property = ContainerScopeProperty.create_new_property(
 				scene_uid,
 				scene_root.get_path_to(target),
 				target.scope_name,
 				new_uid,
-				target.parent_scope_name,
+				target.parent_scope_id,
 		)
 		CONTAINER_LIST.add_container(property)
 	else:
 		property.scene_uid = scene_uid
 		property.node_path = scene_root.get_path_to(target)
 		property.scope_name = target.scope_name
-		property.parent_scope_id = target.parent_scope_name
+		property.parent_scope_id = target.parent_scope_id
 
 	_save_container_list()
 
@@ -115,16 +119,23 @@ func _select_parent_scope(index:int, target: ContainerScope) -> void:
 	if index == 0:
 		target.parent_scope_name = &""
 		target.parent_scope_id = &""
+		EditorInterface.mark_scene_as_unsaved()
 		return
 	
 	# Noneを除外するために -1 する
 	index -= 1
-	var id_pairs := CONTAINER_LIST.get_id_pairs()
-	var ids: Array[StringName] = []
-	ids.assign(id_pairs.values())
-	var value := ids[index]
-	target.parent_scope_name = id_pairs.keys()[index]
-	target.parent_scope_id = value
+	var container_list := CONTAINER_LIST.container_list
+	var parent_scope_id := container_list[index].scope_id
+	print(parent_scope_id)
+	var parent_scope := CONTAINER_LIST.get_scope_property(parent_scope_id)
+
+	if parent_scope == null:
+		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
+		return
+	
+	target.parent_scope_name = parent_scope.scope_name
+	target.parent_scope_id = parent_scope_id
+	EditorInterface.mark_scene_as_unsaved()
 
 
 func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> bool:

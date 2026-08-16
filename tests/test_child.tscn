@@ -7,8 +7,9 @@
 
 [node name="ChildContainer" type="Node" parent="." unique_id=1379404796 node_paths=PackedStringArray("_inject_target") groups=["test_group"]]
 script = ExtResource("1_aq8yr")
-_scope_id = &"Child"
-_parent_scope_id = &"Root"
+_scope_uid = &"3xAWkVtf"
+parent_scope_name = &"RootContainer"
+parent_scope_id = &"YpOuZ4xr"
 _inject_target = [NodePath("../UserTestChild")]
 
 [node name="UserTestChild" type="Node" parent="." unique_id=1793292354]

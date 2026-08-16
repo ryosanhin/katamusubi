@@ -8,15 +8,15 @@ script = ExtResource("1_6c5k7")
 scene_uid = &"uid://m01k3x2tdojt"
 node_path = NodePath("RootContainer")
 scope_name = &"RootContainer"
-scope_id = &"us5HonO4"
+scope_id = &"YpOuZ4xr"
 
 [sub_resource type="Resource" id="Resource_6jo0g"]
 script = ExtResource("1_6c5k7")
 scene_uid = &"uid://csglhfff2wyeg"
 node_path = NodePath("ChildContainer")
 scope_name = &"ChildContainer"
-scope_id = &"DPwBAQ9o"
+scope_id = &"3xAWkVtf"
 
 [resource]
 script = ExtResource("2_6jo0g")
-_container_list = Array[ExtResource("1_6c5k7")]([SubResource("Resource_6c5k7"), SubResource("Resource_6jo0g")])
+container_list = Array[ExtResource("1_6c5k7")]([SubResource("Resource_6c5k7"), SubResource("Resource_6jo0g")])
