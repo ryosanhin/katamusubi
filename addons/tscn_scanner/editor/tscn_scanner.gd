@@ -97,7 +97,12 @@ static func scan(
 		# ここまで来た場合はmatched_resultの長さは1のみ
 		if !matched_result[0].inherits:
 			errors.append(
-					"%sは適切なクラスを継承していません。" % matched_result[0].node_path
+					"シーン %s のノード %s (スコープID '%s') は ContainerScope を継承していません。"
+					% [
+						scene_path,
+						matched_result[0].node_path,
+						definition.scope_id,
+					]
 			)	
 		
 	return errors

@@ -1,26 +1,26 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://c2k0tr3wwlt6s"]
 
-[ext_resource type="Script" path="res://tests/root_container.gd" id="1_valid"]
-[ext_resource type="Script" path="res://tests/editor/fixtures/invalid_scope.gd" id="2_invalid"]
+[ext_resource type="Script" uid="uid://bfd4tcjs5neik" path="res://tests/root_container.gd" id="1_valid"]
+[ext_resource type="Script" uid="uid://uayam6ddyiwy" path="res://tests/editor/fixtures/invalid_scope.gd" id="2_invalid"]
 
-[node name="ScannerCases" type="Node"]
+[node name="ScannerCases" type="Node" unique_id=1624345458]
 
-[node name="FirstScope" type="Node" parent="."]
+[node name="FirstScope" type="Node" parent="." unique_id=181869753 groups=["test_group"]]
 script = ExtResource("1_valid")
 scope_id = &"first"
 
-[node name="SecondScope" type="Node" parent="."]
+[node name="SecondScope" type="Node" parent="." unique_id=699065186 groups=["test_group"]]
 script = ExtResource("1_valid")
 scope_id = &"second"
 
-[node name="DuplicateOne" type="Node" parent="."]
+[node name="DuplicateOne" type="Node" parent="." unique_id=2123528398 groups=["test_group"]]
 script = ExtResource("1_valid")
 scope_id = &"duplicate"
 
-[node name="DuplicateTwo" type="Node" parent="."]
+[node name="DuplicateTwo" type="Node" parent="." unique_id=1844870995 groups=["test_group"]]
 script = ExtResource("1_valid")
 scope_id = &"duplicate"
 
-[node name="InvalidInheritance" type="Node" parent="."]
+[node name="InvalidInheritance" type="Node" parent="." unique_id=1170678188]
 script = ExtResource("2_invalid")
 scope_id = &"invalid"
