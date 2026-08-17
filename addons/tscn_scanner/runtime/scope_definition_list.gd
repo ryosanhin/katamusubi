@@ -33,11 +33,11 @@ func get_new_id() -> StringName:
 	const MAX_LOOP_COUNT := 100
 
 	while current_id_list.has(id):
-		id = RandomID.get_random_id()
-		loop_count += 1
-		if loop_count > MAX_LOOP_COUNT:
+		if loop_count >= MAX_LOOP_COUNT:
 			push_error("uid生成ループ回数が上限に達しました。")
 			return &""
+		id = RandomID.get_random_id()
+		loop_count += 1
 
 	return id
 

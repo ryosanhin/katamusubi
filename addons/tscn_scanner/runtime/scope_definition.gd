@@ -41,11 +41,11 @@ static func create_new_definition(
 func _to_string() -> String:
 	var path := ResourceUID.uid_to_path(scene_uid)
 	return """
-		scene_uid:
-		node_path:
-		scope_name:
-		scope_id:
-		parent_scope_id:
+		scene_uid: %s
+		node_path: %s
+		scope_name: %s
+		scope_id: %s
+		parent_scope_id: %s
 	""" % [
 		path,
 		node_path,
