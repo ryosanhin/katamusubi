@@ -123,11 +123,12 @@ func _apply_or_update(target: ContainerScope) -> void:
 		var original_node_path := definition.node_path
 		var original_scope_name := definition.scope_name
 		var original_parent_scope_id := definition.parent_scope_id
-
+		# データを新しいものに置き換える
 		definition.scene_uid = scene_uid
 		definition.node_path = scene_root.get_path_to(target)
 		definition.scope_name = target.scope_name
 		definition.parent_scope_id = target.get_parent_scope_id()
+		# 保存失敗時はデータを基に戻す
 		if not _try_save_container_list():
 			definition.scene_uid = original_scene_uid
 			definition.node_path = original_node_path
