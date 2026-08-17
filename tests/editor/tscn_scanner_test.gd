@@ -1,6 +1,10 @@
 extends SceneTree
 
-const FIXTURE := &"res://tests/editor/fixtures/scanner_cases.tscn"
+const SCANNER_CASES_FIXTURE := &"res://tests/editor/fixtures/scanner_cases.tscn"
+const SCANNER_ROOT_FIXTURE := &"res://tests/editor/fixtures/scanner_root.tscn"
+const SCANNER_CHILD_FIXTURE := &"res://tests/editor/fixtures/scanner_child.tscn"
+const SCANNER_ROOT_SCOPE_ID := &"scanner_root_scope"
+const SCANNER_CHILD_SCOPE_ID := &"scanner_child_scope"
 
 var _failures: PackedStringArray = []
 
@@ -23,33 +27,41 @@ func _init() -> void:
 
 
 func _test_multiple_scopes_in_one_scene() -> void:
-	var errors := TscnScanner.scan(FIXTURE, [
-		_definition(FIXTURE, &"first"),
-		_definition(FIXTURE, &"second"),
+	var errors := TscnScanner.scan(SCANNER_CASES_FIXTURE, [
+		_definition(SCANNER_CASES_FIXTURE, &"first"),
+		_definition(SCANNER_CASES_FIXTURE, &"second"),
 	])
 	_expect(errors.is_empty(), "単一シーン内の複数スコープを検出できる")
 
 
 func _test_multiple_scenes() -> void:
-	var root_scene := &"res://tests/test_root.tscn"
-	var child_scene := &"res://tests/test_child.tscn"
-	var root_errors := TscnScanner.scan(root_scene, [_definition(root_scene, &"Ghlg8Ye0")])
-	var child_errors := TscnScanner.scan(child_scene, [_definition(child_scene, &"YCDZ7JOA")])
+	var root_errors := TscnScanner.scan(SCANNER_ROOT_FIXTURE, [
+		_definition(SCANNER_ROOT_FIXTURE, SCANNER_ROOT_SCOPE_ID),
+	])
+	var child_errors := TscnScanner.scan(SCANNER_CHILD_FIXTURE, [
+		_definition(SCANNER_CHILD_FIXTURE, SCANNER_CHILD_SCOPE_ID),
+	])
 	_expect(root_errors.is_empty() and child_errors.is_empty(), "複数シーンを個別に検査できる")
 
 
 func _test_duplicate_id() -> void:
-	var errors := TscnScanner.scan(FIXTURE, [_definition(FIXTURE, &"duplicate")])
+	var errors := TscnScanner.scan(SCANNER_CASES_FIXTURE, [
+		_definition(SCANNER_CASES_FIXTURE, &"duplicate"),
+	])
 	_expect(_contains(errors, "複数ノード"), "重複したスコープIDを報告する")
 
 
 func _test_missing_id() -> void:
-	var errors := TscnScanner.scan(FIXTURE, [_definition(FIXTURE, &"missing")])
+	var errors := TscnScanner.scan(SCANNER_CASES_FIXTURE, [
+		_definition(SCANNER_CASES_FIXTURE, &"missing"),
+	])
 	_expect(_contains(errors, "見つかりませんでした"), "存在しないスコープIDを報告する")
 
 
 func _test_invalid_inheritance() -> void:
-	var errors := TscnScanner.scan(FIXTURE, [_definition(FIXTURE, &"invalid")])
+	var errors := TscnScanner.scan(SCANNER_CASES_FIXTURE, [
+		_definition(SCANNER_CASES_FIXTURE, &"invalid"),
+	])
 	_expect(_contains(errors, "継承していません"), "ContainerScopeの継承違反を報告する")
 
 
