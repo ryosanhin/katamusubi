@@ -1,7 +1,7 @@
 extends SceneTree
 
 const TestScope := preload("res://tests/child_container.gd")
-const ROOT_SCOPE_ID := &"Ghlg8Ye0"
+const ROOT_SCOPE_ID := &"LqaexzOm"
 const CHILD_SCOPE_ID := &"YCDZ7JOA"
 const DELAYED_SCOPE_ID := &"delayed_child"
 const UNKNOWN_SCOPE_ID := &"unknown_scope"
@@ -48,7 +48,7 @@ func _test_child_scope_before_parent_is_added() -> void:
 	var definition := ScopeDefinition.create_new_definition(
 		"", NodePath(), &"DelayedChild", DELAYED_SCOPE_ID, ROOT_SCOPE_ID
 	)
-	ContainerScope.DEFINITION_LIST.add_scope_definitions(definition)
+	ContainerScope.DEFINITION_LIST.add_scope_definition(definition)
 
 	var child_scope := _create_scope(DELAYED_SCOPE_ID)
 	root.add_child(child_scope)
@@ -66,7 +66,7 @@ func _test_child_scope_before_parent_is_added() -> void:
 
 	child_scope.free()
 	parent_scope.free()
-	ContainerScope.DEFINITION_LIST.remove_scope_definitions(definition)
+	ContainerScope.DEFINITION_LIST.remove_scope_definition(definition)
 
 
 func _test_scope_without_definition() -> void:

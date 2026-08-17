@@ -6,7 +6,7 @@ extends Resource
 
 ## スコープ定義を追加
 ## [param definition]: 追加するスコープ定義
-func add_scope_definitions(
+func add_scope_definition(
 	definition: ScopeDefinition
 ) -> void:
 	if definition.scope_id.is_empty():
@@ -17,10 +17,16 @@ func add_scope_definitions(
 
 ## 登録されているスコープ定義リストから削除する[br]
 ## [param definition]: 削除するスコープ定義
-func remove_scope_definitions(
+func remove_scope_definition(
 	definition: ScopeDefinition
 ) -> void:
 	scope_definitions.erase(definition)
+	# 削除されたスコープのIDを親スコープとして
+	# 参照しているスコープがあれば参照を解除
+	var deleted_id := definition.scope_id
+	for def in scope_definitions:
+		if def.parent_scope_id == deleted_id:
+			def.parent_scope_id = &""
 
 
 ## 新規スコープIDを取得[br]

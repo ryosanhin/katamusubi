@@ -30,6 +30,13 @@ func _parse_begin(object: Object) -> void:
 	)
 	inspector_container.add_child(delete_button)
 
+	# スコープIDの表示
+	var scope_id_display := Label.new()
+	scope_id_display.text = (
+		"ScopeID: %s" % target.scope_id
+	)
+	inspector_container.add_child(scope_id_display)
+
 	# 親スコープ選択プルダウンメニューの説明
 	var pulldown_description := Label.new()
 	pulldown_description.text = (
@@ -110,9 +117,9 @@ func _apply_or_update(target: ContainerScope) -> void:
 				new_id,
 				target.get_parent_scope_id(),
 		)
-		DEFINITION_LIST.add_scope_definitions(new_definition)
+		DEFINITION_LIST.add_scope_definition(new_definition)
 		if not _try_save_container_list():
-			DEFINITION_LIST.remove_scope_definitions(new_definition)
+			DEFINITION_LIST.remove_scope_definition(new_definition)
 			target.scope_id = original_scope_id
 			return
 
@@ -155,7 +162,7 @@ func _delete(target: ContainerScope) -> void:
 		push_error("対象のスコープ定義が一覧に存在しません: %s" % target.scope_id)
 		return
 
-	DEFINITION_LIST.remove_scope_definitions(definition)
+	DEFINITION_LIST.remove_scope_definition(definition)
 	if not _try_save_container_list():
 		DEFINITION_LIST.scope_definitions.insert(original_index, definition)
 		return
