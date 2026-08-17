@@ -80,7 +80,7 @@ func _parse_begin(object: Object) -> void:
 
 
 func _apply_or_update(target: ContainerScope) -> void:
-	var scene_root := EditorInterface.get_edited_scene_root()
+	var scene_root := _get_edited_scene_root()
 	if not _is_target_in_edited_scene(target, scene_root):
 		return
 
@@ -94,6 +94,7 @@ func _apply_or_update(target: ContainerScope) -> void:
 		push_error("シーンのUIDを取得できませんでした: %s" % scene_path)
 		return
 
+	var original_scope_id := target.scope_id
 	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
 
 	if definition == null:
@@ -102,24 +103,42 @@ func _apply_or_update(target: ContainerScope) -> void:
 		if new_id.is_empty():
 			push_error("空のスコープIDでは登録できません")
 			return
-		target.scope_id = new_id
-		EditorInterface.mark_scene_as_unsaved()
-		definition = ScopeDefinition.create_new_definition(
+		var new_definition := ScopeDefinition.create_new_definition(
 				scene_uid,
 				scene_root.get_path_to(target),
 				target.scope_name,
 				new_id,
 				target.get_parent_scope_id(),
 		)
-		DEFINITION_LIST.add_scope_definitions(definition)
+		DEFINITION_LIST.add_scope_definitions(new_definition)
+		if not _try_save_container_list():
+			DEFINITION_LIST.remove_scope_definitions(new_definition)
+			target.scope_id = original_scope_id
+			return
+
+		target.scope_id = new_id
 	else:
 		# アップデート処理
+		var original_scene_uid := definition.scene_uid
+		var original_node_path := definition.node_path
+		var original_scope_name := definition.scope_name
+		var original_parent_scope_id := definition.parent_scope_id
+		# データを新しいものに置き換える
 		definition.scene_uid = scene_uid
 		definition.node_path = scene_root.get_path_to(target)
 		definition.scope_name = target.scope_name
 		definition.parent_scope_id = target.get_parent_scope_id()
+		# 保存失敗時はデータを基に戻す
+		if not _try_save_container_list():
+			definition.scene_uid = original_scene_uid
+			definition.node_path = original_node_path
+			definition.scope_name = original_scope_name
+			definition.parent_scope_id = original_parent_scope_id
+			target.scope_id = original_scope_id
+			return
 
-	_try_save_container_list()
+	if target.scope_id != original_scope_id:
+		_mark_scene_as_unsaved()
 
 
 func _delete(target: ContainerScope) -> void:
@@ -127,12 +146,22 @@ func _delete(target: ContainerScope) -> void:
 		return
 
 	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
-	if definition != null:
-		DEFINITION_LIST.remove_scope_definitions(definition)
-		_try_save_container_list()
+	if definition == null:
+		push_error("対象のスコープ定義が登録されていません: %s" % target.scope_id)
+		return
+
+	var original_index := DEFINITION_LIST.scope_definitions.find(definition)
+	if original_index < 0:
+		push_error("対象のスコープ定義が一覧に存在しません: %s" % target.scope_id)
+		return
+
+	DEFINITION_LIST.remove_scope_definitions(definition)
+	if not _try_save_container_list():
+		DEFINITION_LIST.scope_definitions.insert(original_index, definition)
+		return
 
 	target.scope_id = &""
-	EditorInterface.mark_scene_as_unsaved()
+	_mark_scene_as_unsaved()
 
 
 func _select_parent_scope(
@@ -184,9 +213,24 @@ func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> boo
 
 
 func _try_save_container_list() -> bool:
-	var error := ResourceSaver.save(DEFINITION_LIST, DEFINITION_LIST_PATH)
+	var error := _save_container_list()
 	if error != OK:
 		push_error("failed save list: %s" % error_string(error))
 		return false
 	print("successfully saved list")
 	return true
+
+
+## テスト用サブクラスで保存結果を決定的に差し替えるための境界。
+func _save_container_list() -> Error:
+	return ResourceSaver.save(DEFINITION_LIST, DEFINITION_LIST_PATH)
+
+
+## テスト時に編集中のシーンを差し替えるための境界。
+func _get_edited_scene_root() -> Node:
+	return EditorInterface.get_edited_scene_root()
+
+
+## テスト時に未保存化の呼び出し有無を記録するための境界。
+func _mark_scene_as_unsaved() -> void:
+	EditorInterface.mark_scene_as_unsaved()
