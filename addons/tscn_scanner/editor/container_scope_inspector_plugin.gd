@@ -58,7 +58,7 @@ func _parse_begin(object: Object) -> void:
 				scope_definition.scope_id,
 		)
 	pulldown_menu.item_selected.connect(
-			_select_parent_scope.bind(target)
+			_select_parent_scope.bind(pulldown_menu, target)
 	)
 	inspector_container.add_child(pulldown_menu)
 
@@ -66,15 +66,17 @@ func _parse_begin(object: Object) -> void:
 	add_custom_control(inspector_container)
 
 	# 初期値を確認
-	var predicate := (
-			func(scope_definition: ScopeDefinition) -> bool:
-				return scope_definition.scope_id == target.get_parent_scope_id()
-	)
-	var tmp_index := DEFINITION_LIST.scope_definitions.find_custom(predicate.bind())
-	if tmp_index < 0 or tmp_index > DEFINITION_LIST.scope_definitions.size():
+	var parent_scope_id := target.get_parent_scope_id()
+	if parent_scope_id.is_empty():
 		pulldown_menu.select(0)
 		return
-	pulldown_menu.select(tmp_index + 1)
+
+	for item_index in pulldown_menu.item_count:
+		if pulldown_menu.get_item_metadata(item_index) == parent_scope_id:
+			pulldown_menu.select(item_index)
+			return
+
+	pulldown_menu.select(0)
 
 
 func _apply_or_update(target: ContainerScope) -> void:
@@ -133,8 +135,13 @@ func _delete(target: ContainerScope) -> void:
 	EditorInterface.mark_scene_as_unsaved()
 
 
-func _select_parent_scope(index:int, target: ContainerScope) -> void:
-	if index == 0:
+func _select_parent_scope(
+		index: int,
+		pulldown_menu: OptionButton,
+		target: ContainerScope,
+) -> void:
+	var parent_scope_id: StringName = pulldown_menu.get_item_metadata(index)
+	if parent_scope_id.is_empty():
 		# 対象スコープに登録されている親スコープ情報を削除
 		var target_scope_definition := DEFINITION_LIST.get_scope_definition(
 				target.scope_id
@@ -146,22 +153,17 @@ func _select_parent_scope(index:int, target: ContainerScope) -> void:
 		target_scope_definition.parent_scope_id = &""
 		_try_save_container_list()
 		return
-	
-	# Noneを除外するために -1 する
-	index -= 1
-	var container_list := DEFINITION_LIST.scope_definitions
-	var parent_scope_id := container_list[index].scope_id
-	
+
 	if parent_scope_id == target.scope_id:
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
-	
+
 	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
 
 	if parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
-	
+
 	# スコープの登録情報にも参照先親スコープを登録
 	var target_scope_definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
 	target_scope_definition.parent_scope_id = parent_scope_id
