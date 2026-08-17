@@ -7,6 +7,8 @@ var _container_scope_inspector_plugin: EditorInspectorPlugin
 
 func _build() -> bool:
 	var errors: PackedStringArray = []
+	# シーンUIDごとに所属スコープ定義をまとめる
+	# Array は Array[ScopeDefinition]
 	var definitions_by_scene: Dictionary[StringName, Array] = {}
 	for definition in DEFINITION_LIST.scope_definitions:
 		if not definitions_by_scene.has(definition.scene_uid):
