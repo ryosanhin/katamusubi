@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://tests/root_container.gd" id="1_valid"]
+[ext_resource type="Script" path="res://tests/editor/fixtures/invalid_scope.gd" id="2_invalid"]
+
+[node name="ScannerCases" type="Node"]
+
+[node name="FirstScope" type="Node" parent="."]
+script = ExtResource("1_valid")
+scope_id = &"first"
+
+[node name="SecondScope" type="Node" parent="."]
+script = ExtResource("1_valid")
+scope_id = &"second"
+
+[node name="DuplicateOne" type="Node" parent="."]
+script = ExtResource("1_valid")
+scope_id = &"duplicate"
+
+[node name="DuplicateTwo" type="Node" parent="."]
+script = ExtResource("1_valid")
+scope_id = &"duplicate"
+
+[node name="InvalidInheritance" type="Node" parent="."]
+script = ExtResource("2_invalid")
+scope_id = &"invalid"
