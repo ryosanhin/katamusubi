@@ -148,6 +148,6 @@ class ScopeScanResult:
 		init_inherits: bool,
 	) -> void:
 		node_path = init_node_path
-		has_script = has_script
+		has_script = init_hsa_script
 		inherits = init_inherits
 
