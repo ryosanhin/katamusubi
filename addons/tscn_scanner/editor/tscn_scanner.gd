@@ -2,65 +2,152 @@
 extends RefCounted
 class_name TscnScanner
 
-## シーン内を走査しコンテナスコープが存在するか確認する
-## [param property]: コンテナとスコープの情報
-static func scan(property: ScopeDefinition) -> PackedStringArray:
+## 一つのシーンを走査し、同シーンに属するすべてのスコープ定義を確認する[br]
+## [param scene_uid]: 調べたいシーンのUID[br]
+## [param definitions]: そのシーンに所属していると思われるスコープ定義群[br]
+## returns: エラー一覧
+static func scan(
+	scene_uid: StringName,
+	definitions: Array[ScopeDefinition],
+) -> PackedStringArray:
 	var errors: PackedStringArray = []
-	const PACKED_SCENE_STRING := "PackedScene"
+	const GROUP_NAME := &"test_group"
+	const SCOPE_ID_STRING_NAME := &"scope_id"
 	const SCRIPT_STRING_NAME := &"script"
-	
-	# シーンを取得
-	var packed_scene := load(property.scene_uid) as PackedScene
+	var packed_scene := load(scene_uid) as PackedScene
 	
 	if packed_scene == null:
-		errors.append("シーンが存在しません。")
+		errors.append("シーン %s が存在しません。" % _get_scene_path(scene_uid))
 		return errors
 
-	# シーン内容を取り出し
 	var scene_state := packed_scene.get_state()
-	
-	# シーン内のノードを総ざらい
+	# Arrayの中身はScopeScanResult
+	var nodes_by_scope_id: Dictionary[StringName, Array] = {}
+
+	# 保存済みプロパティを一度だけ読み、スコープIDからノード情報を引けるようにする。
 	for node_index in scene_state.get_node_count():
-		if scene_state.get_node_path(node_index) != property.node_path:
+		# ノードの所属グループに含まれていなければスキップ
+		if not GROUP_NAME in scene_state.get_node_groups(node_index):
 			continue
 		
-		# 該当するノードのプロパティを総ざらい
+		var scope_id: StringName = &""
+		var script: Script = null
 		for prop_index in scene_state.get_node_property_count(node_index):
-			if scene_state.get_node_property_name(node_index, prop_index) != SCRIPT_STRING_NAME:
-				continue
-
-			# スクリプトがあればそれを読み込み
-			var script := scene_state.get_node_property_value(
-					node_index,
-					prop_index
-			) as Script
+			var property_name := scene_state.get_node_property_name(node_index, prop_index)
 			
-			# 空またはキャストに失敗した場合
-			if script == null:
-				errors.append("スクリプトの読み込みに失敗しました。")
-				return errors
-			
-			# 読み込んだスクリプトがコンテナスコープスクリプトを継承しているか確認
-			if check_inheritance(script):
-				return errors
-			else:
-				errors.append("%sは適切なクラスを継承していません。" % property.node_path)
-			
-			# スクリプトは一つだけのはずなのでここで終了
-			errors.append("%sに適切なスクリプトが見つかりませんでした。" % property.node_path)
-			break
-	
-	var scene_path := ResourceUID.get_id_path(
-			ResourceUID.text_to_id(property.scene_uid)
-	)
+			if property_name == SCOPE_ID_STRING_NAME:
+				scope_id = scene_state.get_node_property_value(
+						node_index,
+						prop_index,
+				) as StringName
+			elif property_name == SCRIPT_STRING_NAME:
+				script = scene_state.get_node_property_value(
+						node_index,
+						prop_index,
+				) as Script
 
-	errors.append("シーン %s に対象のノードが見つかりませんでした。" % scene_path)
+		if scope_id.is_empty():
+			continue
+		
+		if not nodes_by_scope_id.has(scope_id):
+			nodes_by_scope_id[scope_id] = []
+		
+		nodes_by_scope_id[scope_id].append(
+				ScopeScanResult.new(
+						scene_state.get_node_path(node_index),
+						script != null,
+						_check_inheritance(script),
+				)
+		)
 
+	var scene_path := _get_scene_path(scene_uid)
+
+	# 渡されたシーンごとにまとまったスコープ定義を総チェック
+	for definition in definitions:
+		var matched_result: Array[ScopeScanResult] = []
+		matched_result.assign(nodes_by_scope_id.get(definition.scope_id, []))
+
+		# スコープのノードが無ければ終了
+		if matched_result.is_empty():
+			errors.append(
+					"シーン %s にスコープID '%s' が見つかりませんでした。"
+					% [
+						scene_path,
+						definition.scope_id,
+					]
+			)
+			continue
+		
+		# スコープのノードが2個以上あっても終了
+		if matched_result.size() > 1:
+			var error_node_paths: PackedStringArray = []
+			
+			for result in matched_result:
+				error_node_paths.append(str(result.node_path))
+			
+			errors.append(
+					"シーン %s でスコープID '%s' が複数ノードに存在します: %s"
+					% [
+						scene_path,
+						definition.scope_id,
+						", ".join(error_node_paths),
+					]
+			)
+			continue
+
+		# ここまで来た場合はmatched_resultの長さは1のみ
+		# そもそもスクリプトがアタッチされていない場合も終了
+		if not matched_result[0].has_script:
+			errors.append(
+					"シーン %s のノード %s (スコープID '%s') にスクリプトが設定されていません。"
+					% [
+						scene_path,
+						matched_result[0].node_path,
+						definition.scope_id,
+					]
+			)
+			continue
+		
+		# ContainerScope以外を継承している場合も終了
+		if not matched_result[0].inherits:
+			errors.append(
+					"シーン %s のノード %s (スコープID '%s') は ContainerScope を継承していません。"
+					% [
+						scene_path,
+						matched_result[0].node_path,
+						definition.scope_id,
+					]
+			)
+			continue
+		
 	return errors
 
-static func check_inheritance(script: Script) -> bool:
+
+static func _get_scene_path(scene_uid: StringName) -> String:
+	var resource_id := ResourceUID.text_to_id(scene_uid)
+	if resource_id == ResourceUID.INVALID_ID:
+		return scene_uid
+	return ResourceUID.get_id_path(resource_id)
+
+static func _check_inheritance(script: Script) -> bool:
 	while script != null:
 		if script == ContainerScope:
 			return true
 		script = script.get_base_script()
 	return false
+
+
+class ScopeScanResult:
+	var node_path: NodePath
+	var has_script: bool
+	var inherits: bool
+
+	func _init(
+		init_node_path: NodePath,
+		init_hsa_script: bool,
+		init_inherits: bool,
+	) -> void:
+		node_path = init_node_path
+		has_script = init_hsa_script
+		inherits = init_inherits
+
