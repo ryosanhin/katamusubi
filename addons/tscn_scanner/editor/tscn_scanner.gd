@@ -55,6 +55,7 @@ static func scan(
 		nodes_by_scope_id[scope_id].append(
 				ScopeScanResult.new(
 						scene_state.get_node_path(node_index),
+						script != null,
 						_check_inheritance(script),
 				)
 		)
@@ -95,7 +96,20 @@ static func scan(
 			continue
 
 		# ここまで来た場合はmatched_resultの長さは1のみ
-		if !matched_result[0].inherits:
+		# そもそもスクリプトがアタッチされていない場合も終了
+		if not matched_result[0].has_script:
+			errors.append(
+					"シーン %s のノード %s (スコープID '%s') にスクリプトが設定されていません。"
+					% [
+						scene_path,
+						matched_result[0].node_path,
+						definition.scope_id,
+					]
+			)
+			continue
+		
+		# ContainerScope以外を継承している場合も終了
+		if not matched_result[0].inherits:
 			errors.append(
 					"シーン %s のノード %s (スコープID '%s') は ContainerScope を継承していません。"
 					% [
@@ -103,7 +117,8 @@ static func scan(
 						matched_result[0].node_path,
 						definition.scope_id,
 					]
-			)	
+			)
+			continue
 		
 	return errors
 
@@ -124,12 +139,15 @@ static func _check_inheritance(script: Script) -> bool:
 
 class ScopeScanResult:
 	var node_path: NodePath
+	var has_script: bool
 	var inherits: bool
 
 	func _init(
 		init_node_path: NodePath,
+		init_hsa_script: bool,
 		init_inherits: bool,
 	) -> void:
 		node_path = init_node_path
+		has_script = has_script
 		inherits = init_inherits
 
