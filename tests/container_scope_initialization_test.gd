@@ -48,7 +48,7 @@ func _test_child_scope_before_parent_is_added() -> void:
 	var definition := ScopeDefinition.create_new_definition(
 		"", &"DelayedChild", DELAYED_SCOPE_ID, ROOT_SCOPE_ID
 	)
-	ContainerScope.DEFINITION_LIST.add_scope_definitions(definition)
+	ContainerScope.DEFINITION_LIST.add_scope_definition(definition)
 
 	var child_scope := _create_scope(DELAYED_SCOPE_ID)
 	root.add_child(child_scope)
@@ -66,7 +66,7 @@ func _test_child_scope_before_parent_is_added() -> void:
 
 	child_scope.free()
 	parent_scope.free()
-	ContainerScope.DEFINITION_LIST.remove_scope_definitions(definition)
+	ContainerScope.DEFINITION_LIST.remove_scope_definition(DELAYED_SCOPE_ID)
 
 
 func _test_scope_without_definition() -> void:
