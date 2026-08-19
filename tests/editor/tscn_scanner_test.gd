@@ -66,7 +66,7 @@ func _test_invalid_inheritance() -> void:
 
 
 func _definition(scene_uid: StringName, scope_id: StringName) -> ScopeDefinition:
-	return ScopeDefinition.create_new_definition(scene_uid, NodePath(), &"", scope_id, &"")
+	return ScopeDefinition.create_new_definition(scene_uid, &"", scope_id, &"")
 
 
 func _contains(errors: PackedStringArray, text: String) -> bool:
