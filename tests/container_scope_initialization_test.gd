@@ -46,7 +46,7 @@ func _test_child_scope_with_valid_parent() -> void:
 
 func _test_child_scope_before_parent_is_added() -> void:
 	var definition := ScopeDefinition.create_new_definition(
-		"", NodePath(), &"DelayedChild", DELAYED_SCOPE_ID, ROOT_SCOPE_ID
+		"", &"DelayedChild", DELAYED_SCOPE_ID, ROOT_SCOPE_ID
 	)
 	ContainerScope.DEFINITION_LIST.add_scope_definitions(definition)
 
