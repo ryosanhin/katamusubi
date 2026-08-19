@@ -109,7 +109,7 @@ func _apply_or_update(target: ContainerScope) -> void:
 				new_id,
 				target.get_parent_scope_id(),
 		)
-		var rollback_action := DEFINITION_LIST.add_scope_definitions(new_definition)
+		var rollback_action := DEFINITION_LIST.add_scope_definition(new_definition)
 		if not _try_save_container_list():
 			rollback_action.rollback()
 			target.scope_id = original_scope_id
@@ -117,20 +117,15 @@ func _apply_or_update(target: ContainerScope) -> void:
 
 		target.scope_id = new_id
 	else:
-		# アップデート処理
-		var original_scene_uid := definition.scene_uid
-		var original_scope_name := definition.scope_name
-		var original_parent_scope_id := definition.parent_scope_id
-		# データを新しいものに置き換える
-		definition.scene_uid = scene_uid
-		definition.scope_name = target.scope_name
-		definition.parent_scope_id = target.get_parent_scope_id()
+		var rollback_action := DEFINITION_LIST.update_scope_definition(
+				target.scope_id,
+				scene_uid,
+				target.scope_name,
+				target.get_parent_scope_id(),
+		)
 		# 保存失敗時はデータを基に戻す
 		if not _try_save_container_list():
-			definition.scene_uid = original_scene_uid
-			definition.scope_name = original_scope_name
-			definition.parent_scope_id = original_parent_scope_id
-			target.scope_id = original_scope_id
+			rollback_action.rollback()
 			return
 
 	if target.scope_id != original_scope_id:
@@ -140,13 +135,8 @@ func _apply_or_update(target: ContainerScope) -> void:
 func _delete(target: ContainerScope) -> void:
 	if target.scope_id.is_empty():
 		return
-
-	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
-	if definition == null:
-		push_error("対象のスコープ定義が登録されていません: %s" % target.scope_id)
-		return
 	
-	var rollback_action := DEFINITION_LIST.remove_scope_definitions(definition)
+	var rollback_action := DEFINITION_LIST.remove_scope_definition(target.scope_id)
 	if not _try_save_container_list():
 		rollback_action.rollback()
 		return
