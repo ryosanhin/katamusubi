@@ -1,7 +1,7 @@
 extends SceneTree
 
 const TestScope := preload("res://tests/child_container.gd")
-const ROOT_SCOPE_ID := &"LqaexzOm"
+const ROOT_SCOPE_ID := &"Ghlg8Ye0"
 const CHILD_SCOPE_ID := &"YCDZ7JOA"
 const DELAYED_SCOPE_ID := &"delayed_child"
 const UNKNOWN_SCOPE_ID := &"unknown_scope"
