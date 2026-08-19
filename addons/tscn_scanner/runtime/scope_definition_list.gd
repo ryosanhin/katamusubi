@@ -14,6 +14,12 @@ func add_scope_definition(
 		push_error("空のスコープIDでは登録できません: %s" % definition)
 		return RollbackAction.new(false, Callable())
 	
+	# existing_scope_definition が null じゃなかったら既にスコープIDが使われているので無効
+	var existing_scope_definition := get_scope_definition(definition.scope_id)
+	if existing_scope_definition != null:
+		push_error("既にスコープIDが登録されています: %s" % definition)
+		return RollbackAction.new(false, Callable())
+
 	scope_definitions.append(definition)
 	
 	return RollbackAction.new(
@@ -131,8 +137,8 @@ func _get_current_id_list() -> Array[StringName]:
 
 ## スコープIDから該当するスコープ定義を取得[br]
 ## 存在しない場合は[code]null[/code]を返す
-func get_scope_definition(id: StringName) -> ScopeDefinition:
+func get_scope_definition(scope_id: StringName) -> ScopeDefinition:
 	for definition in scope_definitions:
-		if definition.scope_id == id:
+		if definition.scope_id == scope_id:
 			return definition
 	return null
