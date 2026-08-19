@@ -8,11 +8,15 @@ extends Resource
 ## [param definition]: 追加するスコープ定義
 func add_scope_definitions(
 	definition: ScopeDefinition
-) -> void:
+) -> RollbackAction:
 	if definition.scope_id.is_empty():
 		push_error("空のスコープIDでは登録できません: %s" % definition)
-		return
+		return null
 	scope_definitions.append(definition)
+	return RollbackAction.new(Callable(
+			func() -> void:
+				scope_definitions.erase(definition)
+	))
 
 
 ## 登録されているスコープ定義リストから削除する[br]

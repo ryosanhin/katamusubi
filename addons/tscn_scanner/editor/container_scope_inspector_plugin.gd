@@ -110,9 +110,9 @@ func _apply_or_update(target: ContainerScope) -> void:
 				new_id,
 				target.get_parent_scope_id(),
 		)
-		DEFINITION_LIST.add_scope_definitions(new_definition)
+		var rollback_action := DEFINITION_LIST.add_scope_definitions(new_definition)
 		if not _try_save_container_list():
-			DEFINITION_LIST.remove_scope_definitions(new_definition)
+			rollback_action.rollback()
 			target.scope_id = original_scope_id
 			return
 
