@@ -23,8 +23,18 @@ func add_scope_definitions(
 ## [param definition]: 削除するスコープ定義
 func remove_scope_definitions(
 	definition: ScopeDefinition
-) -> void:
+) -> RollbackAction:
+	var original_index := scope_definitions.find(definition)
+	if original_index < 0:
+		push_error("対象のスコープ定義が一覧に存在しません: %s" % definition.scope_id)
+		return null
+	
 	scope_definitions.erase(definition)
+
+	return RollbackAction.new(Callable(
+			func() -> void:
+				scope_definitions.insert(original_index, definition)
+	))
 
 
 ## 新規スコープIDを取得[br]

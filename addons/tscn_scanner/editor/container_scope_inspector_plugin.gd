@@ -145,15 +145,10 @@ func _delete(target: ContainerScope) -> void:
 	if definition == null:
 		push_error("対象のスコープ定義が登録されていません: %s" % target.scope_id)
 		return
-
-	var original_index := DEFINITION_LIST.scope_definitions.find(definition)
-	if original_index < 0:
-		push_error("対象のスコープ定義が一覧に存在しません: %s" % target.scope_id)
-		return
-
-	DEFINITION_LIST.remove_scope_definitions(definition)
+	
+	var rollback_action := DEFINITION_LIST.remove_scope_definitions(definition)
 	if not _try_save_container_list():
-		DEFINITION_LIST.scope_definitions.insert(original_index, definition)
+		rollback_action.rollback()
 		return
 
 	target.scope_id = &""
