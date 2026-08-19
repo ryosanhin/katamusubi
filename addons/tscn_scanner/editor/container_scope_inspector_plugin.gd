@@ -85,7 +85,8 @@ func _parse_begin(object: Object) -> void:
 
 	pulldown_menu.select(0)
 
-
+# TODO: 今後登録はツリー参加時に行うようにし、プロパティの変化を監視し更新を自動で行えるようにする
+# TODO: なので今後はここの処理を分ける
 func _apply_or_update(target: ContainerScope) -> void:
 	var scene_root := _get_edited_scene_root()
 	if not _is_target_in_edited_scene(target, scene_root):
@@ -198,9 +199,15 @@ func _select_parent_scope(
 
 	# スコープの登録情報にも参照先親スコープを登録
 	var target_scope_definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
+	var former_parent_scope_id := target_scope_definition.parent_scope_id
 	target_scope_definition.parent_scope_id = parent_scope_id
-	_try_save_container_list()
 
+	# TODO: 今後更新を自動で受け付ける用にする
+	if not _try_save_container_list():
+		# ロールバック
+		target_scope_definition.parent_scope_id = former_parent_scope_id
+		return
+	
 	EditorInterface.mark_scene_as_unsaved()
 
 
