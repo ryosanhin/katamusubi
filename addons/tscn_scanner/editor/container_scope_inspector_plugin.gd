@@ -112,36 +112,37 @@ func _apply_or_update(target: ContainerScope) -> void:
 			return
 		var new_definition := ScopeDefinition.create_new_definition(
 				scene_uid,
-				scene_root.get_path_to(target),
 				target.scope_name,
 				new_id,
 				target.get_parent_scope_id(),
 		)
-		DEFINITION_LIST.add_scope_definition(new_definition)
+		var rollback_action := DEFINITION_LIST.add_scope_definition(new_definition)
+
+		# そもそもロールバック対象処理が正常に終了しているか確認
+		if not rollback_action.operation_succeeded:
+			return
+
 		if not _try_save_container_list():
-			DEFINITION_LIST.remove_scope_definition(new_definition)
+			rollback_action.rollback()
 			target.scope_id = original_scope_id
 			return
 
 		target.scope_id = new_id
 	else:
-		# アップデート処理
-		var original_scene_uid := definition.scene_uid
-		var original_node_path := definition.node_path
-		var original_scope_name := definition.scope_name
-		var original_parent_scope_id := definition.parent_scope_id
-		# データを新しいものに置き換える
-		definition.scene_uid = scene_uid
-		definition.node_path = scene_root.get_path_to(target)
-		definition.scope_name = target.scope_name
-		definition.parent_scope_id = target.get_parent_scope_id()
+		var rollback_action := DEFINITION_LIST.update_scope_definition(
+				target.scope_id,
+				scene_uid,
+				target.scope_name,
+				target.get_parent_scope_id(),
+		)
+
+		# そもそもロールバック対象処理が正常に終了しているか確認
+		if not rollback_action.operation_succeeded:
+			return
+
 		# 保存失敗時はデータを基に戻す
 		if not _try_save_container_list():
-			definition.scene_uid = original_scene_uid
-			definition.node_path = original_node_path
-			definition.scope_name = original_scope_name
-			definition.parent_scope_id = original_parent_scope_id
-			target.scope_id = original_scope_id
+			rollback_action.rollback()
 			return
 
 	if target.scope_id != original_scope_id:
@@ -151,20 +152,15 @@ func _apply_or_update(target: ContainerScope) -> void:
 func _delete(target: ContainerScope) -> void:
 	if target.scope_id.is_empty():
 		return
+	
+	var rollback_action := DEFINITION_LIST.remove_scope_definition(target.scope_id)
 
-	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
-	if definition == null:
-		push_error("対象のスコープ定義が登録されていません: %s" % target.scope_id)
+	# そもそもロールバック対象処理が正常に終了しているか確認
+	if not rollback_action.operation_succeeded:
 		return
-
-	var original_index := DEFINITION_LIST.scope_definitions.find(definition)
-	if original_index < 0:
-		push_error("対象のスコープ定義が一覧に存在しません: %s" % target.scope_id)
-		return
-
-	DEFINITION_LIST.remove_scope_definition(definition)
+	
 	if not _try_save_container_list():
-		DEFINITION_LIST.scope_definitions.insert(original_index, definition)
+		rollback_action.rollback()
 		return
 
 	target.scope_id = &""
