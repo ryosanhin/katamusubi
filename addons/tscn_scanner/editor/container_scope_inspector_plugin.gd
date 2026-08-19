@@ -30,6 +30,13 @@ func _parse_begin(object: Object) -> void:
 	)
 	inspector_container.add_child(delete_button)
 
+	# スコープIDの表示
+	var scope_id_display := Label.new()
+	scope_id_display.text = (
+		"ScopeID: %s" % target.scope_id
+	)
+	inspector_container.add_child(scope_id_display)
+
 	# 親スコープ選択プルダウンメニューの説明
 	var pulldown_description := Label.new()
 	pulldown_description.text = (
