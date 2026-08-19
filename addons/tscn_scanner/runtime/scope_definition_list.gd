@@ -4,8 +4,9 @@ extends Resource
 @export var scope_definitions: Array[ScopeDefinition] = []
 
 
-## スコープ定義を追加
-## [param definition]: 追加するスコープ定義
+## スコープ定義を追加[br]
+## [param definition]: 追加するスコープ定義[br]
+## returns: ロールバック用クラス
 func add_scope_definition(
 	definition: ScopeDefinition
 ) -> RollbackAction:
@@ -24,12 +25,17 @@ func add_scope_definition(
 	)
 
 
-## スコープ定義を更新
+## スコープ定義を更新[br]
+## [param scope_id]: 変更対象のスコープID[br]
+## [param new_scene_uid]: 新しいシーンUID[br]
+## [param new_scope_name]: 新しいスコープ名[br]
+## [param new_parent_scope_id]: 新しい親スコープID[br]
+## returns: ロールバック用クラス
 func update_scope_definition(
 	scope_id: StringName,
 	new_scene_uid: StringName,
 	new_scope_name: StringName,
-	parent_scope_id: StringName,
+	new_parent_scope_id: StringName,
 ) -> RollbackAction:
 	var definition := get_scope_definition(scope_id)
 	if definition == null:
@@ -43,7 +49,7 @@ func update_scope_definition(
 	# データを新しいものに置き換える
 	definition.scene_uid = new_scene_uid
 	definition.scope_name = new_scope_name
-	definition.parent_scope_id = parent_scope_id
+	definition.parent_scope_id = new_parent_scope_id
 
 	return RollbackAction.new(
 			true,
@@ -57,7 +63,8 @@ func update_scope_definition(
 
 
 ## 登録されているスコープ定義リストから削除する[br]
-## [param scope_id]: 削除対象のスコープID
+## [param scope_id]: 削除対象のスコープID[br]
+## returns: ロールバック用クラス
 func remove_scope_definition(
 	scope_id: StringName
 ) -> RollbackAction:
@@ -65,12 +72,12 @@ func remove_scope_definition(
 
 	if definition == null:
 		push_error("対象のスコープ定義が登録されていません: %s" % scope_id)
-		return
+		return RollbackAction.new(false, Callable())
 
 	var original_index := scope_definitions.find(definition)
 	if original_index < 0:
 		push_error("対象のスコープ定義が一覧に存在しません: %s" % definition.scope_id)
-		return null
+		return RollbackAction.new(false, Callable())
 	
 	scope_definitions.erase(definition)
 

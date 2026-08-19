@@ -110,6 +110,11 @@ func _apply_or_update(target: ContainerScope) -> void:
 				target.get_parent_scope_id(),
 		)
 		var rollback_action := DEFINITION_LIST.add_scope_definition(new_definition)
+
+		# そもそもロールバック対象処理が正常に終了しているか確認
+		if not rollback_action.operation_succeeded:
+			return
+
 		if not _try_save_container_list():
 			rollback_action.rollback()
 			target.scope_id = original_scope_id
@@ -123,6 +128,11 @@ func _apply_or_update(target: ContainerScope) -> void:
 				target.scope_name,
 				target.get_parent_scope_id(),
 		)
+
+		# そもそもロールバック対象処理が正常に終了しているか確認
+		if not rollback_action.operation_succeeded:
+			return
+
 		# 保存失敗時はデータを基に戻す
 		if not _try_save_container_list():
 			rollback_action.rollback()
@@ -137,6 +147,11 @@ func _delete(target: ContainerScope) -> void:
 		return
 	
 	var rollback_action := DEFINITION_LIST.remove_scope_definition(target.scope_id)
+
+	# そもそもロールバック対象処理が正常に終了しているか確認
+	if not rollback_action.operation_succeeded:
+		return
+	
 	if not _try_save_container_list():
 		rollback_action.rollback()
 		return
