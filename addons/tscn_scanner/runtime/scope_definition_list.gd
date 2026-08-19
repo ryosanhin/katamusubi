@@ -81,11 +81,21 @@ func remove_scope_definition(
 	
 	scope_definitions.erase(definition)
 
+	# 削除されたスコープのIDを親スコープとして
+	# 参照しているスコープがあれば参照を解除
+	var modified_definitions: Array[ScopeDefinition] = []
+	for def in scope_definitions:
+		if def.parent_scope_id == scope_id:
+			def.parent_scope_id = &""
+			modified_definitions.append(def)
+	
 	return RollbackAction.new(
 			true,
 			Callable(
 		func() -> void:
 			scope_definitions.insert(original_index, definition)
+			for def in modified_definitions:
+				def.parent_scope_id = definition.scope_id
 			),
 	)
 
