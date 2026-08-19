@@ -13,10 +13,6 @@ config_version=5
 config/name="GD-Injection"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/tscn_scanner/plugin.cfg")
-
 [global_group]
 
 test_group="Group for test"
