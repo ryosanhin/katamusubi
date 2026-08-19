@@ -1,5 +1,5 @@
-# GD-Injection
-**A dependency injection container for GDScript.**
+# katamusubi
+**A dependency injection container in GDScript.**
 
 This project is heavily inspired by [VContainer](https://github.com/hadashiA/VContainer), an excellent DI library for C#. Therefore, the API and concepts intentionally resemble VContainer.
 

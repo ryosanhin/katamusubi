@@ -18,7 +18,7 @@ var _container: InjectionContainer
 var state: State = State.NOT_INITIALIZED
 
 ## プロジェクト内のコンテナ情報のリスト
-const DEFINITION_LIST := preload("res://addons/tscn_scanner/scope_definition_list.tres")
+const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
 
 ## スコープ用グループ名
 const CONTAINER_GROUP := &"test_group"
