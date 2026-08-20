@@ -53,7 +53,7 @@ func as_type(new_service_type: Script) -> ServiceRegistration:
 
 
 ## 登録へ任意のIDを付与
-func withkey(new_key: StringName) -> ServiceRegistration:
+func with_key(new_key: StringName) -> ServiceRegistration:
 	key = new_key
 	return self
 
