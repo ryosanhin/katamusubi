@@ -1,13 +1,16 @@
 @tool
 extends RefCounted
 
+const ContainerScope := preload("res://addons/katamusubi/runtime/container_scope.gd")
+const ScopeDefinition := preload("res://addons/katamusubi/runtime/scope_definition.gd")
+
 ## 一つのシーンを走査し、同シーンに属するすべてのスコープ定義を確認する[br]
 ## [param scene_uid]: 調べたいシーンのUID[br]
 ## [param definitions]: そのシーンに所属していると思われるスコープ定義群[br]
 ## returns: エラー一覧
 static func scan(
 	scene_uid: StringName,
-	definitions: Array[Katamusubi.ScopeDefinition],
+	definitions: Array[ScopeDefinition],
 ) -> PackedStringArray:
 	var errors: PackedStringArray = []
 	const GROUP_NAME := &"test_group"

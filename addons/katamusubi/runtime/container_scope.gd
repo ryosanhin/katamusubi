@@ -2,6 +2,11 @@
 @abstract
 extends Node
 
+const InjectionContainer := preload("res://addons/katamusubi/runtime/injection_container.gd")
+const InstanceInjector := preload("res://addons/katamusubi/runtime/instance_injector.gd")
+const ScopeDefinition := preload("res://addons/katamusubi/runtime/scope_definition.gd")
+const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
+
 ## コンテナ初期化の内部状態
 enum State {
 	NOT_INITIALIZED,
@@ -11,7 +16,7 @@ enum State {
 }
 
 ## このシーンスコープで利用する依存コンテナ
-var _container: Katamusubi.InjectionContainer
+var _container: InjectionContainer
 
 ## 重複初期化と親子間の再帰初期化を防ぐ状態
 var state: State = State.NOT_INITIALIZED
@@ -60,17 +65,17 @@ func _exit_tree() -> void:
 
 
 ## 論理IDが一致する親スコープを取得
-func _find_parent_scope() -> Katamusubi.ContainerScope:
+func _find_parent_scope() -> Node:
 	var parent_scope_id := get_parent_scope_id()
-	var parent_scope := Katamusubi.DEFINITION_LIST.get_scope_definition(parent_scope_id)
+	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
 
 	if parent_scope_id.is_empty():
 		return null
 
-	var matched: Array[Katamusubi.ContainerScope] = []
+	var matched: Array[Node] = []
 
 	for node in get_tree().get_nodes_in_group(CONTAINER_GROUP):
-		var scope := node as Katamusubi.ContainerScope
+		var scope := node as Node
 		
 		if (
 				scope != null
@@ -108,7 +113,7 @@ func _ensure_initialized() -> void:
 		_stop_initialization_retry()
 		return
 
-	var parent_container: Katamusubi.InjectionContainer = null
+	var parent_container: InjectionContainer = null
 	if not definition.parent_scope_id.is_empty():
 		var parent_scope := _find_parent_scope()
 		
@@ -130,7 +135,7 @@ func _ensure_initialized() -> void:
 		# 親スコープのコンテナを取得
 		parent_container = parent_scope._container
 
-	_container = Katamusubi.InjectionContainer.new(parent_container)
+	_container = InjectionContainer.new(parent_container)
 	
 	_register_instance(_container)
 
@@ -146,7 +151,7 @@ func _ensure_initialized() -> void:
 
 
 func _inject_dependencies() -> bool:
-	var injector := Katamusubi.InstanceInjector.new(_container, scope_name)
+	var injector := InstanceInjector.new(_container, scope_name)
 
 	for target in _inject_target:
 		if not injector.try_inject_arguments(target):
@@ -176,8 +181,8 @@ func _on_node_added(_node: Node) -> void:
 
 
 ## 自身のスコープ定義を取得
-func get_scope_definition() -> Katamusubi.ScopeDefinition:
-	return Katamusubi.DEFINITION_LIST.get_scope_definition(scope_id)
+func get_scope_definition() -> ScopeDefinition:
+	return DEFINITION_LIST.get_scope_definition(scope_id)
 
 
 ## 親スコープのIDを取得
@@ -190,4 +195,4 @@ func get_parent_scope_id() -> StringName:
 
 ## 具体コンテナが登録内容を定義
 @abstract
-func _register_instance(container: Katamusubi.InjectionContainer) -> void
+func _register_instance(container: InjectionContainer) -> void

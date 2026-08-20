@@ -1,18 +1,21 @@
 extends RefCounted
 
+const ResolveEntry := preload("res://addons/katamusubi/runtime/resolve_entry.gd")
+const ServiceRegistration := preload("res://addons/katamusubi/runtime/service_registration.gd")
+
 ## 親スコープのコンテナです。ローカルで見つからない依存を親へ問い合わせ
-var _parent: Katamusubi.InjectionContainer
+var _parent: RefCounted
 
 ## 「公開型class_name + ID」をキーにしたローカル登録
-var _entries: Dictionary[String, Katamusubi.ResolveEntry] = {}
+var _entries: Dictionary[String, ResolveEntry] = {}
 
 ## 任意の親コンテナを指定してスコープを生成
-func _init(parent: Katamusubi.InjectionContainer) -> void:
+func _init(parent: RefCounted) -> void:
 	_parent = parent
 
 
 ## 登録情報をローカルスコープへ追加
-func register(registration: Katamusubi.ServiceRegistration) -> void:
+func register(registration: ServiceRegistration) -> void:
 	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
 		var errors := "\n".join(validation_errors)
@@ -30,7 +33,7 @@ func register(registration: Katamusubi.ServiceRegistration) -> void:
 		)
 		return
 
-	_entries[key] = Katamusubi.ResolveEntry.new(registration)
+	_entries[key] = ResolveEntry.new(registration)
 
 
 func resolve_with_string_name(
@@ -71,7 +74,7 @@ func resolve_with_script(
 
 ## Singleton参照とローカル登録を解放します。
 func clear() -> void:
-	for entry: Katamusubi.ResolveEntry in _entries.values():
+	for entry: ResolveEntry in _entries.values():
 		entry.clear()
 	_entries.clear()
 	_parent = null
