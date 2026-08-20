@@ -23,8 +23,8 @@ static func create_new_definition(
 	init_scope_name: StringName,
 	init_scope_id: StringName,
 	init_parent_scope_id: StringName,
-) -> Katamusubi.ScopeDefinition:
-	var definition := Katamusubi.ScopeDefinition.new()
+) -> Resource:
+	var definition := new()
 	definition.scene_uid = init_scene_uid
 	definition.scope_name = init_scope_name
 	definition.scope_id = init_scope_id

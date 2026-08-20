@@ -1,11 +1,14 @@
 extends RefCounted
 ## インスタンス注入だけを担当
 
+const InjectionContainer := preload("res://addons/katamusubi/runtime/injection_container.gd")
+const MethodReader := preload("res://addons/katamusubi/runtime/method_reader.gd")
+
 var _scope_name: StringName
-var _container: Katamusubi.InjectionContainer
+var _container: InjectionContainer
 
 func _init(
-	container: Katamusubi.InjectionContainer,
+	container: InjectionContainer,
 	scope_name: StringName,
 ) -> void:
 	_container = container
@@ -18,7 +21,7 @@ func try_inject_arguments(target: Node) -> bool:
 		return false
 	
 	var script := target.get_script() as Script
-	var arguments := Katamusubi.MethodReader.get_injection_arguments(script)
+	var arguments := MethodReader.get_injection_arguments(script)
 	var resolved_arguments: Array = []
 
 	for argument in arguments:
@@ -37,7 +40,7 @@ func try_inject_arguments(target: Node) -> bool:
 		
 		resolved_arguments.append(resolved_service)
 
-	var injection_method := Callable(target, Katamusubi.MethodReader.METHOD_NAME)
+	var injection_method := Callable(target, MethodReader.METHOD_NAME)
 	if not injection_method.is_valid():
 		push_error(
 				"依存注入メソッドを呼び出せません: 対象=%s, スコープ名=%s"

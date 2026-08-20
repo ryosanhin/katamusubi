@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Lifecycle := preload("res://addons/katamusubi/runtime/lifecycle.gd")
+
 ## 実際に生成するインスタンスのクラスのスクリプト
 var implementation_type: Script
 
@@ -16,7 +18,7 @@ var service_name: StringName:
 var key: StringName = &""
 
 ## インスタンスの生成規則
-var lifecycle: Katamusubi.Lifecycle.Type = Katamusubi.Lifecycle.Type.SINGLETON
+var lifecycle: Lifecycle.Type = Lifecycle.Type.SINGLETON
 
 ## 外部インスタンス
 var instance: Variant
@@ -25,34 +27,34 @@ var instance: Variant
 static func create_instance_registration(
 	provided_instance: Variant,
 	type: Script,
-) -> Katamusubi.ServiceRegistration:
-	var registration := Katamusubi.ServiceRegistration.new()
+) -> RefCounted:
+	var registration := new()
 	registration.instance = provided_instance
 	registration.implementation_type = type
 	registration.service_type = type
-	registration.lifecycle = Katamusubi.Lifecycle.Type.SINGLETON
+	registration.lifecycle = Lifecycle.Type.SINGLETON
 	return registration
 
 
 ## クラスを登録
 static func create_class_registration(
 	type: Script,
-	lifecycle_type: Katamusubi.Lifecycle.Type,
-) -> Katamusubi.ServiceRegistration:
-	var registration := Katamusubi.ServiceRegistration.new()
+	lifecycle_type: Lifecycle.Type,
+) -> RefCounted:
+	var registration := new()
 	registration.implementation_type = type
 	registration.service_type = type
 	registration.lifecycle = lifecycle_type
 	return registration
 
 ## インスタンスのクラスを別の抽象型・基底型として公開
-func as_type(new_service_type: Script) -> Katamusubi.ServiceRegistration:
+func as_type(new_service_type: Script) -> RefCounted:
 	service_type = new_service_type
 	return self
 
 
 ## 登録へ任意のIDを付与
-func withkey(new_key: StringName) -> Katamusubi.ServiceRegistration:
+func withkey(new_key: StringName) -> RefCounted:
 	key = new_key
 	return self
 
@@ -69,11 +71,11 @@ func validate() -> PackedStringArray:
 		errors.append("公開するクラスが指定されていません。")
 		return errors
 
-	if not Katamusubi.Lifecycle.is_valid(lifecycle):
+	if not Lifecycle.is_valid(lifecycle):
 		errors.append(
 				"ライフサイクルが不正です: %s"
 				%
-				Katamusubi.Lifecycle.to_display_name(lifecycle)
+				Lifecycle.to_display_name(lifecycle)
 		)
 
 	if implementation_type.get_global_name().is_empty():
