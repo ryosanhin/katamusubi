@@ -1,17 +1,14 @@
 @tool
 extends EditorInspectorPlugin
 
-const DEFINITION_LIST_PATH := "res://addons/katamusubi/scope_definition_list.tres"
-const DEFINITION_LIST := preload(DEFINITION_LIST_PATH) 
-
 const ENUM_PROP_NAME := "_parent_scope_id"
 
 func _can_handle(object: Object) -> bool:
-	return object is ContainerScope
+	return object is Katamusubi.ContainerScope
 
 
 func _parse_begin(object: Object) -> void:
-	var target := object as ContainerScope
+	var target := object as Katamusubi.ContainerScope
 	var inspector_container := VBoxContainer.new()
 
 	# コンテナ登録ボタン
@@ -52,7 +49,7 @@ func _parse_begin(object: Object) -> void:
 			0,
 			&"",
 	)
-	for scope_definition in DEFINITION_LIST.scope_definitions:
+	for scope_definition in Katamusubi.DEFINITION_LIST.scope_definitions:
 		if scope_definition.scope_id == target.scope_id:
 			continue
 		var scene_path := ResourceUID.uid_to_path(scope_definition.scene_uid)
@@ -87,7 +84,7 @@ func _parse_begin(object: Object) -> void:
 
 # TODO: 今後登録はツリー参加時に行うようにし、プロパティの変化を監視し更新を自動で行えるようにする
 # TODO: なので今後はここの処理を分ける
-func _apply_or_update(target: ContainerScope) -> void:
+func _apply_or_update(target: Katamusubi.ContainerScope) -> void:
 	var scene_root := _get_edited_scene_root()
 	if not _is_target_in_edited_scene(target, scene_root):
 		return
@@ -103,21 +100,21 @@ func _apply_or_update(target: ContainerScope) -> void:
 		return
 
 	var original_scope_id := target.scope_id
-	var definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
+	var definition := Katamusubi.DEFINITION_LIST.get_scope_definition(target.scope_id)
 
 	if definition == null:
 		# 新規登録
-		var new_id := DEFINITION_LIST.get_new_id()
+		var new_id := Katamusubi.DEFINITION_LIST.get_new_id()
 		if new_id.is_empty():
 			push_error("空のスコープIDでは登録できません")
 			return
-		var new_definition := ScopeDefinition.create_new_definition(
+		var new_definition := Katamusubi.ScopeDefinition.create_new_definition(
 				scene_uid,
 				target.scope_name,
 				new_id,
 				target.get_parent_scope_id(),
 		)
-		var rollback_action := DEFINITION_LIST.add_scope_definition(new_definition)
+		var rollback_action := Katamusubi.DEFINITION_LIST.add_scope_definition(new_definition)
 
 		# そもそもロールバック対象処理が正常に終了しているか確認
 		if not rollback_action.operation_succeeded:
@@ -130,7 +127,7 @@ func _apply_or_update(target: ContainerScope) -> void:
 
 		target.scope_id = new_id
 	else:
-		var rollback_action := DEFINITION_LIST.update_scope_definition(
+		var rollback_action := Katamusubi.DEFINITION_LIST.update_scope_definition(
 				target.scope_id,
 				scene_uid,
 				target.scope_name,
@@ -150,11 +147,11 @@ func _apply_or_update(target: ContainerScope) -> void:
 		_mark_scene_as_unsaved()
 
 
-func _delete(target: ContainerScope) -> void:
+func _delete(target: Katamusubi.ContainerScope) -> void:
 	if target.scope_id.is_empty():
 		return
 	
-	var rollback_action := DEFINITION_LIST.remove_scope_definition(target.scope_id)
+	var rollback_action := Katamusubi.DEFINITION_LIST.remove_scope_definition(target.scope_id)
 
 	# そもそもロールバック対象処理が正常に終了しているか確認
 	if not rollback_action.operation_succeeded:
@@ -171,12 +168,12 @@ func _delete(target: ContainerScope) -> void:
 func _select_parent_scope(
 		index: int,
 		pulldown_menu: OptionButton,
-		target: ContainerScope,
+		target: Katamusubi.ContainerScope,
 ) -> void:
 	var parent_scope_id: StringName = pulldown_menu.get_item_metadata(index)
 	if parent_scope_id.is_empty():
 		# 対象スコープに登録されている親スコープ情報を削除
-		var target_scope_definition := DEFINITION_LIST.get_scope_definition(
+		var target_scope_definition := Katamusubi.DEFINITION_LIST.get_scope_definition(
 				target.scope_id
 		)
 		if target_scope_definition == null:
@@ -191,14 +188,14 @@ func _select_parent_scope(
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 
-	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
+	var parent_scope := Katamusubi.DEFINITION_LIST.get_scope_definition(parent_scope_id)
 
 	if parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
 
 	# スコープの登録情報にも参照先親スコープを登録
-	var target_scope_definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
+	var target_scope_definition := Katamusubi.DEFINITION_LIST.get_scope_definition(target.scope_id)
 	var former_parent_scope_id := target_scope_definition.parent_scope_id
 	target_scope_definition.parent_scope_id = parent_scope_id
 
@@ -211,7 +208,10 @@ func _select_parent_scope(
 	EditorInterface.mark_scene_as_unsaved()
 
 
-func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> bool:
+func _is_target_in_edited_scene(
+	target: Katamusubi.ContainerScope,
+	scene_root: Node,
+) -> bool:
 	if scene_root == null:
 		push_error("編集中のシーンがありません。")
 		return false
@@ -233,7 +233,10 @@ func _try_save_container_list() -> bool:
 
 ## テスト用サブクラスで保存結果を決定的に差し替えるための境界。
 func _save_container_list() -> Error:
-	return ResourceSaver.save(DEFINITION_LIST, DEFINITION_LIST_PATH)
+	return ResourceSaver.save(
+			Katamusubi.DEFINITION_LIST,
+			Katamusubi.DEFINITION_LIST_PATH
+	)
 
 
 ## テスト時に編集中のシーンを差し替えるための境界。

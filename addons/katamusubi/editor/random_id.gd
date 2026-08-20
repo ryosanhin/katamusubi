@@ -1,6 +1,6 @@
 @tool
 extends RefCounted
-class_name RandomID
+## ランダムでIDを生成するクラス
 
 const CHARS := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 

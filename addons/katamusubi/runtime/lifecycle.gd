@@ -1,6 +1,5 @@
 @tool
 extends RefCounted
-class_name Lifecycle
 
 ## 登録した依存オブジェクトの生成規則です。
 enum Type {

@@ -1,6 +1,6 @@
 @tool
 extends RefCounted
-class_name RollbackAction
+## ロールバック用クラス
 
 var _rollback_action: Callable
 

@@ -1,11 +1,11 @@
 extends RefCounted
-class_name ResolveEntry
+## インスタンス生成のための情報
 
-var _registration: ServiceRegistration
+var _registration: Katamusubi.ServiceRegistration
 var _singleton_instance: Variant
 
 func _init(
-	registration: ServiceRegistration
+	registration: Katamusubi.ServiceRegistration
 ) -> void:
 	_registration = registration
 
@@ -14,7 +14,7 @@ func resolve() -> Variant:
 	if _registration.instance != null:
 		return _registration.instance
 
-	if _registration.lifecycle == Lifecycle.Type.SINGLETON:
+	if _registration.lifecycle == Katamusubi.Lifecycle.Type.SINGLETON:
 		if _singleton_instance == null:
 			_singleton_instance = _registration.implementation_type.new()
 		return _singleton_instance

@@ -1,6 +1,5 @@
 @tool
 extends RefCounted
-class_name TscnScanner
 
 ## 一つのシーンを走査し、同シーンに属するすべてのスコープ定義を確認する[br]
 ## [param scene_uid]: 調べたいシーンのUID[br]
@@ -8,7 +7,7 @@ class_name TscnScanner
 ## returns: エラー一覧
 static func scan(
 	scene_uid: StringName,
-	definitions: Array[ScopeDefinition],
+	definitions: Array[Katamusubi.ScopeDefinition],
 ) -> PackedStringArray:
 	var errors: PackedStringArray = []
 	const GROUP_NAME := &"test_group"

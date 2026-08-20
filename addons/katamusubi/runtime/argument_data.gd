@@ -1,5 +1,5 @@
 extends RefCounted
-class_name ArgumentData
+## 汎用（多分）引数データ
 
 var arg_name: StringName
 var arg_class: StringName
