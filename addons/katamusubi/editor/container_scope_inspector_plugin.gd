@@ -2,7 +2,7 @@
 extends EditorInspectorPlugin
 
 const DEFINITION_LIST_PATH := "res://addons/katamusubi/scope_definition_list.tres"
-const DEFINITION_LIST := preload(DEFINITION_LIST_PATH) 
+const DEFINITION_LIST := preload(DEFINITION_LIST_PATH)
 
 const ENUM_PROP_NAME := "_parent_scope_id"
 
