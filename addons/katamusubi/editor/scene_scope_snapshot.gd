@@ -5,7 +5,6 @@ class_name SceneScopeSnapshot
 var scene_uid: StringName
 var entries: Array[ScannedEntry] = []
 
-var unique_scope_ids: Array[StringName] = []
 
 func _init(
 	init_scene_uid: StringName,

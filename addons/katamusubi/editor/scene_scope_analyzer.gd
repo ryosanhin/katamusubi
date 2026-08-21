@@ -14,7 +14,9 @@ func _init(
 	_definitions = init_definitions
 
 
-## シーンに実在するIDと保存済み定義のIDとの差分を返す。
+## シーンに実在するIDと保存済み定義のIDとの差分を返す。[br]
+## Dictionaryのkeyは"deleted", "continuous", "new" の3つ[br]
+## ArrayはスコープIDの配列
 func calculate_diff() -> Dictionary[String, Array]:
 	var diff: Dictionary[String, Array] = {
 		"deleted": [],
@@ -48,26 +50,38 @@ func validate() -> PackedStringArray:
 				matched_entries.append(entry)
 
 		if matched_entries.is_empty():
-			errors.append("シーン %s にスコープID '%s' が見つかりませんでした。" % [
-				scene_path, definition.scope_id,
-			])
+			errors.append(
+				"シーン %s にスコープID '%s' が見つかりませんでした。"
+				% [
+					scene_path, definition.scope_id,
+				]
+			)
 			continue
 		if matched_entries.size() > 1:
-			errors.append("シーン %s でスコープID '%s' が複数ノードに存在します" % [
-				scene_path, definition.scope_id,
-			])
+			errors.append(
+					"シーン %s でスコープID '%s' が複数ノードに存在します"
+					% [
+						scene_path, definition.scope_id,
+					]
+			)
 			continue
 
 		var entry := matched_entries[0]
 		if not entry.has_script:
-			errors.append("シーン %s のノード %s (スコープID '%s') にスクリプトが設定されていません。" % [
-				scene_path, entry.node_path, definition.scope_id,
-			])
+			errors.append(
+					"シーン %s のノード %s (スコープID '%s') にスクリプトが設定されていません。"
+					% [
+						scene_path, entry.node_path, definition.scope_id,
+					]
+			)
 			continue
 		if not entry.inherits_container_scope:
-			errors.append("シーン %s のノード %s (スコープID '%s') は ContainerScope を継承していません。" % [
-				scene_path, entry.node_path, definition.scope_id,
-			])
+			errors.append(
+					"シーン %s のノード %s (スコープID '%s') は ContainerScope を継承していません。"
+					% [
+						scene_path, entry.node_path, definition.scope_id,
+					]
+			)
 
 	return errors
 

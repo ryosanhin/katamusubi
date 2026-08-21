@@ -8,7 +8,6 @@ const SCRIPT_STRING_NAME := &"script"
 
 
 ## シーンファイルを走査し、ファイルから読み取れるスコープの情報を返す。
-## ScopeDefinition との比較や診断は SceneScopeAnalyzer が担当する。
 func scan(scene_uid: StringName) -> SceneScopeSnapshot:
 	var entries: Array[ScannedEntry] = []
 	var packed_scene := load(scene_uid) as PackedScene
@@ -25,11 +24,20 @@ func scan(scene_uid: StringName) -> SceneScopeSnapshot:
 		var scope_id: StringName = &""
 		var script: Script = null
 		for prop_index in scene_state.get_node_property_count(node_index):
-			var property_name := scene_state.get_node_property_name(node_index, prop_index)
+			var property_name := scene_state.get_node_property_name(
+					node_index,
+					prop_index,
+			)
 			if property_name == SCOPE_ID_STRING_NAME:
-				scope_id = scene_state.get_node_property_value(node_index, prop_index) as StringName
+				scope_id = scene_state.get_node_property_value(
+						node_index,
+						prop_index,
+				) as StringName
 			elif property_name == SCRIPT_STRING_NAME:
-				script = scene_state.get_node_property_value(node_index, prop_index) as Script
+				script = scene_state.get_node_property_value(
+						node_index,
+						prop_index,
+				) as Script
 
 		if scope_id.is_empty():
 			continue
