@@ -3,10 +3,13 @@ extends EditorPlugin
 
 const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
 
+const SceneSnapshotAnalyzer := preload("editor/scene_snapshot_analyzer.gd")
+
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 
 func _build() -> bool:
 	var errors: PackedStringArray = []
+	var scanner := TscnScanner.new()
 	# シーンUIDごとに所属スコープ定義をまとめる
 	# Array は Array[ScopeDefinition]
 	var definitions_by_scene: Dictionary[StringName, Array] = {}
@@ -18,7 +21,12 @@ func _build() -> bool:
 	for scene_uid in definitions_by_scene:
 		var definitions: Array[ScopeDefinition] = []
 		definitions.assign(definitions_by_scene[scene_uid])
-		errors.append_array(TscnScanner.static_scan(scene_uid, definitions))
+		var snapshot := scanner.scan(scene_uid)
+		if snapshot == null:
+			errors.append("シーン %s を走査できませんでした。" % scene_uid)
+			continue
+		var analyzer := SceneSnapshotAnalyzer.new(snapshot, definitions)
+		errors.append_array(analyzer.validate())
 
 	print("エラー %d 件：\n%s" % [errors.size(), "\n".join(errors)])
 		
