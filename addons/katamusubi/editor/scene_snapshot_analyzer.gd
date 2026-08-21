@@ -1,13 +1,14 @@
 @tool
 extends RefCounted
-class_name SceneScopeAnalyzer
 
-var _snapshot: SceneScopeSnapshot
+const SceneSnapshot := preload("scene_snapshot.gd")
+
+var _snapshot: SceneSnapshot
 var _definitions: Array[ScopeDefinition]
 
 
 func _init(
-	init_snapshot: SceneScopeSnapshot,
+	init_snapshot: SceneSnapshot,
 	init_definitions: Array[ScopeDefinition],
 ) -> void:
 	_snapshot = init_snapshot

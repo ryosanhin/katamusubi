@@ -1,6 +1,5 @@
 @tool
 extends RefCounted
-class_name SceneScopeSnapshot
 
 var scene_uid: StringName
 var entries: Array[ScannedEntry] = []

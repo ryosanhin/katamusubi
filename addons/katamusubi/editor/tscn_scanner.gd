@@ -6,9 +6,10 @@ const GROUP_NAME := &"test_group"
 const SCOPE_ID_STRING_NAME := &"scope_id"
 const SCRIPT_STRING_NAME := &"script"
 
+const SceneSnapshot := preload("scene_snapshot.gd")
 
 ## シーンファイルを走査し、ファイルから読み取れるスコープの情報を返す。
-func scan(scene_uid: StringName) -> SceneScopeSnapshot:
+func scan(scene_uid: StringName) -> SceneSnapshot:
 	var entries: Array[ScannedEntry] = []
 	var packed_scene := load(scene_uid) as PackedScene
 
@@ -50,7 +51,7 @@ func scan(scene_uid: StringName) -> SceneScopeSnapshot:
 			_inherits_container_scope(script),
 		))
 
-	return SceneScopeSnapshot.new(scene_uid, entries)
+	return SceneSnapshot.new(scene_uid, entries)
 
 
 func _inherits_container_scope(script: Script) -> bool:

@@ -6,8 +6,9 @@ const SCANNER_CHILD_FIXTURE := &"res://tests/editor/fixtures/scanner_child.tscn"
 const SCANNER_ROOT_SCOPE_ID := &"scanner_root_scope"
 const SCANNER_CHILD_SCOPE_ID := &"scanner_child_scope"
 
-var _failures: PackedStringArray = []
+const SceneSnapshotAnalyzer := preload("res://addons/katamusubi/editor/scene_snapshot_analyzer.gd")
 
+var _failures: PackedStringArray = []
 
 func _init() -> void:
 	_test_multiple_scopes_in_one_scene()
@@ -72,7 +73,7 @@ func _test_diff_calculation() -> void:
 		_definition(SCANNER_CASES_FIXTURE, &"first"),
 		_definition(SCANNER_CASES_FIXTURE, &"deleted"),
 	]
-	var diff := SceneScopeAnalyzer.new(snapshot, definitions).calculate_diff()
+	var diff := SceneSnapshotAnalyzer.new(snapshot, definitions).calculate_diff()
 	_expect(&"first" in diff["continuous"], "継続しているスコープIDを差分に含める")
 	_expect(&"deleted" in diff["deleted"], "削除されたスコープIDを差分に含める")
 	_expect(&"second" in diff["new"], "新しいスコープIDを差分に含める")
@@ -87,7 +88,7 @@ func _validate(
 	definitions: Array[ScopeDefinition],
 ) -> PackedStringArray:
 	var snapshot := TscnScanner.new().scan(scene_uid)
-	return SceneScopeAnalyzer.new(snapshot, definitions).validate()
+	return SceneSnapshotAnalyzer.new(snapshot, definitions).validate()
 
 
 func _contains(errors: PackedStringArray, text: String) -> bool:

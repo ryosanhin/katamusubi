@@ -3,6 +3,8 @@ extends EditorPlugin
 
 const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
 
+const SceneSnapshotAnalyzer := preload("editor/scene_snapshot_analyzer.gd")
+
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 
 func _build() -> bool:
@@ -23,7 +25,7 @@ func _build() -> bool:
 		if snapshot == null:
 			errors.append("シーン %s を走査できませんでした。" % scene_uid)
 			continue
-		var analyzer := SceneScopeAnalyzer.new(snapshot, definitions)
+		var analyzer := SceneSnapshotAnalyzer.new(snapshot, definitions)
 		errors.append_array(analyzer.validate())
 
 	print("エラー %d 件：\n%s" % [errors.size(), "\n".join(errors)])
