@@ -18,7 +18,7 @@ func _build() -> bool:
 	for scene_uid in definitions_by_scene:
 		var definitions: Array[ScopeDefinition] = []
 		definitions.assign(definitions_by_scene[scene_uid])
-		errors.append_array(TscnScanner.scan(scene_uid, definitions))
+		errors.append_array(TscnScanner.static_scan(scene_uid, definitions))
 
 	print("エラー %d 件：\n%s" % [errors.size(), "\n".join(errors)])
 		

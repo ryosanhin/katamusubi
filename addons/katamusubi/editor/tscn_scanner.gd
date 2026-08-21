@@ -2,73 +2,77 @@
 extends RefCounted
 class_name TscnScanner
 
+const GROUP_NAME := &"test_group"
+const SCOPE_ID_STRING_NAME := &"scope_id"
+const SCRIPT_STRING_NAME := &"script"
+
+var new_scope_ids: Array[StringName]
+var continuous_scopeids: Array[StringName]
+var deleted_scope_ids: Array[StringName]
+
+var _scene_uid: StringName
+var _definitions: Array[ScopeDefinition]
+var _snapshot: SceneScopeSnapshot
+
+func _init(
+	init_scene_uid: StringName,
+	init_definitions: Array[ScopeDefinition]
+) -> void:
+	_scene_uid = init_scene_uid
+	_definitions = init_definitions
+	_snapshot = _scan_scene(init_scene_uid)
+
+
+func get_scene_scope_diff() -> Dictionary:
+	var existing_scope_ids := _snapshot.get_existing_scope_ids()
+
+	var existed_scope_ids := _definitions.map(
+			func(def: ScopeDefinition) -> StringName:
+				return def.scope_id
+	)
+
+	var result: Dictionary[String, Array] = {}
+	result["deleted"] = []
+	result["continuous"] = []
+	result["new"] = []
+
+	# 継続して存在するスコープと削除されていたスコープを抽出
+	while not existed_scope_ids.is_empty():
+		var existed_scope_id := existed_scope_ids.pop_back()
+		if existed_scope_id in existing_scope_ids:
+			result["continuous"].append(existed_scope_id)
+		else:
+			result["deleted"].append(existed_scope_id)
+	
+	# 新規作成されたスコープを抽出
+	for existing_scope_id in existing_scope_ids:
+		if not existing_scope_id in result["continuous"]:
+			result["new"].append(existing_scope_id)
+
+	return result
+
+
+
+
 ## 一つのシーンを走査し、同シーンに属するすべてのスコープ定義を確認する[br]
 ## [param scene_uid]: 調べたいシーンのUID[br]
 ## [param definitions]: そのシーンに所属していると思われるスコープ定義群[br]
 ## returns: エラー一覧
-static func scan(
+func static_scan(
 	scene_uid: StringName,
 	definitions: Array[ScopeDefinition],
 ) -> PackedStringArray:
 	var errors: PackedStringArray = []
-	const GROUP_NAME := &"test_group"
-	const SCOPE_ID_STRING_NAME := &"scope_id"
-	const SCRIPT_STRING_NAME := &"script"
-	var packed_scene := load(scene_uid) as PackedScene
 	
-	if packed_scene == null:
-		errors.append("シーン %s が存在しません。" % _get_scene_path(scene_uid))
-		return errors
+	var scene_path := ResourceUID.uid_to_path(scene_uid)
 
-	var scene_state := packed_scene.get_state()
-	# Arrayの中身はScopeScanResult
-	var nodes_by_scope_id: Dictionary[StringName, Array] = {}
-
-	# 保存済みプロパティを一度だけ読み、スコープIDからノード情報を引けるようにする。
-	for node_index in scene_state.get_node_count():
-		# ノードの所属グループに含まれていなければスキップ
-		if not GROUP_NAME in scene_state.get_node_groups(node_index):
-			continue
-		
-		var scope_id: StringName = &""
-		var script: Script = null
-		for prop_index in scene_state.get_node_property_count(node_index):
-			var property_name := scene_state.get_node_property_name(node_index, prop_index)
-			
-			if property_name == SCOPE_ID_STRING_NAME:
-				scope_id = scene_state.get_node_property_value(
-						node_index,
-						prop_index,
-				) as StringName
-			elif property_name == SCRIPT_STRING_NAME:
-				script = scene_state.get_node_property_value(
-						node_index,
-						prop_index,
-				) as Script
-
-		if scope_id.is_empty():
-			continue
-		
-		if not nodes_by_scope_id.has(scope_id):
-			nodes_by_scope_id[scope_id] = []
-		
-		nodes_by_scope_id[scope_id].append(
-				ScopeScanResult.new(
-						scene_state.get_node_path(node_index),
-						script != null,
-						_check_inheritance(script),
-				)
-		)
-
-	var scene_path := _get_scene_path(scene_uid)
-
+	var existing_scope_ids := _snapshot.get_existing_scope_ids()
+	
 	# 渡されたシーンごとにまとまったスコープ定義を総チェック
-	for definition in definitions:
-		var matched_result: Array[ScopeScanResult] = []
-		matched_result.assign(nodes_by_scope_id.get(definition.scope_id, []))
+	for definition in _definitions:
 
 		# スコープのノードが無ければ終了
-		if matched_result.is_empty():
+		if existing_scope_ids.is_empty():
 			errors.append(
 					"シーン %s にスコープID '%s' が見つかりませんでした。"
 					% [
@@ -79,18 +83,13 @@ static func scan(
 			continue
 		
 		# スコープのノードが2個以上あっても終了
-		if matched_result.size() > 1:
-			var error_node_paths: PackedStringArray = []
-			
-			for result in matched_result:
-				error_node_paths.append(str(result.node_path))
-			
+		if existing_scope_ids.count(definition.scope_id) > 1:
+			var error_node_paths: PackedStringArray = []			
 			errors.append(
-					"シーン %s でスコープID '%s' が複数ノードに存在します: %s"
+					"シーン %s でスコープID '%s' が複数ノードに存在します"
 					% [
 						scene_path,
 						definition.scope_id,
-						", ".join(error_node_paths),
 					]
 			)
 			continue
@@ -123,31 +122,63 @@ static func scan(
 	return errors
 
 
-static func _get_scene_path(scene_uid: StringName) -> String:
-	var resource_id := ResourceUID.text_to_id(scene_uid)
-	if resource_id == ResourceUID.INVALID_ID:
-		return scene_uid
-	return ResourceUID.get_id_path(resource_id)
+## [code]SceneState[/code]を利用してシーン内を走査[br]
+## シーンが存在しない場合は[code]null[/code]を返す[br]
+## [param scene_uid]: 検索したいシーンのUID[br]
+## returns: SceneScopeSnapshot
+func _scan_scene(
+	scene_uid: StringName
+) -> SceneScopeSnapshot:
+	var entries: Array[ScannedEntry] = []
 
-static func _check_inheritance(script: Script) -> bool:
+	var packed_scene := load(scene_uid) as PackedScene
+	
+	if packed_scene == null:
+		push_error("シーン %s が存在しません。" % scene_uid)
+		return null
+
+	var scene_state := packed_scene.get_state()
+
+	for node_index in scene_state.get_node_count():
+		# ノードの所属グループに含まれていなければスキップ
+		if not GROUP_NAME in scene_state.get_node_groups(node_index):
+			continue
+		
+		var scope_id: StringName = &""
+		var script: Script = null
+		for prop_index in scene_state.get_node_property_count(node_index):
+			var property_name := scene_state.get_node_property_name(node_index, prop_index)
+			
+			if property_name == SCOPE_ID_STRING_NAME:
+				scope_id = scene_state.get_node_property_value(
+						node_index,
+						prop_index,
+				) as StringName
+			elif property_name == SCRIPT_STRING_NAME:
+				script = scene_state.get_node_property_value(
+						node_index,
+						prop_index,
+				) as Script
+
+		if scope_id.is_empty():
+			continue
+
+		entries.append(
+				ScannedEntry.new(
+					scene_uid,
+					scope_id,
+					scene_state.get_node_path(node_index),
+					script != null,
+					_check_inheritance(script),
+				)
+		)
+	
+	return SceneScopeSnapshot.new(scene_uid, entries)
+
+
+func _check_inheritance(script: Script) -> bool:
 	while script != null:
 		if script == ContainerScope:
 			return true
 		script = script.get_base_script()
 	return false
-
-
-class ScopeScanResult:
-	var node_path: NodePath
-	var has_script: bool
-	var inherits: bool
-
-	func _init(
-		init_node_path: NodePath,
-		init_hsa_script: bool,
-		init_inherits: bool,
-	) -> void:
-		node_path = init_node_path
-		has_script = init_hsa_script
-		inherits = init_inherits
-
