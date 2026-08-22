@@ -19,11 +19,13 @@ func on_node_added(node: Node) -> void:
 	var scope := node as ContainerScope
 	if scope == null:
 		return
-	
+	var is_modified := false
+
 	var is_in_group := scope.is_in_group(scope.CONTAINER_GROUP)
 
 	if not is_in_group:
 		scope.add_to_group(scope.CONTAINER_GROUP, true)
+		is_modified = true
 	
 	var is_empty := scope.scope_id.is_empty()
 
@@ -31,10 +33,11 @@ func on_node_added(node: Node) -> void:
 		var new_id := _get_new_id()
 		if new_id.is_empty():
 			push_error("新規IDが取得できませんでした。")
-			return
-		scope.scope_id = new_id
+		else:
+			scope.scope_id = new_id
+			is_modified = true
 	
-	if is_in_group or is_empty:
+	if is_modified:
 		EditorInterface.mark_scene_as_unsaved()
 
 
