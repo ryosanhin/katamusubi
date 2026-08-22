@@ -7,6 +7,9 @@ const SceneSnapshotAnalyzer := preload("editor/scene_snapshot_analyzer.gd")
 
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 
+const ScopeContainerObserver := preload("editor/scope_container_observer.gd")
+var _scope_container_observer: ScopeContainerObserver
+
 func _build() -> bool:
 	var errors: PackedStringArray = []
 	var scanner := TscnScanner.new()
@@ -40,13 +43,27 @@ func _enter_tree() -> void:
 	_container_scope_inspector_plugin = preload(
 			"res://addons/katamusubi/editor/container_scope_inspector_plugin.gd"
 	).new()
-	
 	add_inspector_plugin(_container_scope_inspector_plugin)
+
+	# node追加時のシグナルを接続
+	_scope_container_observer = ScopeContainerObserver.new(DEFINITION_LIST)
+	get_tree().node_added.connect(_scope_container_observer.on_node_added)
+
+	#シーン保存時のシグナルを接続
+	scene_saved.connect(_scope_container_observer.on_scene_saved)
 
 
 func _exit_tree() -> void:
-	if _container_scope_inspector_plugin == null:
-		return
+	if _container_scope_inspector_plugin != null:
+		remove_inspector_plugin(_container_scope_inspector_plugin)
+		_container_scope_inspector_plugin = null
 	
-	remove_inspector_plugin(_container_scope_inspector_plugin)
-	_container_scope_inspector_plugin = null
+	# node追加時のシグナルを切断
+	if _scope_container_observer != null:
+		if get_tree().node_added.is_connected(_scope_container_observer.on_node_added):
+			get_tree().node_added.disconnect(_scope_container_observer.on_node_added)
+
+		if scene_saved.is_connected(_scope_container_observer.on_scene_saved):
+			scene_saved.disconnect(_scope_container_observer.on_scene_saved)
+		
+		_scope_container_observer = null
