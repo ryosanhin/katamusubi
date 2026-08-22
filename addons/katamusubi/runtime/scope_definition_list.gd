@@ -1,6 +1,7 @@
 @tool
 extends Resource
 
+@export_file var save_path: String
 @export var scope_definitions: Array[ScopeDefinition] = []
 
 
@@ -109,7 +110,7 @@ func remove_scope_definition(
 ## 新規スコープIDを取得[br]
 ## 100回生成して新規IDが生成できなかった場合は[code]&""[/code]を返す
 func get_new_id() -> StringName:
-	var current_id_list := _get_current_id_list()
+	var current_id_list := get_current_id_list()
 
 	var id := RandomID.get_random_id()
 	var loop_count := 1
@@ -126,7 +127,7 @@ func get_new_id() -> StringName:
 
 
 ## スコープIDの一覧を生成
-func _get_current_id_list() -> Array[StringName]:
+func get_current_id_list() -> Array[StringName]:
 	var current_id_list: Array[StringName] = []
 	var tmp_list := scope_definitions.map(
 			func(definition: ScopeDefinition) -> StringName: return definition.scope_id
@@ -142,3 +143,6 @@ func get_scope_definition(scope_id: StringName) -> ScopeDefinition:
 		if definition.scope_id == scope_id:
 			return definition
 	return null
+
+func save() -> Error:
+	return ResourceSaver.save(self, save_path)

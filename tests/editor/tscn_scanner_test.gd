@@ -73,7 +73,7 @@ func _test_diff_calculation() -> void:
 		_definition(SCANNER_CASES_FIXTURE, &"first"),
 		_definition(SCANNER_CASES_FIXTURE, &"deleted"),
 	]
-	var diff := SceneSnapshotAnalyzer.new(snapshot, definitions).calculate_diff()
+	var diff := SceneSnapshotAnalyzer.new(snapshot, definitions).get_diff()
 	_expect(&"first" in diff["continuous"], "継続しているスコープIDを差分に含める")
 	_expect(&"deleted" in diff["deleted"], "削除されたスコープIDを差分に含める")
 	_expect(&"second" in diff["new"], "新しいスコープIDを差分に含める")

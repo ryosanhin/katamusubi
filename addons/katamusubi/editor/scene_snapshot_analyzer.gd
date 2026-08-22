@@ -2,6 +2,8 @@
 extends RefCounted
 
 const SceneSnapshot := preload("scene_snapshot.gd")
+const ScannedEntry := preload("scanned_entry.gd")
+const ScopeDiff := preload("scope_diff.gd")
 
 var _snapshot: SceneSnapshot
 var _definitions: Array[ScopeDefinition]
@@ -15,28 +17,25 @@ func _init(
 	_definitions = init_definitions
 
 
-## シーンに実在するIDと保存済み定義のIDとの差分を返す。[br]
-## Dictionaryのkeyは"deleted", "continuous", "new" の3つ[br]
-## ArrayはスコープIDの配列
-func calculate_diff() -> Dictionary[String, Array]:
-	var diff: Dictionary[String, Array] = {
-		"deleted": [],
-		"continuous": [],
-		"new": [],
-	}
+## シーンに実在するIDと保存済み定義のIDとの差分を返す。
+func get_diff() -> ScopeDiff:
 	var existing_scope_ids := _snapshot.get_existing_scope_ids()
+	var removed: Array[StringName] = []
+	var retained: Array[StringName] =[]
+	var added: Array[StringName] = []
 
 	for definition in _definitions:
 		if definition.scope_id in existing_scope_ids:
-			diff["continuous"].append(definition.scope_id)
+			retained.append(definition.scope_id)
 		else:
-			diff["deleted"].append(definition.scope_id)
+			removed.append(definition.scope_id)
 
 	for scope_id in existing_scope_ids:
-		if not scope_id in diff["continuous"] and not scope_id in diff["new"]:
-			diff["new"].append(scope_id)
+		if not scope_id in retained and not scope_id in added:
+			added.append(scope_id)
 
-	return diff
+	return ScopeDiff.new(removed, retained, added)
+
 
 
 ## 保存済み定義に対応するノードが実行可能な状態かを検査する。

@@ -1,6 +1,8 @@
 @tool
 extends RefCounted
 
+const ScannedEntry := preload("scanned_entry.gd")
+
 var scene_uid: StringName
 var entries: Array[ScannedEntry] = []
 
