@@ -7,8 +7,10 @@ const SCOPE_ID_STRING_NAME := &"scope_id"
 const SCRIPT_STRING_NAME := &"script"
 
 const SceneSnapshot := preload("scene_snapshot.gd")
+const ScannedEntry := preload("scanned_entry.gd")
 
 ## シーンファイルを走査し、ファイルから読み取れるスコープの情報を返す。
+## シーンUIDが無効なときは[code]null[/code]を返す。
 func scan(scene_uid: StringName) -> SceneSnapshot:
 	var entries: Array[ScannedEntry] = []
 	var packed_scene := load(scene_uid) as PackedScene

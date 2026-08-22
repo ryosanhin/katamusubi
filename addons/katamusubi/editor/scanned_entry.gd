@@ -1,6 +1,5 @@
 @tool
 extends RefCounted
-class_name ScannedEntry
 
 var scene_uid: StringName
 var scope_id: StringName

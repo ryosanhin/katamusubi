@@ -1,4 +1,3 @@
-@tool
 @abstract
 extends Node
 class_name ContainerScope
@@ -32,28 +31,12 @@ var scope_name: StringName:
 ## 注入対象
 @export var _inject_target: Array[Node] = []
 
-func _enter_tree() -> void:
-	var is_in_group := is_in_group(CONTAINER_GROUP)
-
-	if not is_in_group:
-		add_to_group(CONTAINER_GROUP, true)
-
-	# エディタのみで実行
-	if Engine.is_editor_hint():
-		if not is_in_group:
-			EditorInterface.mark_scene_as_unsaved()
-		return
-
 
 func _ready() -> void:
-	if Engine.is_editor_hint():
-		return
 	_ensure_initialized()
 
 
 func _exit_tree() -> void:
-	if Engine.is_editor_hint():
-		return
 	_stop_initialization_retry()
 
 	if _container != null:
