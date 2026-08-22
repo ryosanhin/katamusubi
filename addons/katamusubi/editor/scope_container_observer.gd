@@ -16,6 +16,13 @@ func _init(
 
 
 func on_node_added(node: Node) -> void:
+	if EditorInterface.is_playing_scene():
+		return
+
+	var scene_root := EditorInterface.get_edited_scene_root()
+	if scene_root == null or not _is_node_editable_in_scene(node, scene_root):
+		return
+
 	var scope := node as ContainerScope
 	if scope == null:
 		return
@@ -27,8 +34,6 @@ func on_node_added(node: Node) -> void:
 		scope.add_to_group(scope.CONTAINER_GROUP, true)
 		is_modified = true
 	
-	var is_empty := scope.scope_id.is_empty()
-
 	if scope.scope_id.is_empty():
 		var new_id := _get_new_id()
 		if new_id.is_empty():
@@ -39,6 +44,31 @@ func on_node_added(node: Node) -> void:
 	
 	if is_modified:
 		EditorInterface.mark_scene_as_unsaved()
+
+
+func _is_node_editable_in_scene(node: Node, scene_root: Node) -> bool:
+	if node == scene_root:
+		return true
+	if not scene_root.is_ancestor_of(node):
+		return false
+
+	var owner := node.owner
+	if owner == null:
+		return false
+
+	while owner != scene_root:
+		if not scene_root.is_ancestor_of(owner):
+			return false
+		if owner.scene_file_path.is_empty():
+			return false
+		var instance_owner := owner.owner
+		if instance_owner == null:
+			return false
+		if not instance_owner.is_editable_instance(owner):
+			return false
+		owner = instance_owner
+
+	return true
 
 
 func on_filesystem_changed() -> void:
