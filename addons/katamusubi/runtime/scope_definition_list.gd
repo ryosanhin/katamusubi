@@ -148,4 +148,4 @@ func save() -> Error:
 	var path := ResourceUID.uid_to_path(save_path)
 	if path.is_empty():
 		return Error.FAILED
-	return ResourceSaver.save(self, save_path)
+	return ResourceSaver.save(self, path)
