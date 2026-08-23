@@ -33,3 +33,12 @@ func get_duplicated_count(scope_id: StringName) -> int:
 		if entry.scope_id == scope_id:
 			count += 1
 	return count
+
+
+## スコープIDをキーとして該当するシーン内のスキャンした情報を返す。[br]
+## 該当情報が無い場合は[code]null[/code]を返す。
+func get_entry(scope_id: StringName) -> ScannedEntry:
+	for entry in entries:
+		if entry.scope_id == scope_id:
+			return entry
+	return null

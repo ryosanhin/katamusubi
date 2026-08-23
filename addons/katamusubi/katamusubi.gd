@@ -10,9 +10,10 @@ var _container_scope_inspector_plugin: EditorInspectorPlugin
 const ScopeContainerObserver := preload("editor/scope_container_observer.gd")
 var _scope_container_observer: ScopeContainerObserver
 
+const TscnScanner := preload("editor/tscn_scanner.gd")
+
 func _build() -> bool:
 	var errors: PackedStringArray = []
-	var scanner := TscnScanner.new()
 	# シーンUIDごとに所属スコープ定義をまとめる
 	# Array は Array[ScopeDefinition]
 	var definitions_by_scene: Dictionary[StringName, Array] = {}
@@ -24,7 +25,7 @@ func _build() -> bool:
 	for scene_uid in definitions_by_scene:
 		var definitions: Array[ScopeDefinition] = []
 		definitions.assign(definitions_by_scene[scene_uid])
-		var snapshot := scanner.scan(scene_uid)
+		var snapshot := TscnScanner.scan(scene_uid)
 		if snapshot == null:
 			errors.append("シーン %s を走査できませんでした。" % scene_uid)
 			continue
@@ -45,9 +46,19 @@ func _enter_tree() -> void:
 	).new()
 	add_inspector_plugin(_container_scope_inspector_plugin)
 
-	# node追加時のシグナルを接続
 	_scope_container_observer = ScopeContainerObserver.new(DEFINITION_LIST)
-	get_tree().node_added.connect(_scope_container_observer.on_node_added)
+
+	# 編集中のシーン切り替え時
+	scene_changed.connect(
+			_scope_container_observer.on_scene_changed,
+			CONNECT_DEFERRED,
+	)
+
+	# node追加時のシグナルを接続
+	get_tree().node_added.connect(
+			_scope_container_observer.on_node_added,
+			CONNECT_DEFERRED,
+	)
 
 	#シーン保存時のシグナルを接続
 	scene_saved.connect(_scope_container_observer.on_scene_saved)
@@ -58,11 +69,17 @@ func _exit_tree() -> void:
 		remove_inspector_plugin(_container_scope_inspector_plugin)
 		_container_scope_inspector_plugin = null
 	
-	# node追加時のシグナルを切断
+	
 	if _scope_container_observer != null:
+		# 編集中のシーン切り替え時
+		if scene_changed.is_connected(_scope_container_observer.on_scene_changed):
+			scene_changed.disconnect(_scope_container_observer.on_scene_changed)
+			
+		# node追加時のシグナルを切断
 		if get_tree().node_added.is_connected(_scope_container_observer.on_node_added):
 			get_tree().node_added.disconnect(_scope_container_observer.on_node_added)
-
+		
+		#シーン保存時のシグナルを接続
 		if scene_saved.is_connected(_scope_container_observer.on_scene_saved):
 			scene_saved.disconnect(_scope_container_observer.on_scene_saved)
 		

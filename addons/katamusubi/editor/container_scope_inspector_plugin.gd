@@ -14,22 +14,6 @@ func _parse_begin(object: Object) -> void:
 	var target := object as ContainerScope
 	var inspector_container := VBoxContainer.new()
 
-	# コンテナ登録ボタン
-	var apply_or_update_button := Button.new()
-	apply_or_update_button.text = "Apply/Update Container"
-	apply_or_update_button.pressed.connect(
-		_apply_or_update.bind(target)
-	)
-	inspector_container.add_child(apply_or_update_button)
-
-	# コンテナ削除ボタン
-	var delete_button := Button.new()
-	delete_button.text = "Delete Container"
-	delete_button.pressed.connect(
-		_delete.bind(target)
-	)
-	inspector_container.add_child(delete_button)
-
 	# スコープIDの表示
 	var scope_id_display := Label.new()
 	scope_id_display.text = (
@@ -111,7 +95,7 @@ func _apply_or_update(target: ContainerScope) -> void:
 		if new_id.is_empty():
 			push_error("空のスコープIDでは登録できません")
 			return
-		var new_definition := ScopeDefinition.create_new_definition(
+		var new_definition := ScopeDefinition.new(
 				scene_uid,
 				target.scope_name,
 				new_id,
