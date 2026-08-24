@@ -48,12 +48,14 @@ func _enter_tree() -> void:
 
 	_scope_container_observer = ScopeContainerObserver.new(DEFINITION_LIST)
 
-	# 編集中のシーン切り替え時
+	# 編集中のシーン切り替え時のシグナル接続
 	scene_changed.connect(
 			_scope_container_observer.on_scene_changed,
 			CONNECT_DEFERRED,
 	)
 
+	var scene_tree := get_tree()
+	
 	# node追加時のシグナルを接続
 	get_tree().node_added.connect(
 			_scope_container_observer.on_node_added,
@@ -62,6 +64,11 @@ func _enter_tree() -> void:
 
 	#シーン保存時のシグナルを接続
 	scene_saved.connect(_scope_container_observer.on_scene_saved)
+
+	# ここまで設定したけど現在開いているシーンにはシグナルが来ないので手動で呼び出し
+	var current_root_node := scene_tree.current_scene
+	if is_instance_valid(current_root_node):
+		_scope_container_observer.on_scene_changed.call_deferred()
 
 
 func _exit_tree() -> void:

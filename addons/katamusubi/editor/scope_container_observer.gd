@@ -57,7 +57,7 @@ func _is_editable(node: Node) -> bool:
 	if node == root:
 		return true
 	
-	# PackedScene の root より下位のノードの owner は PackedScene の root になる
+	# owner = 変更が保存されるtscnファイルのルートノード
 	if node.owner != root:
 		return false
 
@@ -198,6 +198,9 @@ func _try_save_definition_list() -> bool:
 		push_error("failed save list: %s" % error_string(error))
 		return false
 	print("successfully saved list")
+	# ファイルシステムで再スキャンを呼び出して、読み込ませる
+	var fs := EditorInterface.get_resource_filesystem()
+	fs.scan()
 	return true
 
 
