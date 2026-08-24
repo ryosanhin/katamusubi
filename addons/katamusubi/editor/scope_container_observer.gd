@@ -49,23 +49,8 @@ func on_node_added(node: Node) -> void:
 ## PackedScene のインスタンスはインスタンス前に編集しておけ
 func _is_editable(node: Node) -> bool:
 	var root := EditorInterface.get_edited_scene_root()
-	
-	if root == null:
-		return false
-	
-	# 自分がシーンの root なら編集可能なシーン
-	if node == root:
-		return true
-	
 	# owner = 変更が保存されるtscnファイルのルートノード
-	if node.owner != root:
-		return false
-
-	# PackedScene のインスタンスの root はファイルパスを持つ
-	if not node.scene_file_path.is_empty():
-		return false
-	
-	return true
+	return node.owner == root
 
 
 ## スクリプト差し替え時シグナル接続対象を総チェック
