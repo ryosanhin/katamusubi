@@ -12,17 +12,20 @@ var analyzed_scene_uid: StringName:
 var _snapshot: SceneSnapshot
 var _comparable_definitions: Array[ScopeDefinition]
 
-
+## コンストラクタ[br]
+## [param init_snapshot]: シーンのスナップショット
+## [param init_comparable_definitions]: 比較するスコープ定義。
+## コンストラクタ内でスキャンされたシーンUIDでフィルタリングするため全定義を引数としても問題ない。[br]
 func _init(
 	init_snapshot: SceneSnapshot,
-	init_definitions: Array[ScopeDefinition],
+	init_comparable_definitions: Array[ScopeDefinition],
 ) -> void:
 	_snapshot = init_snapshot
 
 	# まとめて渡されるスコープ定義の内、シーンUIDが一致して比較できるものだけを取り出す
-	_comparable_definitions = init_definitions.filter(
+	_comparable_definitions = init_comparable_definitions.filter(
 			func(def: ScopeDefinition) -> bool:
-				return def.scene_uid == analyzed_scene_uid
+				return def.scene_uid == init_snapshot.scene_uid
 	)
 
 
@@ -32,11 +35,6 @@ func get_diff() -> ScopeDiff:
 	var removed: Array[StringName] = []
 	var retained: Array[StringName] =[]
 	var added: Array[StringName] = []
-
-	var comparable_definitions := _comparable_definitions.filter(
-			func(def: ScopeDefinition) -> bool:
-				return def.scene_uid == analyzed_scene_uid
-	)
 	
 	for definition in _comparable_definitions:
 		if definition.scope_id in existing_scope_ids:
