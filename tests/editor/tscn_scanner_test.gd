@@ -7,7 +7,9 @@ const SCANNER_ROOT_SCOPE_ID := &"scanner_root_scope"
 const SCANNER_CHILD_SCOPE_ID := &"scanner_child_scope"
 
 const TscnScanner := preload("res://addons/katamusubi/editor/tscn_scanner.gd")
+const SceneSnapshot := preload("res://addons/katamusubi/editor/scene_snapshot.gd")
 const SceneSnapshotAnalyzer := preload("res://addons/katamusubi/editor/scene_snapshot_analyzer.gd")
+const ScannedEntry := preload("res://addons/katamusubi/editor/scanned_entry.gd")
 
 var _failures: PackedStringArray = []
 
@@ -18,6 +20,7 @@ func _init() -> void:
 	_test_missing_id()
 	_test_invalid_inheritance()
 	_test_diff_calculation()
+	_test_snapshot_rejects_entries_from_another_scene()
 
 	if _failures.is_empty():
 		print("TscnScanner tests passed")
@@ -78,6 +81,22 @@ func _test_diff_calculation() -> void:
 	_expect(&"first" in diff["continuous"], "継続しているスコープIDを差分に含める")
 	_expect(&"deleted" in diff["deleted"], "削除されたスコープIDを差分に含める")
 	_expect(&"second" in diff["new"], "新しいスコープIDを差分に含める")
+
+
+func _test_snapshot_rejects_entries_from_another_scene() -> void:
+	var matching_entry := _entry(SCANNER_ROOT_FIXTURE, &"matching")
+	var foreign_entry := _entry(SCANNER_CHILD_FIXTURE, &"foreign")
+	var snapshot := SceneSnapshot.new(
+		SCANNER_ROOT_FIXTURE,
+		[matching_entry, foreign_entry] as Array[ScannedEntry],
+	)
+
+	_expect(snapshot.entries == [matching_entry], "異なるシーンのエントリを保持しない")
+	_expect(snapshot.get_entry(&"foreign") == null, "異なるシーンのエントリを取得できない")
+
+
+func _entry(scene_uid: StringName, scope_id: StringName) -> ScannedEntry:
+	return ScannedEntry.new(scene_uid, scope_id, scope_id, &"", NodePath(scope_id), true, true)
 
 
 func _definition(scene_uid: StringName, scope_id: StringName) -> ScopeDefinition:
