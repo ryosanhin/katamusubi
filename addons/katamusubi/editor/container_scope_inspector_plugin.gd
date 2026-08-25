@@ -57,7 +57,14 @@ func _parse_begin(object: Object) -> void:
 	add_custom_control(inspector_container)
 
 	# 初期値を確認
-	var parent_scope_id := target.get_parent_scope_id()
+	var target_scope_definition := DEFINITION_LIST.get_scope_definition(
+			target.scope_id
+	)
+	var parent_scope_id := (
+			target_scope_definition.parent_scope_id
+			if target_scope_definition != null else &""
+	)
+
 	if parent_scope_id.is_empty():
 		pulldown_menu.select(0)
 		return
