@@ -8,12 +8,13 @@ var entries: Array[ScannedEntry] = []
 
 
 func _init(
+	init_scene_uid: StringName,
 	init_entries: Array[ScannedEntry]
 ) -> void:
+	scene_uid = init_scene_uid
 	if init_entries.size() < 1:
 		return
 	entries = init_entries
-	scene_uid = entries[0].scene_uid
 	
 	var errors: PackedStringArray = []
 	

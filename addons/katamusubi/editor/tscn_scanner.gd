@@ -63,7 +63,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 			_inherits_container_scope(script),
 		))
 
-	return SceneSnapshot.new(entries)
+	return SceneSnapshot.new(scene_uid, entries)
 
 
 static func _inherits_container_scope(script: Script) -> bool:
