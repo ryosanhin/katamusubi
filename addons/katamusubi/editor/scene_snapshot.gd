@@ -8,21 +8,37 @@ var entries: Array[ScannedEntry] = []
 
 
 func _init(
-	init_scene_uid: StringName,
 	init_entries: Array[ScannedEntry]
 ) -> void:
-	scene_uid = init_scene_uid
+	if init_entries.size() < 1:
+		return
 	entries = init_entries
+	scene_uid = entries[0].scene_uid
+	
+	var errors: PackedStringArray = []
+	
+	for entry in entries:
+		if entry.scene_uid != scene_uid:
+			errors.append(
+					"シーン %s の スキャン結果にシーン %s のスコープ %s （%s）が混在しています。"
+					% [
+						ResourceUID.uid_to_path(scene_uid),
+						ResourceUID.uid_to_path(entry.scene_uid),
+						entry.scope_name,
+						entry.node_path,
+					]
+			)
+	
+	if errors.size() > 0:
+		push_error("\n".join(errors))
 
 
 ## シーン内に含まれるスコープID群を返す
 func get_existing_scope_ids() -> Array[StringName]:
 	var scope_ids: Array[StringName] = []
 	for entry in entries:
-		if entry.scene_uid != scene_uid:
-			push_error("異なるシーンUIDに存在するスコープIDが存在します")
-			continue
-		scope_ids.append(entry.scope_id)
+		if entry.scene_uid == scene_uid:
+			scope_ids.append(entry.scope_id)
 	return scope_ids
 
 

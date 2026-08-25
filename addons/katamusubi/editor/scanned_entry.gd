@@ -12,7 +12,7 @@ var inherits_container_scope: bool
 
 ## コンストラクタ[br]
 ## ---ここからスコープ定義用---[br]
-## [param init_scene_uid]: スコープのノードが存在するシーンのuid[br]
+## [param init_scene_uid]: スキャンしたシーンのUID[br]
 ## [param init_scope_name]: スコープのノードの名前[br]
 ## [param init_scope_id]: スコープのID[br]
 ## [param init_parent_scope_id]: 親スコープのID
