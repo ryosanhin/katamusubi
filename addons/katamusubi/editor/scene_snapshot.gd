@@ -14,11 +14,10 @@ func _init(
 	scene_uid = init_scene_uid
 	if init_entries.size() < 1:
 		return
-	entries = init_entries
-	
+
 	var errors: PackedStringArray = []
-	
-	for entry in entries:
+
+	for entry in init_entries:
 		if entry.scene_uid != scene_uid:
 			errors.append(
 					"シーン %s の スキャン結果にシーン %s のスコープ %s （%s）が混在しています。"
@@ -29,7 +28,9 @@ func _init(
 						entry.node_path,
 					]
 			)
-	
+			continue
+		entries.append(entry)
+
 	if errors.size() > 0:
 		push_error("\n".join(errors))
 
