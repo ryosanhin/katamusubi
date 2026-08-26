@@ -5,16 +5,28 @@ const SceneSnapshot := preload("scene_snapshot.gd")
 const ScannedEntry := preload("scanned_entry.gd")
 const ScopeDiff := preload("scope_diff.gd")
 
+var analyzed_scene_uid: StringName:
+	get:
+		return _snapshot.scene_uid
+
 var _snapshot: SceneSnapshot
-var _definitions: Array[ScopeDefinition]
+var _comparable_definitions: Array[ScopeDefinition]
 
-
+## コンストラクタ[br]
+## [param init_snapshot]: シーンのスナップショット
+## [param init_comparable_definitions]: 比較するスコープ定義。
+## コンストラクタ内でスキャンされたシーンUIDでフィルタリングするため全定義を引数としても問題ない。[br]
 func _init(
 	init_snapshot: SceneSnapshot,
-	init_definitions: Array[ScopeDefinition],
+	init_comparable_definitions: Array[ScopeDefinition],
 ) -> void:
 	_snapshot = init_snapshot
-	_definitions = init_definitions
+
+	# まとめて渡されるスコープ定義の内、シーンUIDが一致して比較できるものだけを取り出す
+	_comparable_definitions = init_comparable_definitions.filter(
+			func(def: ScopeDefinition) -> bool:
+				return def.scene_uid == init_snapshot.scene_uid
+	)
 
 
 ## シーンに実在するIDと保存済み定義のIDとの差分を返す。
@@ -23,8 +35,8 @@ func get_diff() -> ScopeDiff:
 	var removed: Array[StringName] = []
 	var retained: Array[StringName] =[]
 	var added: Array[StringName] = []
-
-	for definition in _definitions:
+	
+	for definition in _comparable_definitions:
 		if definition.scope_id in existing_scope_ids:
 			retained.append(definition.scope_id)
 		else:
@@ -41,9 +53,9 @@ func get_diff() -> ScopeDiff:
 ## 保存済み定義に対応するノードが実行可能な状態かを検査する。
 func validate() -> PackedStringArray:
 	var errors: PackedStringArray = []
-	var scene_path := _get_scene_path()
+	var scene_path := ResourceUID.uid_to_path(analyzed_scene_uid)
 
-	for definition in _definitions:
+	for definition in _comparable_definitions:
 		var matched_entries: Array[ScannedEntry] = []
 		for entry in _snapshot.entries:
 			if entry.scope_id == definition.scope_id:
@@ -84,9 +96,3 @@ func validate() -> PackedStringArray:
 			)
 
 	return errors
-
-
-func _get_scene_path() -> String:
-	if String(_snapshot.scene_uid).begins_with("uid://"):
-		return ResourceUID.uid_to_path(_snapshot.scene_uid)
-	return _snapshot.scene_uid

@@ -1,4 +1,3 @@
-@tool
 extends ContainerScope
 
 @export var test_manager: AbstractTestManager

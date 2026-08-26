@@ -14,23 +14,22 @@ class_name ScopeDefinition
 ## 親スコープのID
 @export var parent_scope_id: StringName
 
-## スコープ定義を作成[br]
+## コンストラクタ[br]
+## 仕様上デフォルト引数が設定されているが、代入必須[br]
 ## [param init_scene_uid]: スコープのノードが存在するシーンのuid[br]
 ## [param init_scope_name]: スコープのノードの名前[br]
 ## [param init_scope_id]: スコープのID[br]
 ## [param init_parent_scope_id]: 親スコープのID
-static func create_new_definition(
-	init_scene_uid: String,
-	init_scope_name: StringName,
-	init_scope_id: StringName,
-	init_parent_scope_id: StringName,
-) -> ScopeDefinition:
-	var definition := ScopeDefinition.new()
-	definition.scene_uid = init_scene_uid
-	definition.scope_name = init_scope_name
-	definition.scope_id = init_scope_id
-	definition.parent_scope_id = init_parent_scope_id
-	return definition
+func _init(
+	init_scene_uid: StringName = &"",
+	init_scope_name: StringName = &"",
+	init_scope_id: StringName = &"",
+	init_parent_scope_id: StringName = &"",
+) -> void:
+	scene_uid = init_scene_uid
+	scope_name = init_scope_name
+	scope_id = init_scope_id
+	parent_scope_id = init_parent_scope_id
 
 func _to_string() -> String:
 	var path := ResourceUID.uid_to_path(scene_uid)
