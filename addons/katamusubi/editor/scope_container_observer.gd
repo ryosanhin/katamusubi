@@ -55,9 +55,6 @@ func _is_editable(node: Node) -> bool:
 
 ## スクリプト差し替え時シグナル接続対象を総チェック
 func connect_children_signal(root: Node) -> void:
-	if root == null:
-		return
-	
 	var stack: Array[Node] = [root]
 
 	while not stack.is_empty():
@@ -131,6 +128,10 @@ func on_scene_saved(path: String) -> void:
 		return
 	
 	var snapshot := TscnScanner.scan(scene_uid)
+	if snapshot == null:
+		push_error("シーン %s が読み込めませんでした。" % path)
+		return
+	
 	var analyzer := SceneSnapshotAnalyzer.new(snapshot, _definition_list.scope_definitions)
 	var diff := analyzer.get_diff()
 	var rollback_actions: Array[RollbackAction] = []
