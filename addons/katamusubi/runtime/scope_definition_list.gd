@@ -145,4 +145,7 @@ func get_scope_definition(scope_id: StringName) -> ScopeDefinition:
 	return null
 
 func save() -> Error:
-	return ResourceSaver.save(self, save_path)
+	var path := ResourceUID.uid_to_path(save_path)
+	if path.is_empty():
+		return Error.FAILED
+	return ResourceSaver.save(self, path)
