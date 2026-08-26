@@ -14,6 +14,7 @@ script = ExtResource("1_6c5k7")
 scene_uid = &"uid://csglhfff2wyeg"
 scope_name = &"ChildContainer"
 scope_id = &"UOt8McFn"
+parent_scope_id = &"0DQt1Eua"
 
 [resource]
 script = ExtResource("2_6jo0g")

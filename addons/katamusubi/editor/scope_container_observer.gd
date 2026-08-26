@@ -33,7 +33,7 @@ func on_node_added(node: Node) -> void:
 	if not is_instance_valid(node):
 		return
 
-	if not _is_editable(node):
+	if not _is_owned_by_edited_scene(node):
 		return
 
 	# スクリプトの差し替えを監視する
@@ -57,7 +57,7 @@ func _on_scene_changed(root: Node) -> void:
 
 	while not stack.is_empty():
 		var node := stack.pop_back()
-		if _is_editable(node):
+		if _is_owned_by_edited_scene(node):
 			_connect_on_script_changed(node)
 			# そもそもシグナル接続時に既にスコープのスクリプトをアタッチされていたら
 			# 監視し損ねるのでここのタイミングで手動で確認
@@ -80,7 +80,7 @@ func _connect_on_script_changed(node: Node) -> void:
 
 ## スクリプトが差し替えられたときの実際に行われる処理
 func _on_script_changed(node: Node) -> void:
-	if not _is_editable(node):
+	if not _is_owned_by_edited_scene(node):
 		return
 	var scope := node as ContainerScope
 	if scope == null:
@@ -157,12 +157,12 @@ func on_scene_saved(path: String) -> void:
 			rollback_action.rollback()
 
 
-## 対象のノードが編集可能か、編集して意味があるか確認[br]
-## PackedScene のインスタンスはインスタンス前に編集しておけ
-func _is_editable(node: Node) -> bool:
+## 対象のノードが監視対象か確認[br]
+## PackedScene のインスタンスはPackedScene 毎に編集しておけ
+func _is_owned_by_edited_scene(node: Node) -> bool:
 	var root := EditorInterface.get_edited_scene_root()
 	# owner = 変更が保存されるtscnファイルのルートノード
-	return node.owner == root
+	return node == root or node.owner == root
 
 
 ## 新規スコープIDを取得[br]
