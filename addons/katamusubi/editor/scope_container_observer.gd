@@ -19,8 +19,11 @@ func _init(
 
 ## 編集中のシーンが変更になったときの処理
 func on_scene_changed(node: Node) -> void:
+	# null のときはシーンを閉じて編集中シーンが無くなったとき
 	if node == null:
+		_clear_observed_nodes()
 		return
+	
 	# シーン内の編集対象ノードのスクリプト差し替え状況を監視
 	_on_scene_changed(node)
 
@@ -47,11 +50,7 @@ func on_node_added(node: Node) -> void:
 
 ## スクリプト差し替え時シグナル接続対象を総チェック
 func _on_scene_changed(root: Node) -> void:
-	## まず前のシーンで監視していたノードのシグナルを解除する
-	while not _observed_nodes.is_empty():
-		var node := _observed_nodes.pop_back()
-		if node.script_changed.is_connected(_on_script_changed.bind(node)):
-			node.script_changed.disconnect(_on_script_changed.bind(node))
+	_clear_observed_nodes()
 
 	var stack: Array[Node] = [root]
 
@@ -108,6 +107,15 @@ func _assign_scope_id(scope: ContainerScope) -> void:
 	
 	if is_modified:
 		EditorInterface.mark_scene_as_unsaved()
+
+
+## 監視中のノードの監視を全て削除する
+func _clear_observed_nodes() -> void:
+	while not _observed_nodes.is_empty():
+		var node := _observed_nodes.pop_back()
+		if node.script_changed.is_connected(_on_script_changed.bind(node)):
+			node.script_changed.disconnect(_on_script_changed.bind(node))
+	_observed_nodes.clear()
 
 
 func on_filesystem_changed() -> void:
