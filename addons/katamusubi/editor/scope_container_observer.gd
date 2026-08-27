@@ -113,6 +113,8 @@ func _assign_scope_id(scope: ContainerScope) -> void:
 func _clear_observed_nodes() -> void:
 	while not _observed_nodes.is_empty():
 		var node := _observed_nodes.pop_back()
+		if not is_instance_valid(node):
+			continue
 		if node.script_changed.is_connected(_on_script_changed.bind(node)):
 			node.script_changed.disconnect(_on_script_changed.bind(node))
 	_observed_nodes.clear()
