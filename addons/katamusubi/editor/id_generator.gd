@@ -11,13 +11,13 @@ const CONTAINER_GROUP := &"test_group"
 ## 100回生成して新規IDが生成できなかった場合は[code]&""[/code]を返す。[br]
 ## [param existed_ids]: 既存スコープID
 static func get_unique_id(existed_ids: Array[StringName]) -> StringName:
-	var tmp_ids: Array[StringName]
+	var tmp_ids: Array[StringName] = []
 	# エディタで開いているシーンを全取得
 	var opened_roots := EditorInterface.get_open_scene_roots()
 	for root in opened_roots:
 		if root == null:
 			continue
-		tmp_ids.append(_get_scope_ids_existed_in_children(root))
+		tmp_ids.append_array(_get_scope_ids_in_subtree(root))
 	existed_ids.append_array(tmp_ids)
 
 	var id := RandomID.get_random_id()
@@ -36,7 +36,7 @@ static func get_unique_id(existed_ids: Array[StringName]) -> StringName:
 
 ## 子ノード内に存在するスコープを検索し存在したスコープIDを返す。[br]
 ## [param root]: 検索する始点のノード
-static func _get_scope_ids_existed_in_children(root: Node) -> Array[StringName]:
+static func _get_scope_ids_in_subtree(root: Node) -> Array[StringName]:
 	var scope_ids: Array[StringName] = []
 	var nodes: Array[Node] = [root]
 
