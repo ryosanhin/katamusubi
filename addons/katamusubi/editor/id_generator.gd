@@ -15,16 +15,9 @@ static func get_unique_id(existed_ids: Array[StringName]) -> StringName:
 	# エディタで開いているシーンを全取得
 	var opened_roots := EditorInterface.get_open_scene_roots()
 	for root in opened_roots:
-		var tree :=  root.get_tree()
-		if tree == null:
+		if root == null:
 			continue
-		# シーンのルート経由でツリーを取得、グループ名でスコープを検索
-		var grouped_nodes :=tree.get_nodes_in_group(CONTAINER_GROUP)
-		for node in grouped_nodes:
-			var scope := node as ContainerScope
-			if scope == null:
-				continue
-			tmp_ids.append(scope.scope_id)
+		tmp_ids.append(_get_scope_ids_existed_in_children(root))
 	existed_ids.append_array(tmp_ids)
 
 	var id := RandomID.get_random_id()
@@ -39,3 +32,18 @@ static func get_unique_id(existed_ids: Array[StringName]) -> StringName:
 		loop_count += 1
 
 	return id
+
+
+## 子ノード内に存在するスコープを検索し存在したスコープIDを返す。[br]
+## [param root]: 検索する始点のノード
+static func _get_scope_ids_existed_in_children(root: Node) -> Array[StringName]:
+	var scope_ids: Array[StringName] = []
+	var nodes: Array[Node] = [root]
+
+	for node in nodes:
+		var scope := node as ContainerScope
+		if scope != null:
+			scope_ids.append(scope.scope_id)
+		nodes.append_array(node.get_children())
+	
+	return scope_ids
