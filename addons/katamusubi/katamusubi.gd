@@ -49,10 +49,7 @@ func _enter_tree() -> void:
 	_scope_container_observer = ScopeContainerObserver.new(DEFINITION_LIST)
 
 	# 編集中のシーン切り替え時のシグナル接続
-	scene_changed.connect(
-			_scope_container_observer.on_scene_changed,
-			CONNECT_DEFERRED,
-	)
+	scene_changed.connect(_scope_container_observer.on_scene_changed)
 
 	var scene_tree := get_tree()
 	
