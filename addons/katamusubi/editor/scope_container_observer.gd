@@ -70,15 +70,15 @@ func _on_scene_changed(root: Node) -> void:
 ## スクリプト差し替え時のシグナルへの接続
 func _connect_on_script_changed(node: Node) -> void:
 	if not node.script_changed.is_connected(_on_script_changed.bind(node)):
-		node.script_changed.connect(
-				_on_script_changed.bind(node),
-				CONNECT_DEFERRED
-		)
+		node.script_changed.connect(_on_script_changed.bind(node))
 		_observed_nodes.append(node)
 
 
 ## スクリプトが差し替えられたときの実際に行われる処理
 func _on_script_changed(node: Node) -> void:
+	if not is_instance_valid(node):
+		return
+
 	if not _is_owned_by_edited_scene(node):
 		return
 	var scope := node as ContainerScope
