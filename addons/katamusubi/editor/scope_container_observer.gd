@@ -1,10 +1,10 @@
 @tool
 extends RefCounted
 
-const RandomId := preload("random_id.gd")
 const ScopeDefinitionList := preload("../runtime/scope_definition_list.gd")
 const TscnScanner := preload("tscn_scanner.gd")
 const SceneSnapshotAnalyzer := preload("scene_snapshot_analyzer.gd")
+const IdGenerator := preload("id_generator.gd")
 
 var _definition_list: ScopeDefinitionList
 
@@ -98,7 +98,7 @@ func _assign_scope_id(scope: ContainerScope) -> void:
 		is_modified = true
 	
 	if scope.scope_id.is_empty():
-		var new_id := _get_new_id()
+		var new_id := IdGenerator.get_unique_id(_definition_list.get_current_id_list())
 		if new_id.is_empty():
 			push_error("新規IDが取得できませんでした。")
 		else:
@@ -171,25 +171,6 @@ func _is_owned_by_edited_scene(node: Node) -> bool:
 	var root := EditorInterface.get_edited_scene_root()
 	# owner = 変更が保存されるtscnファイルのルートノード
 	return node == root or node.owner == root
-
-
-## 新規スコープIDを取得[br]
-## 100回生成して新規IDが生成できなかった場合は[code]&""[/code]を返す
-func _get_new_id() -> StringName:
-	var current_id_list := _definition_list.get_current_id_list()
-
-	var id := RandomID.get_random_id()
-	var loop_count := 1
-	const MAX_LOOP_COUNT := 100
-
-	while current_id_list.has(id):
-		if loop_count >= MAX_LOOP_COUNT:
-			push_error("uid生成ループ回数が上限に達しました。")
-			return &""
-		id = RandomID.get_random_id()
-		loop_count += 1
-
-	return id
 
 
 func _try_save_definition_list() -> bool:
