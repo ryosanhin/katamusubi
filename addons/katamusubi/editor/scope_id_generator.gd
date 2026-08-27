@@ -39,11 +39,14 @@ static func get_unique_id(existed_ids: Array[StringName]) -> StringName:
 static func _get_scope_ids_in_subtree(root: Node) -> Array[StringName]:
 	var scope_ids: Array[StringName] = []
 	var nodes: Array[Node] = [root]
+	
+	while not nodes.is_empty():
+		var node := nodes.pop_back()
 
-	for node in nodes:
 		var scope := node as ContainerScope
 		if scope != null:
 			scope_ids.append(scope.scope_id)
+
 		nodes.append_array(node.get_children())
 	
 	return scope_ids
