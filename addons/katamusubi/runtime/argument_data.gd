@@ -1,5 +1,4 @@
 extends RefCounted
-class_name ArgumentData
 
 var arg_name: StringName
 var arg_class: StringName

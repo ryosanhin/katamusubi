@@ -1,6 +1,5 @@
 @tool
 extends RefCounted
-class_name RandomID
 
 const CHARS := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
