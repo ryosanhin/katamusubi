@@ -2,6 +2,8 @@
 extends Node
 class_name ContainerScope
 
+const Const := preload("plugin_const.gd")
+
 ## コンテナ初期化の内部状態
 enum State {
 	NOT_INITIALIZED,
@@ -18,9 +20,6 @@ var state: State = State.NOT_INITIALIZED
 
 ## プロジェクト内のコンテナ情報のリスト
 const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
-
-## スコープ用グループ名
-const CONTAINER_GROUP := &"test_group"
 
 var scope_name: StringName:
 	get:
@@ -56,7 +55,7 @@ func _find_parent_scope() -> ContainerScope:
 
 	var matched: Array[ContainerScope] = []
 
-	for node in get_tree().get_nodes_in_group(CONTAINER_GROUP):
+	for node in get_tree().get_nodes_in_group(Const.GROUP_NAME):
 		var scope := node as ContainerScope
 		
 		if (

@@ -3,9 +3,6 @@ extends RefCounted
 
 const RandomID := preload("random_id.gd")
 
-## スコープ用グループ名
-const CONTAINER_GROUP := &"test_group"
-
 
 ## 新規スコープIDを取得。[br]
 ## 100回生成して新規IDが生成できなかった場合は[code]&""[/code]を返す。[br]

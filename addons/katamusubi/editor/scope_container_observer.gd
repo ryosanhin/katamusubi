@@ -1,6 +1,7 @@
 @tool
 extends RefCounted
 
+const Const := preload("../runtime/plugin_const.gd")
 const ScopeDefinitionList := preload("../runtime/scope_definition_list.gd")
 const TscnScanner := preload("tscn_scanner.gd")
 const SceneSnapshotAnalyzer := preload("scene_snapshot_analyzer.gd")
@@ -91,10 +92,10 @@ func _on_script_changed(node: Node) -> void:
 func _assign_scope_id(scope: ContainerScope) -> void:
 	var is_modified := false
 
-	var is_in_group := scope.is_in_group(scope.CONTAINER_GROUP)
+	var is_in_group := scope.is_in_group(Const.GROUP_NAME)
 
 	if not is_in_group:
-		scope.add_to_group(scope.CONTAINER_GROUP, true)
+		scope.add_to_group(Const.GROUP_NAME, true)
 		is_modified = true
 	
 	if scope.scope_id.is_empty():
@@ -126,7 +127,9 @@ func on_filesystem_changed() -> void:
 
 		# 削除されていた場合
 		if not FileAccess.file_exists(path):
-			_definition_list.remove_scope_definition(definition.scope_id)
+			var rollback_action := _definition_list.remove_scope_definition(definition.scope_id)
+			if not _try_save_definition_list():
+				rollback_action.rollback()
 
 
 func on_scene_saved(path: String) -> void:
