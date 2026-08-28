@@ -107,25 +107,6 @@ func remove_scope_definition(
 	)
 
 
-## 新規スコープIDを取得[br]
-## 100回生成して新規IDが生成できなかった場合は[code]&""[/code]を返す
-func get_new_id() -> StringName:
-	var current_id_list := get_current_id_list()
-
-	var id := RandomID.get_random_id()
-	var loop_count := 1
-	const MAX_LOOP_COUNT := 100
-
-	while current_id_list.has(id):
-		if loop_count >= MAX_LOOP_COUNT:
-			push_error("uid生成ループ回数が上限に達しました。")
-			return &""
-		id = RandomID.get_random_id()
-		loop_count += 1
-
-	return id
-
-
 ## スコープIDの一覧を生成
 func get_current_id_list() -> Array[StringName]:
 	var current_id_list: Array[StringName] = []
