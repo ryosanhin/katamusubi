@@ -1,6 +1,8 @@
 extends RefCounted
 class_name InjectionContainer
 
+const ResolveEntry := preload("resolve_entry.gd")
+
 ## 親スコープのコンテナです。ローカルで見つからない依存を親へ問い合わせ
 var _parent: InjectionContainer
 

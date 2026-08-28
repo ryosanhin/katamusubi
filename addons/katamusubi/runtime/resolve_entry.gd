@@ -1,5 +1,4 @@
 extends RefCounted
-class_name ResolveEntry
 
 var _registration: ServiceRegistration
 var _singleton_instance: Variant

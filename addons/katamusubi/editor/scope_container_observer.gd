@@ -6,6 +6,7 @@ const ScopeDefinitionList := preload("../runtime/scope_definition_list.gd")
 const TscnScanner := preload("tscn_scanner.gd")
 const SceneSnapshotAnalyzer := preload("scene_snapshot_analyzer.gd")
 const IdGenerator := preload("scope_id_generator.gd")
+const RollbackAction := preload("rollback_action.gd")
 
 var _definition_list: ScopeDefinitionList
 

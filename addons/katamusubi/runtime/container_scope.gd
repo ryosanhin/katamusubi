@@ -3,6 +3,7 @@ extends Node
 class_name ContainerScope
 
 const Const := preload("plugin_const.gd")
+const InstanceInjector := preload("instance_injector.gd")
 
 ## コンテナ初期化の内部状態
 enum State {
