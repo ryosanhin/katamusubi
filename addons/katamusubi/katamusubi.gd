@@ -62,10 +62,11 @@ func _enter_tree() -> void:
 	#シーン保存時のシグナルを接続
 	scene_saved.connect(_scope_container_observer.on_scene_saved)
 
-	# ここまで設定したけど現在開いているシーンにはシグナルが来ないので手動で呼び出し
-	var current_root_node := scene_tree.current_scene
+	# ここまで今後追加で開くシーンへの接続の設定はしたけど
+	# 現在開いているシーンにはシグナルが来ないので手動で呼び出し
+	var current_root_node := EditorInterface.get_edited_scene_root()
 	if is_instance_valid(current_root_node):
-		_scope_container_observer.on_scene_changed.call_deferred()
+		_scope_container_observer.on_scene_changed(current_root_node)
 
 
 func _exit_tree() -> void:
