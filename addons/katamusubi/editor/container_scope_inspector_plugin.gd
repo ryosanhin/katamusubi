@@ -6,6 +6,15 @@ const DEFINITION_LIST := preload(DEFINITION_LIST_PATH)
 
 const ENUM_PROP_NAME := "_parent_scope_id"
 
+const EditorScopeWorkSpace := preload("editor_scope_workspace.gd")
+
+var _editor_scope_workspace: EditorScopeWorkSpace
+
+
+func _init() -> void:
+	_editor_scope_workspace = EditorScopeWorkSpace.new(DEFINITION_LIST)
+
+
 func _can_handle(object: Object) -> bool:
 	return object is ContainerScope
 
@@ -36,10 +45,16 @@ func _parse_begin(object: Object) -> void:
 			0,
 			&"",
 	)
-	for scope_definition in DEFINITION_LIST.scope_definitions:
+	
+	for scope_definition in _editor_scope_workspace.get_scope_definitions():
 		if scope_definition.scope_id == target.scope_id:
 			continue
-		var scene_path := ResourceUID.uid_to_path(scope_definition.scene_uid)
+		
+		var scene_path := (
+					"unsaved" if scope_definition.scene_uid.is_empty()
+					else ResourceUID.uid_to_path(scope_definition.scene_uid)
+		)
+
 		var scene_name := scene_path.get_file()
 
 		pulldown_menu.add_item("%s::%s" % [scene_name, scope_definition.scope_name])
