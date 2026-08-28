@@ -50,7 +50,9 @@ func get_duplicated_count(scope_id: StringName) -> int:
 	for entry in entries:
 		if entry.scope_id == scope_id:
 			count += 1
-	return count
+	if count < 2:
+		return 0
+	return count - 1
 
 
 ## スコープIDをキーとして該当するシーン内のスキャンした情報を返す。[br]
