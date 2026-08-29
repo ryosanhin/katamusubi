@@ -18,12 +18,13 @@ func replace_scene_snapshots(
 	snapshots: Array[ScopeDefinition],
 ) -> RollbackAction:
 	var replacements: Array[ScopeDefinition] = []
-	var used_ids: Dictionary[StringName, bool] = {}
+	var ids_from_other_scenes: Dictionary[StringName, bool] = {}
+	var replacement_ids: Dictionary[StringName, bool] = {}
 
 	for snapshot in scope_snapshots:
 		if snapshot.scene_uid == scene_uid:
 			continue
-		used_ids[snapshot.scope_id] = true
+		ids_from_other_scenes[snapshot.scope_id] = true
 
 	for snapshot in snapshots:
 		if snapshot.scene_uid != scene_uid:
@@ -32,10 +33,14 @@ func replace_scene_snapshots(
 		if snapshot.scope_id.is_empty():
 			push_error("空のスコープIDでは登録できません: %s" % snapshot)
 			return RollbackAction.new(false, Callable())
-		if snapshot.scope_id in used_ids:
+		if snapshot.scope_id in ids_from_other_scenes:
 			push_error("既にスコープIDが登録されています: %s" % snapshot)
 			return RollbackAction.new(false, Callable())
-		used_ids[snapshot.scope_id] = true
+		# 同一シーン内の重複は代表を1件残す。これによりビルド時に対象シーンが
+		# 再スキャンされ、SceneSnapshotAnalyzer が実ノードの重複を報告できる。
+		if snapshot.scope_id in replacement_ids:
+			continue
+		replacement_ids[snapshot.scope_id] = true
 		replacements.append(_duplicate_snapshot(snapshot))
 
 	var original_snapshots := _duplicate_snapshots(scope_snapshots)
