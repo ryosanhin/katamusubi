@@ -2,6 +2,11 @@
 extends EditorInspectorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
+const ParentScopeCandidateProvider := preload(
+		"res://addons/katamusubi/editor/parent_scope_candidate_provider.gd"
+)
+
+var _parent_scope_candidate_provider := ParentScopeCandidateProvider.new(SCOPE_INDEX)
 
 
 func _can_handle(object: Object) -> bool:
@@ -10,6 +15,7 @@ func _can_handle(object: Object) -> bool:
 
 func _parse_begin(object: Object) -> void:
 	var target := object as ContainerScope
+	var scene_root := EditorInterface.get_edited_scene_root()
 	var inspector_container := VBoxContainer.new()
 
 	# スコープIDの表示
@@ -35,7 +41,10 @@ func _parse_begin(object: Object) -> void:
 			&"",
 	)
 	
-	for scope_definition in _get_parent_scope_candidates(target):
+	for scope_definition in _parent_scope_candidate_provider.get_candidates(
+		target,
+		scene_root,
+	):
 		if scope_definition.scope_id == target.scope_id:
 			continue
 		
@@ -73,81 +82,27 @@ func _parse_begin(object: Object) -> void:
 
 
 func _select_parent_scope(
-		index: int,
-		pulldown_menu: OptionButton,
-		target: ContainerScope,
+	index: int,
+	pulldown_menu: OptionButton,
+	target: ContainerScope,
 ) -> void:
 	var parent_scope_id: StringName = pulldown_menu.get_item_metadata(index)
 	if parent_scope_id == target.scope_id:
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 
-	var parent_scope := _get_parent_scope_candidate(parent_scope_id, target)
+	var scene_root := EditorInterface.get_edited_scene_root()
+	var parent_scope := _parent_scope_candidate_provider.get_candidate(
+		parent_scope_id,
+		target,
+		scene_root,
+	)
 	if not parent_scope_id.is_empty() and parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
 
 	target.parent_scope_id = parent_scope_id
 	_mark_scene_as_unsaved()
-
-
-## 保存済みシーンのスコープと、現在編集中のシーン内のスコープを親候補として取得する。
-## 現在のシーンについては、ScopeIndex の保存時点の情報ではなく編集中のノードを優先する。
-func _get_parent_scope_candidates(target: ContainerScope) -> Array[ScopeDefinition]:
-	var candidates: Array[ScopeDefinition] = []
-	var scene_root := EditorInterface.get_edited_scene_root()
-	if not _is_target_in_edited_scene(target, scene_root):
-		return candidates
-
-	var edited_scene_uid := _get_edited_scene_uid(scene_root)
-	for snapshot in SCOPE_INDEX.scope_snapshots:
-		if not edited_scene_uid.is_empty() and snapshot.scene_uid == edited_scene_uid:
-			continue
-		candidates.append(snapshot)
-
-	for scope in _get_edited_scene_scopes(scene_root):
-		if scope.scope_id.is_empty():
-			continue
-		candidates.append(ScopeDefinition.new(
-				edited_scene_uid,
-				scope.scope_name,
-				scope.scope_id,
-				scope.parent_scope_id,
-		))
-
-	return candidates
-
-
-func _get_parent_scope_candidate(
-	parent_scope_id: StringName,
-	target: ContainerScope,
-) -> ScopeDefinition:
-	for candidate in _get_parent_scope_candidates(target):
-		if candidate.scope_id == parent_scope_id:
-			return candidate
-	return null
-
-
-func _get_edited_scene_scopes(scene_root: Node) -> Array[ContainerScope]:
-	var scopes: Array[ContainerScope] = []
-	var stack: Array[Node] = [scene_root]
-	while not stack.is_empty():
-		var node := stack.pop_back()
-		if node == scene_root or node.owner == scene_root:
-			var scope := node as ContainerScope
-			if scope != null:
-				scopes.append(scope)
-		for index in range(node.get_child_count() - 1, -1, -1):
-			stack.append(node.get_child(index))
-	return scopes
-
-
-func _get_edited_scene_uid(scene_root: Node) -> StringName:
-	if scene_root.scene_file_path.is_empty():
-		return &""
-	var scene_uid := ResourceUID.path_to_uid(scene_root.scene_file_path)
-	return &"" if scene_uid == scene_root.scene_file_path else scene_uid
-
 
 func _get_scene_path(scene_uid: StringName) -> String:
 	if scene_uid.is_empty():
@@ -156,18 +111,6 @@ func _get_scene_path(scene_uid: StringName) -> String:
 			return scene_root.scene_file_path
 		return "unsaved"
 	return ResourceUID.uid_to_path(scene_uid)
-
-
-func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> bool:
-	if scene_root == null:
-		push_error("編集中のシーンがありません。")
-		return false
-	if target != scene_root and not scene_root.is_ancestor_of(target):
-		push_error("コンテナスコープは編集中のシーンに属していません。")
-		return false
-
-	return true
-
 
 ## テスト時に未保存化の呼び出し有無を記録するための境界。
 func _mark_scene_as_unsaved() -> void:
