@@ -3,7 +3,6 @@ extends RefCounted
 
 const SceneSnapshot := preload("scene_snapshot.gd")
 const ScannedEntry := preload("scanned_entry.gd")
-const ScopeDiff := preload("scope_diff.gd")
 
 var analyzed_scene_uid: StringName:
 	get:
@@ -27,27 +26,6 @@ func _init(
 			func(def: ScopeDefinition) -> bool:
 				return def.scene_uid == init_snapshot.scene_uid
 	)
-
-
-## シーンに実在するIDと保存済み定義のIDとの差分を返す。
-func get_diff() -> ScopeDiff:
-	var existing_scope_ids := _snapshot.get_existing_scope_ids()
-	var removed: Array[StringName] = []
-	var retained: Array[StringName] =[]
-	var added: Array[StringName] = []
-	
-	for snapshot in _comparable_snapshots:
-		if snapshot.scope_id in existing_scope_ids:
-			retained.append(snapshot.scope_id)
-		else:
-			removed.append(snapshot.scope_id)
-
-	for scope_id in existing_scope_ids:
-		if not scope_id in retained and not scope_id in added:
-			added.append(scope_id)
-
-	return ScopeDiff.new(removed, retained, added)
-
 
 
 ## 保存済み定義に対応するノードが実行可能な状態かを検査する。
