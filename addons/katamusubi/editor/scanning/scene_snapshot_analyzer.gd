@@ -10,20 +10,20 @@ var analyzed_scene_uid: StringName:
 		return _snapshot.scene_uid
 
 var _snapshot: SceneSnapshot
-var _comparable_definitions: Array[ScopeDefinition]
+var _comparable_snapshots: Array[ScopeDefinition]
 
 ## コンストラクタ[br]
 ## [param init_snapshot]: シーンのスナップショット
-## [param init_comparable_definitions]: 比較するスコープ定義。
+## [param init_comparable_snapshots]: 比較するスコープ定義。
 ## コンストラクタ内でスキャンされたシーンUIDでフィルタリングするため全定義を引数としても問題ない。[br]
 func _init(
 	init_snapshot: SceneSnapshot,
-	init_comparable_definitions: Array[ScopeDefinition],
+	init_comparable_snapshots: Array[ScopeDefinition],
 ) -> void:
 	_snapshot = init_snapshot
 
 	# まとめて渡されるスコープ定義の内、シーンUIDが一致して比較できるものだけを取り出す
-	_comparable_definitions = init_comparable_definitions.filter(
+	_comparable_snapshots = init_comparable_snapshots.filter(
 			func(def: ScopeDefinition) -> bool:
 				return def.scene_uid == init_snapshot.scene_uid
 	)
@@ -36,11 +36,11 @@ func get_diff() -> ScopeDiff:
 	var retained: Array[StringName] =[]
 	var added: Array[StringName] = []
 	
-	for definition in _comparable_definitions:
-		if definition.scope_id in existing_scope_ids:
-			retained.append(definition.scope_id)
+	for snapshot in _comparable_snapshots:
+		if snapshot.scope_id in existing_scope_ids:
+			retained.append(snapshot.scope_id)
 		else:
-			removed.append(definition.scope_id)
+			removed.append(snapshot.scope_id)
 
 	for scope_id in existing_scope_ids:
 		if not scope_id in retained and not scope_id in added:
@@ -55,17 +55,17 @@ func validate() -> PackedStringArray:
 	var errors: PackedStringArray = []
 	var scene_path := ResourceUID.uid_to_path(analyzed_scene_uid)
 
-	for definition in _comparable_definitions:
+	for snapshot in _comparable_snapshots:
 		var matched_entries: Array[ScannedEntry] = []
 		for entry in _snapshot.entries:
-			if entry.scope_id == definition.scope_id:
+			if entry.scope_id == snapshot.scope_id:
 				matched_entries.append(entry)
 
 		if matched_entries.is_empty():
 			errors.append(
 				"シーン %s にスコープID '%s' が見つかりませんでした。"
 				% [
-					scene_path, definition.scope_id,
+					scene_path, snapshot.scope_id,
 				]
 			)
 			continue
@@ -73,7 +73,7 @@ func validate() -> PackedStringArray:
 			errors.append(
 					"シーン %s でスコープID '%s' が複数ノードに存在します"
 					% [
-						scene_path, definition.scope_id,
+						scene_path, snapshot.scope_id,
 					]
 			)
 			continue
@@ -83,7 +83,7 @@ func validate() -> PackedStringArray:
 			errors.append(
 					"シーン %s のノード %s (スコープID '%s') にスクリプトが設定されていません。"
 					% [
-						scene_path, entry.node_path, definition.scope_id,
+						scene_path, entry.node_path, snapshot.scope_id,
 					]
 			)
 			continue
@@ -91,7 +91,7 @@ func validate() -> PackedStringArray:
 			errors.append(
 					"シーン %s のノード %s (スコープID '%s') は ContainerScope を継承していません。"
 					% [
-						scene_path, entry.node_path, definition.scope_id,
+						scene_path, entry.node_path, snapshot.scope_id,
 					]
 			)
 

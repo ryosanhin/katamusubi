@@ -5,7 +5,7 @@ extends Resource
 ## 正本は保存済みシーン内の[ContainerScope]であり、このリソースは再生成可能。
 
 @export_file var save_path: String
-@export var scope_definitions: Array[ScopeDefinition] = []
+@export var scope_snapshots: Array[ScopeDefinition] = []
 
 const RollbackAction := preload("utility/rollback_action.gd")
 
@@ -13,68 +13,72 @@ const RollbackAction := preload("utility/rollback_action.gd")
 ## 対象シーンの読み取り用スナップショットを一括で置き換える。[br]
 ## IDの重複などがある場合は何も変更せず、失敗したロールバック操作を返す。[br]
 ## 成功時に返す操作は、置換前の定義の複製を使って状態を完全に復元する。
-func replace_scene_definitions(
+func replace_scene_snapshots(
 	scene_uid: StringName,
-	definitions: Array[ScopeDefinition],
+	snapshots: Array[ScopeDefinition],
 ) -> RollbackAction:
 	var replacements: Array[ScopeDefinition] = []
 	var used_ids: Dictionary[StringName, bool] = {}
 
-	for definition in scope_definitions:
-		if definition.scene_uid == scene_uid:
+	for snapshot in scope_snapshots:
+		if snapshot.scene_uid == scene_uid:
 			continue
-		used_ids[definition.scope_id] = true
+		used_ids[snapshot.scope_id] = true
 
-	for definition in definitions:
-		if definition.scene_uid != scene_uid:
-			push_error("異なるシーンのスコープ定義は登録できません: %s" % definition)
+	for snapshot in snapshots:
+		if snapshot.scene_uid != scene_uid:
+			push_error("異なるシーンのスコープ定義は登録できません: %s" % snapshot)
 			return RollbackAction.new(false, Callable())
-		if definition.scope_id.is_empty():
-			push_error("空のスコープIDでは登録できません: %s" % definition)
+		if snapshot.scope_id.is_empty():
+			push_error("空のスコープIDでは登録できません: %s" % snapshot)
 			return RollbackAction.new(false, Callable())
-		if used_ids.has(definition.scope_id):
-			push_error("既にスコープIDが登録されています: %s" % definition)
+		if snapshot.scope_id in used_ids:
+			push_error("既にスコープIDが登録されています: %s" % snapshot)
 			return RollbackAction.new(false, Callable())
-		used_ids[definition.scope_id] = true
-		replacements.append(_duplicate_definition(definition))
+		used_ids[snapshot.scope_id] = true
+		replacements.append(_duplicate_snapshot(snapshot))
 
-	var original_definitions := _duplicate_definitions(scope_definitions)
-	var retained_definitions: Array[ScopeDefinition] = []
-	for definition in scope_definitions:
-		if definition.scene_uid != scene_uid:
-			retained_definitions.append(definition)
-	scope_definitions.assign(retained_definitions)
-	scope_definitions.append_array(replacements)
+	var original_snapshots := _duplicate_snapshots(scope_snapshots)
+	var retained_snapshots: Array[ScopeDefinition] = []
+	
+	for snapshot in scope_snapshots:
+		# 変更を適用するシーン以外のデータはそのままコピー
+		if snapshot.scene_uid != scene_uid:
+			retained_snapshots.append(snapshot)
+	
+	## TODO: ここassginでディープコピーをする必要ある？
+	scope_snapshots.assign(retained_snapshots)
+	scope_snapshots.append_array(replacements)
 
 	return RollbackAction.new(
 			true,
-			func() -> void: scope_definitions.assign(original_definitions),
+			func() -> void: scope_snapshots.assign(original_snapshots),
 	)
 
 
-func _duplicate_definitions(
-	definitions: Array[ScopeDefinition],
+func _duplicate_snapshots(
+	snapshots: Array[ScopeDefinition],
 ) -> Array[ScopeDefinition]:
 	var duplicates: Array[ScopeDefinition] = []
-	for definition in definitions:
-		duplicates.append(_duplicate_definition(definition))
+	for snapshot in snapshots:
+		duplicates.append(_duplicate_snapshot(snapshot))
 	return duplicates
 
 
-func _duplicate_definition(definition: ScopeDefinition) -> ScopeDefinition:
+func _duplicate_snapshot(snapshot: ScopeDefinition) -> ScopeDefinition:
 	return ScopeDefinition.new(
-		definition.scene_uid,
-		definition.scope_name,
-		definition.scope_id,
-		definition.parent_scope_id,
+		snapshot.scene_uid,
+		snapshot.scope_name,
+		snapshot.scope_id,
+		snapshot.parent_scope_id,
 	)
 
 
 ## スコープIDの一覧を生成
 func get_current_id_list() -> Array[StringName]:
 	var current_id_list: Array[StringName] = []
-	var tmp_list := scope_definitions.map(
-			func(definition: ScopeDefinition) -> StringName: return definition.scope_id
+	var tmp_list := scope_snapshots.map(
+			func(snapshot: ScopeDefinition) -> StringName: return snapshot.scope_id
 	)
 	current_id_list.assign(tmp_list)
 	return current_id_list
@@ -82,10 +86,10 @@ func get_current_id_list() -> Array[StringName]:
 
 ## スコープIDから該当するスコープ定義を取得[br]
 ## 存在しない場合は[code]null[/code]を返す
-func get_scope_definition(scope_id: StringName) -> ScopeDefinition:
-	for definition in scope_definitions:
-		if definition.scope_id == scope_id:
-			return definition
+func get_scope_snapshot(scope_id: StringName) -> ScopeDefinition:
+	for snapshot in scope_snapshots:
+		if snapshot.scope_id == scope_id:
+			return snapshot
 	return null
 
 
