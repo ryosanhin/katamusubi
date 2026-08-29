@@ -2,14 +2,10 @@
 extends EditorInspectorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
-const ParentScopeCandidateProvider := preload(
-		"res://addons/katamusubi/editor/parent_scope_candidate_provider.gd"
-)
-const ParentScopeOptionButtonFactory := preload(
-		"res://addons/katamusubi/editor/parent_scope_option_button_factory.gd"
-)
+const ParentScopeCandidates := preload("inspector/parent_scope_candidates.gd")
+const ParentScopePicker := preload("inspector/parent_scope_picker.gd")
 
-var _parent_scope_candidate_provider := ParentScopeCandidateProvider.new(SCOPE_INDEX)
+var _parent_scope_candidate_provider := ParentScopeCandidates.new(SCOPE_INDEX)
 
 
 func _can_handle(object: Object) -> bool:
@@ -35,7 +31,7 @@ func _parse_begin(object: Object) -> void:
 	)
 	inspector_container.add_child(parent_scope_label)
 
-	var pulldown_factory := ParentScopeOptionButtonFactory.new(
+	var pulldown_factory := ParentScopePicker.new(
 			target.scope_id,
 			target.parent_scope_id,
 	)
