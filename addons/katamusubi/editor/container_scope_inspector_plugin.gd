@@ -29,11 +29,11 @@ func _parse_begin(object: Object) -> void:
 	inspector_container.add_child(scope_id_display)
 
 	# 親スコープ選択プルダウンメニューの説明
-	var pulldown_description := Label.new()
-	pulldown_description.text = (
-		"Select parent scope"
+	var parent_scope_label := Label.new()
+	parent_scope_label.text = (
+		"Current parent scope"
 	)
-	inspector_container.add_child(pulldown_description)
+	inspector_container.add_child(parent_scope_label)
 
 	var pulldown_factory := ParentScopeOptionButtonFactory.new(
 			target.scope_id,
