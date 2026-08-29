@@ -4,7 +4,7 @@ extends Resource
 @export_file var save_path: String
 @export var scope_definitions: Array[ScopeDefinition] = []
 
-const RollbackAction := preload("../editor/rollback_action.gd")
+const RollbackAction := preload("utility/rollback_action.gd")
 
 ## スコープ定義を追加[br]
 ## [param definition]: 追加するスコープ定義[br]
