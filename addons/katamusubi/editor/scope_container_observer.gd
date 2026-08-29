@@ -4,9 +4,7 @@ extends RefCounted
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const ScopeIndex := preload("scope_index.gd")
 const TscnScanner := preload("scanning/tscn_scanner.gd")
-const SceneSnapshotAnalyzer := preload("scanning/scene_snapshot_analyzer.gd")
 const IdGenerator := preload("utility/scope_id_generator.gd")
-const RollbackAction := preload("utility/rollback_action.gd")
 
 var _scope_index: ScopeIndex
 
@@ -123,14 +121,22 @@ func _clear_observed_nodes() -> void:
 
 
 func on_filesystem_changed() -> void:
-	for definition in _scope_index.scope_definitions:
+	var removed_scene_uids: Dictionary[StringName, bool] = {}
+	for definition in _scope_index.scope_snapshots:
 		var path := ResourceUID.uid_to_path(definition.scene_uid)
 
 		# 削除されていた場合
 		if not FileAccess.file_exists(path):
-			var rollback_action := _scope_index.remove_scope_definition(definition.scope_id)
-			if not _try_save_scope_index():
-				rollback_action.rollback()
+			removed_scene_uids[definition.scene_uid] = true
+
+	for scene_uid in removed_scene_uids:
+		var empty_snapshots: Array[ScopeDefinition] = []
+		var rollback_action := _scope_index.replace_scene_snapshots(
+				scene_uid,
+				empty_snapshots,
+		)
+		if rollback_action.operation_succeeded and not _try_save_scope_index():
+			rollback_action.rollback()
 
 
 func on_scene_saved(path: String) -> void:
@@ -144,31 +150,21 @@ func on_scene_saved(path: String) -> void:
 		push_error("シーン %s が読み込めませんでした。" % path)
 		return
 	
-	var analyzer := SceneSnapshotAnalyzer.new(snapshot, _scope_index.scope_definitions)
-	var diff := analyzer.get_diff()
-	var rollback_actions: Array[RollbackAction] = []
-	
-	for removed_id in diff.removed:
-		rollback_actions.append(_scope_index.remove_scope_definition(removed_id))
-	
-	for added_id in diff.added:
-		var scanned_entry := snapshot.get_entry(added_id)
-		var definition := ScopeDefinition.new(
+	var snapshots: Array[ScopeDefinition] = []
+	for scanned_entry in snapshot.entries:
+		snapshots.append(ScopeDefinition.new(
 				scanned_entry.scene_uid,
 				scanned_entry.scope_name,
 				scanned_entry.scope_id,
 				scanned_entry.parent_scope_id,
-		)
-		rollback_actions.append(_scope_index.add_scope_definition(definition))
+		))
 
-	if rollback_actions.size() == 0:
+	var rollback_action := _scope_index.replace_scene_snapshots(scene_uid, snapshots)
+	if not rollback_action.operation_succeeded:
 		return
-	
+
 	if not _try_save_scope_index():
-		for rollback_action in rollback_actions:
-			if not rollback_action.operation_succeeded:
-				continue
-			rollback_action.rollback()
+		rollback_action.rollback()
 
 
 ## 対象のノードが監視対象か確認[br]

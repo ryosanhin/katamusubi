@@ -1,118 +1,94 @@
 @tool
 extends Resource
 
+## 保存済みシーンに含まれるスコープを検索するためのインデックス。
+## 正本は保存済みシーン内の[ContainerScope]であり、このリソースは再生成可能。
+
 @export_file var save_path: String
-@export var scope_definitions: Array[ScopeDefinition] = []
+@export var scope_snapshots: Array[ScopeDefinition] = []
 
 const RollbackAction := preload("utility/rollback_action.gd")
 
-## スコープ定義を追加[br]
-## [param definition]: 追加するスコープ定義[br]
-## returns: ロールバック用クラス
-func add_scope_definition(
-	definition: ScopeDefinition
-) -> RollbackAction:
-	if definition.scope_id.is_empty():
-		push_error("空のスコープIDでは登録できません: %s" % definition)
-		return RollbackAction.new(false, Callable())
-	
-	# existing_scope_definition が null じゃなかったら既にスコープIDが使われているので無効
-	var existing_scope_definition := get_scope_definition(definition.scope_id)
-	if existing_scope_definition != null:
-		push_error("既にスコープIDが登録されています: %s" % definition)
-		return RollbackAction.new(false, Callable())
 
-	scope_definitions.append(definition)
+## 対象シーンの読み取り用スナップショットを一括で置き換える。[br]
+## IDの重複などがある場合は何も変更せず、失敗したロールバック操作を返す。[br]
+## 成功時に返す操作は、置換前の定義の複製を使って状態を完全に復元する。
+func replace_scene_snapshots(
+	scene_uid: StringName,
+	snapshots: Array[ScopeDefinition],
+) -> RollbackAction:
+	var replacements: Array[ScopeDefinition] = []
+
+	# HashSet<T> 的なものが無いので辞書型で代替
+	## 他のシーンで使われているスコープID
+	var used_ids_set: Dictionary[StringName, bool] = {}
 	
+	## 今検査しているシーン内で使われているスコープID
+	var new_ids_set: Dictionary[StringName, bool] = {}
+
+	for snapshot in scope_snapshots:
+		if snapshot.scene_uid == scene_uid:
+			continue
+		used_ids_set[snapshot.scope_id] = true
+
+	for snapshot in snapshots:
+		if snapshot.scene_uid != scene_uid:
+			push_error("異なるシーンのスコープ定義は登録できません: %s" % snapshot)
+			return RollbackAction.new(false, Callable())
+		if snapshot.scope_id.is_empty():
+			push_error("空のスコープIDでは登録できません: %s" % snapshot)
+			return RollbackAction.new(false, Callable())
+		if snapshot.scope_id in used_ids_set:
+			push_error("既にスコープIDが登録されています: %s" % snapshot)
+			return RollbackAction.new(false, Callable())
+		# 同一シーン内の重複は代表を1件残す。これによりビルド時に対象シーンが
+		# 再スキャンされ、SceneSnapshotAnalyzer が実ノードの重複を報告できる。
+		if snapshot.scope_id in new_ids_set:
+			continue
+		new_ids_set[snapshot.scope_id] = true
+		replacements.append(_duplicate_snapshot(snapshot))
+
+	var original_snapshots := _duplicate_snapshots(scope_snapshots)
+	var retained_snapshots: Array[ScopeDefinition] = []
+	
+	for snapshot in scope_snapshots:
+		# 変更を適用するシーン以外のデータはそのままコピー
+		if snapshot.scene_uid != scene_uid:
+			retained_snapshots.append(snapshot)
+	
+	## TODO: ここassginでディープコピーをする必要ある？
+	scope_snapshots.assign(retained_snapshots)
+	scope_snapshots.append_array(replacements)
+
 	return RollbackAction.new(
 			true,
-			Callable(
-		func() -> void:
-			scope_definitions.erase(definition)
-			),
+			func() -> void: scope_snapshots.assign(original_snapshots),
 	)
 
 
-## スコープ定義を更新[br]
-## [param scope_id]: 変更対象のスコープID[br]
-## [param new_scene_uid]: 新しいシーンUID[br]
-## [param new_scope_name]: 新しいスコープ名[br]
-## [param new_parent_scope_id]: 新しい親スコープID[br]
-## returns: ロールバック用クラス
-func update_scope_definition(
-	scope_id: StringName,
-	new_scene_uid: StringName,
-	new_scope_name: StringName,
-	new_parent_scope_id: StringName,
-) -> RollbackAction:
-	var definition := get_scope_definition(scope_id)
-	if definition == null:
-		push_error("対象のスコープ定義が登録されていません: %s" % scope_id)
-		return RollbackAction.new(false, Callable())
-	
-	# アップデート処理
-	var original_scene_uid := definition.scene_uid
-	var original_scope_name := definition.scope_name
-	var original_parent_scope_id := definition.parent_scope_id
-	# データを新しいものに置き換える
-	definition.scene_uid = new_scene_uid
-	definition.scope_name = new_scope_name
-	definition.parent_scope_id = new_parent_scope_id
-
-	return RollbackAction.new(
-			true,
-			Callable(
-		func() -> void:
-			definition.scene_uid = original_scene_uid
-			definition.scope_name = original_scope_name
-			definition.parent_scope_id = original_parent_scope_id
-			),
-	)
+func _duplicate_snapshots(
+	snapshots: Array[ScopeDefinition],
+) -> Array[ScopeDefinition]:
+	var duplicates: Array[ScopeDefinition] = []
+	for snapshot in snapshots:
+		duplicates.append(_duplicate_snapshot(snapshot))
+	return duplicates
 
 
-## 登録されているスコープ定義リストから削除する[br]
-## [param scope_id]: 削除対象のスコープID[br]
-## returns: ロールバック用クラス
-func remove_scope_definition(
-	scope_id: StringName
-) -> RollbackAction:
-	var definition := get_scope_definition(scope_id)
-
-	if definition == null:
-		push_error("対象のスコープ定義が登録されていません: %s" % scope_id)
-		return RollbackAction.new(false, Callable())
-
-	var original_index := scope_definitions.find(definition)
-	if original_index < 0:
-		push_error("対象のスコープ定義が一覧に存在しません: %s" % definition.scope_id)
-		return RollbackAction.new(false, Callable())
-	
-	scope_definitions.erase(definition)
-
-	# 削除されたスコープのIDを親スコープとして
-	# 参照しているスコープがあれば参照を解除
-	var modified_definitions: Array[ScopeDefinition] = []
-	for def in scope_definitions:
-		if def.parent_scope_id == scope_id:
-			def.parent_scope_id = &""
-			modified_definitions.append(def)
-	
-	return RollbackAction.new(
-			true,
-			Callable(
-		func() -> void:
-			scope_definitions.insert(original_index, definition)
-			for def in modified_definitions:
-				def.parent_scope_id = definition.scope_id
-			),
+func _duplicate_snapshot(snapshot: ScopeDefinition) -> ScopeDefinition:
+	return ScopeDefinition.new(
+		snapshot.scene_uid,
+		snapshot.scope_name,
+		snapshot.scope_id,
+		snapshot.parent_scope_id,
 	)
 
 
 ## スコープIDの一覧を生成
 func get_current_id_list() -> Array[StringName]:
 	var current_id_list: Array[StringName] = []
-	var tmp_list := scope_definitions.map(
-			func(definition: ScopeDefinition) -> StringName: return definition.scope_id
+	var tmp_list := scope_snapshots.map(
+			func(snapshot: ScopeDefinition) -> StringName: return snapshot.scope_id
 	)
 	current_id_list.assign(tmp_list)
 	return current_id_list
@@ -120,11 +96,12 @@ func get_current_id_list() -> Array[StringName]:
 
 ## スコープIDから該当するスコープ定義を取得[br]
 ## 存在しない場合は[code]null[/code]を返す
-func get_scope_definition(scope_id: StringName) -> ScopeDefinition:
-	for definition in scope_definitions:
-		if definition.scope_id == scope_id:
-			return definition
+func get_scope_snapshot(scope_id: StringName) -> ScopeDefinition:
+	for snapshot in scope_snapshots:
+		if snapshot.scope_id == scope_id:
+			return snapshot
 	return null
+
 
 func save() -> Error:
 	var path := ResourceUID.uid_to_path(save_path)

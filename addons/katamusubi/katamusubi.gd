@@ -16,20 +16,20 @@ func _build() -> bool:
 	var errors: PackedStringArray = []
 	# シーンUIDごとに所属スコープ定義をまとめる
 	# Array は Array[ScopeDefinition]
-	var definitions_by_scene: Dictionary[StringName, Array] = {}
-	for definition in SCOPE_INDEX.scope_definitions:
-		if not definitions_by_scene.has(definition.scene_uid):
-			definitions_by_scene[definition.scene_uid] = []
-		definitions_by_scene[definition.scene_uid].append(definition)
+	var snapshots_by_scene: Dictionary[StringName, Array] = {}
+	for snapshot in SCOPE_INDEX.scope_snapshots:
+		if not snapshots_by_scene.has(snapshot.scene_uid):
+			snapshots_by_scene[snapshot.scene_uid] = []
+		snapshots_by_scene[snapshot.scene_uid].append(snapshot)
 
-	for scene_uid in definitions_by_scene:
-		var definitions: Array[ScopeDefinition] = []
-		definitions.assign(definitions_by_scene[scene_uid])
-		var snapshot := TscnScanner.scan(scene_uid)
-		if snapshot == null:
+	for scene_uid in snapshots_by_scene:
+		var scope_snapshots: Array[ScopeDefinition] = []
+		scope_snapshots.assign(snapshots_by_scene[scene_uid])
+		var scene_snapshot := TscnScanner.scan(scene_uid)
+		if scene_snapshot == null:
 			errors.append("シーン %s を走査できませんでした。" % scene_uid)
 			continue
-		var analyzer := SceneSnapshotAnalyzer.new(snapshot, definitions)
+		var analyzer := SceneSnapshotAnalyzer.new(scene_snapshot, scope_snapshots)
 		errors.append_array(analyzer.validate())
 
 	print("エラー %d 件：\n%s" % [errors.size(), "\n".join(errors)])

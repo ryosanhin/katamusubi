@@ -93,7 +93,7 @@ func _select_parent_scope(
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 
-	var parent_scope := _editor_scope_workspace.get_scope_definition(parent_scope_id)
+	var parent_scope := _editor_scope_workspace.get_scope_snapshot(parent_scope_id)
 	if not parent_scope_id.is_empty() and parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
