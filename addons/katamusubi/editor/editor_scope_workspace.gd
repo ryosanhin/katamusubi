@@ -30,3 +30,11 @@ func _init(init_index: ScopeIndex) -> void:
 
 func get_scope_definitions() -> Array[ScopeDefinition]:
 	return stable_scope_definitions + active_scope_definitions
+
+
+## スコープIDから編集中のスコープ定義を取得
+func get_scope_definition(scope_id: StringName) -> ScopeDefinition:
+	for definition in get_scope_definitions():
+		if definition.scope_id == scope_id:
+			return definition
+	return null

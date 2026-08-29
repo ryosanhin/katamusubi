@@ -2,21 +2,21 @@
 extends RefCounted
 
 const Const := preload("../runtime/plugin_const.gd")
-const ScopeDefinitionList := preload("../runtime/scope_definition_list.gd")
+const ScopeIndex := preload("../runtime/scope_index.gd")
 const TscnScanner := preload("tscn_scanner.gd")
 const SceneSnapshotAnalyzer := preload("scene_snapshot_analyzer.gd")
 const IdGenerator := preload("scope_id_generator.gd")
 const RollbackAction := preload("rollback_action.gd")
 
-var _definition_list: ScopeDefinitionList
+var _scope_index: ScopeIndex
 
 ## スクリプトの差し替え監視中のノード群
 var _observed_nodes: Array[Node]
 
 func _init(
-	init_definition_list: ScopeDefinitionList
+	init_scope_index: ScopeIndex
 ) -> void:
-	_definition_list = init_definition_list
+	_scope_index = init_scope_index
 
 
 ## 編集中のシーンが変更になったときの処理
@@ -100,7 +100,7 @@ func _assign_scope_id(scope: ContainerScope) -> void:
 		is_modified = true
 	
 	if scope.scope_id.is_empty():
-		var new_id := IdGenerator.get_unique_id(_definition_list.get_current_id_list())
+		var new_id := IdGenerator.get_unique_id(_scope_index.get_current_id_list())
 		if new_id.is_empty():
 			push_error("新規IDが取得できませんでした。")
 		else:
@@ -123,13 +123,13 @@ func _clear_observed_nodes() -> void:
 
 
 func on_filesystem_changed() -> void:
-	for definition in _definition_list.scope_definitions:
+	for definition in _scope_index.scope_definitions:
 		var path := ResourceUID.uid_to_path(definition.scene_uid)
 
 		# 削除されていた場合
 		if not FileAccess.file_exists(path):
-			var rollback_action := _definition_list.remove_scope_definition(definition.scope_id)
-			if not _try_save_definition_list():
+			var rollback_action := _scope_index.remove_scope_definition(definition.scope_id)
+			if not _try_save_scope_index():
 				rollback_action.rollback()
 
 
@@ -144,12 +144,12 @@ func on_scene_saved(path: String) -> void:
 		push_error("シーン %s が読み込めませんでした。" % path)
 		return
 	
-	var analyzer := SceneSnapshotAnalyzer.new(snapshot, _definition_list.scope_definitions)
+	var analyzer := SceneSnapshotAnalyzer.new(snapshot, _scope_index.scope_definitions)
 	var diff := analyzer.get_diff()
 	var rollback_actions: Array[RollbackAction] = []
 	
 	for removed_id in diff.removed:
-		rollback_actions.append(_definition_list.remove_scope_definition(removed_id))
+		rollback_actions.append(_scope_index.remove_scope_definition(removed_id))
 	
 	for added_id in diff.added:
 		var scanned_entry := snapshot.get_entry(added_id)
@@ -159,12 +159,12 @@ func on_scene_saved(path: String) -> void:
 				scanned_entry.scope_id,
 				scanned_entry.parent_scope_id,
 		)
-		rollback_actions.append(_definition_list.add_scope_definition(definition))
+		rollback_actions.append(_scope_index.add_scope_definition(definition))
 
 	if rollback_actions.size() == 0:
 		return
 	
-	if not _try_save_definition_list():
+	if not _try_save_scope_index():
 		for rollback_action in rollback_actions:
 			if not rollback_action.operation_succeeded:
 				continue
@@ -179,8 +179,8 @@ func _is_owned_by_edited_scene(node: Node) -> bool:
 	return node == root or node.owner == root
 
 
-func _try_save_definition_list() -> bool:
-	var error := _save_definition_list()
+func _try_save_scope_index() -> bool:
+	var error := _save_scope_index()
 	if error != OK:
 		push_error("failed save list: %s" % error_string(error))
 		return false
@@ -191,5 +191,5 @@ func _try_save_definition_list() -> bool:
 	return true
 
 
-func _save_definition_list() -> Error:
-	return _definition_list.save()
+func _save_scope_index() -> Error:
+	return _scope_index.save()
