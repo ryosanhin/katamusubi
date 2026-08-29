@@ -3,7 +3,7 @@ extends Node
 class_name ContainerScope
 
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
-const InstanceInjector := preload("injection/instance_injector.gd")
+const InstanceInjector := preload("../injection/instance_injector.gd")
 
 ## コンテナ初期化の内部状態
 enum State {
