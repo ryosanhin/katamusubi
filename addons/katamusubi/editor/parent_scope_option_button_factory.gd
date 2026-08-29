@@ -3,46 +3,58 @@ extends RefCounted
 
 ## 親スコープ候補を表示する OptionButton の生成を担う。
 
-const ParentScopeCandidateProvider := preload(
-		"res://addons/katamusubi/editor/parent_scope_candidate_provider.gd"
-)
-
-var _candidate_provider: ParentScopeCandidateProvider
+var _scope_id: StringName
+var _initial_selected_parent_scope: StringName
 
 
-func _init(candidate_provider: ParentScopeCandidateProvider) -> void:
-	_candidate_provider = candidate_provider
+func _init(
+	init_scope_id: StringName,
+	init_initial_selected_parent_scope: StringName,
+) -> void:
+	_scope_id = init_scope_id
+	_initial_selected_parent_scope = init_initial_selected_parent_scope
 
 
-func create(target: ContainerScope, scene_root: Node) -> OptionButton:
+func create(
+	definitions: Array[ScopeDefinition],
+	scene_root: Node,
+) -> OptionButton:
 	var option_button := OptionButton.new()
-	_add_item(option_button, "None", &"")
 
-	for scope_definition in _candidate_provider.get_candidates(target, scene_root):
-		if scope_definition.scope_id == target.scope_id:
+	# 初期表示を追加
+	option_button.add_item("None")
+	option_button.set_item_metadata(0, &"")
+
+	for def in definitions:
+		if def.scope_id == _scope_id:
 			continue
 
-		var scene_path := _get_scene_path(scope_definition.scene_uid, scene_root)
-		_add_item(
-				option_button,
-				"%s::%s" % [scene_path.get_file(), scope_definition.scope_name],
-				scope_definition.scope_id,
+		var scene_path := _get_scene_path(def.scene_uid, scene_root)
+
+		# 表示を追加
+		option_button.add_item(
+				"%s::%s"
+				% [
+						scene_path.get_file(),
+						def.scope_name,
+				]
+		)
+		# 表示に対応する値を追加
+		# option_button.item_count - 1 は末尾 = 直前に追加した値に対応
+		option_button.set_item_metadata(
+				option_button.item_count - 1,
+				def.scope_id,
 		)
 
-	_select_parent_scope(option_button, target.parent_scope_id)
+	_select_initial_selected_parent_scope(
+			option_button,
+			_initial_selected_parent_scope,
+	)
+
 	return option_button
 
 
-func _add_item(
-	option_button: OptionButton,
-	label: String,
-	scope_id: StringName,
-) -> void:
-	option_button.add_item(label)
-	option_button.set_item_metadata(option_button.item_count - 1, scope_id)
-
-
-func _select_parent_scope(
+func _select_initial_selected_parent_scope(
 	option_button: OptionButton,
 	parent_scope_id: StringName,
 ) -> void:

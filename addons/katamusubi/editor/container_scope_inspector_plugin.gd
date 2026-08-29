@@ -10,9 +10,6 @@ const ParentScopeOptionButtonFactory := preload(
 )
 
 var _parent_scope_candidate_provider := ParentScopeCandidateProvider.new(SCOPE_INDEX)
-var _parent_scope_option_button_factory := ParentScopeOptionButtonFactory.new(
-		_parent_scope_candidate_provider
-)
 
 
 func _can_handle(object: Object) -> bool:
@@ -38,8 +35,15 @@ func _parse_begin(object: Object) -> void:
 	)
 	inspector_container.add_child(pulldown_description)
 
-	# 親スコープ選択プルダウンメニュー
-	var pulldown_menu := _parent_scope_option_button_factory.create(target, scene_root)
+	var pulldown_factory := ParentScopeOptionButtonFactory.new(
+			target.scope_id,
+			target.parent_scope_id,
+	)
+	# 親スコープ選択プルダウンメニューを作成
+	var pulldown_menu := pulldown_factory.create(
+			_parent_scope_candidate_provider.get_candidates(target, scene_root),
+			scene_root,
+	)
 	pulldown_menu.item_selected.connect(
 			_select_parent_scope.bind(pulldown_menu, target)
 	)

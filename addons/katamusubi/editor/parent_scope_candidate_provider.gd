@@ -33,7 +33,7 @@ func get_candidates(
 			continue
 		candidates.append(ScopeDefinition.new(
 			edited_scene_uid,
-			scope.scope_name,
+			scope.name,
 			scope.scope_id,
 			scope.parent_scope_id,
 		))
