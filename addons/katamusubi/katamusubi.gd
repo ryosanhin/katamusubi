@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
+const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
 
 const SceneSnapshotAnalyzer := preload("editor/scene_snapshot_analyzer.gd")
 
@@ -17,7 +17,7 @@ func _build() -> bool:
 	# シーンUIDごとに所属スコープ定義をまとめる
 	# Array は Array[ScopeDefinition]
 	var definitions_by_scene: Dictionary[StringName, Array] = {}
-	for definition in DEFINITION_LIST.scope_definitions:
+	for definition in SCOPE_INDEX.scope_definitions:
 		if not definitions_by_scene.has(definition.scene_uid):
 			definitions_by_scene[definition.scene_uid] = []
 		definitions_by_scene[definition.scene_uid].append(definition)
@@ -46,7 +46,7 @@ func _enter_tree() -> void:
 	).new()
 	add_inspector_plugin(_container_scope_inspector_plugin)
 
-	_scope_container_observer = ScopeContainerObserver.new(DEFINITION_LIST)
+	_scope_container_observer = ScopeContainerObserver.new(SCOPE_INDEX)
 
 	# 編集中のシーン切り替え時のシグナル接続
 	scene_changed.connect(_scope_container_observer.on_scene_changed)
