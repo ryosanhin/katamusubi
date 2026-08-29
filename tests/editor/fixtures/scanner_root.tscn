@@ -1,9 +1,0 @@
-[gd_scene format=3 uid="uid://doy8b5ln3v2kc"]
-
-[ext_resource type="Script" uid="uid://mollsa8g72mg" path="res://tests/editor/fixtures/scanner_scope.gd" id="1_scope"]
-
-[node name="ScannerRoot" type="Node"]
-
-[node name="RootScope" type="Node" parent="." groups=["test_group"]]
-script = ExtResource("1_scope")
-scope_id = &"scanner_root_scope"
