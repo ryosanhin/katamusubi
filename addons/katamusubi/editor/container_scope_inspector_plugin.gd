@@ -1,18 +1,15 @@
 @tool
 extends EditorInspectorPlugin
 
-const DEFINITION_LIST_PATH := "res://addons/katamusubi/scope_definition_list.tres"
-const DEFINITION_LIST := preload(DEFINITION_LIST_PATH)
+const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
 
-const ENUM_PROP_NAME := "_parent_scope_id"
+const EditorScopeWorkspace := preload("editor_scope_workspace.gd")
 
-const EditorScopeWorkSpace := preload("editor_scope_workspace.gd")
-
-var _editor_scope_workspace: EditorScopeWorkSpace
+var _editor_scope_workspace: EditorScopeWorkspace
 
 
 func _init() -> void:
-	_editor_scope_workspace = EditorScopeWorkSpace.new(DEFINITION_LIST)
+	_editor_scope_workspace = EditorScopeWorkspace.new(SCOPE_INDEX)
 
 
 func _can_handle(object: Object) -> bool:
@@ -72,13 +69,7 @@ func _parse_begin(object: Object) -> void:
 	add_custom_control(inspector_container)
 
 	# 初期値を確認
-	var target_scope_definition := DEFINITION_LIST.get_scope_definition(
-			target.scope_id
-	)
-	var parent_scope_id := (
-			target_scope_definition.parent_scope_id
-			if target_scope_definition != null else &""
-	)
+	var parent_scope_id := target.parent_scope_id
 
 	if parent_scope_id.is_empty():
 		pulldown_menu.select(0)
@@ -98,41 +89,17 @@ func _select_parent_scope(
 		target: ContainerScope,
 ) -> void:
 	var parent_scope_id: StringName = pulldown_menu.get_item_metadata(index)
-	if parent_scope_id.is_empty():
-		# 対象スコープに登録されている親スコープ情報を削除
-		var target_scope_definition := DEFINITION_LIST.get_scope_definition(
-				target.scope_id
-		)
-		if target_scope_definition == null:
-			push_error("対象のスコープ定義が登録されていません: %s" % target.scope_id)
-			return
-
-		target_scope_definition.parent_scope_id = &""
-		_try_save_container_list()
-		return
-
 	if parent_scope_id == target.scope_id:
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 
-	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
-
-	if parent_scope == null:
+	var parent_scope := _editor_scope_workspace.get_scope_definition(parent_scope_id)
+	if not parent_scope_id.is_empty() and parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
 
-	# スコープの登録情報にも参照先親スコープを登録
-	var target_scope_definition := DEFINITION_LIST.get_scope_definition(target.scope_id)
-	var former_parent_scope_id := target_scope_definition.parent_scope_id
-	target_scope_definition.parent_scope_id = parent_scope_id
-
-	# TODO: 今後更新を自動で受け付ける用にする
-	if not _try_save_container_list():
-		# ロールバック
-		target_scope_definition.parent_scope_id = former_parent_scope_id
-		return
-	
-	EditorInterface.mark_scene_as_unsaved()
+	target.parent_scope_id = parent_scope_id
+	_mark_scene_as_unsaved()
 
 
 func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> bool:
@@ -144,25 +111,6 @@ func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> boo
 		return false
 
 	return true
-
-
-func _try_save_container_list() -> bool:
-	var error := _save_container_list()
-	if error != OK:
-		push_error("failed save list: %s" % error_string(error))
-		return false
-	print("successfully saved list")
-	return true
-
-
-## テスト用サブクラスで保存結果を決定的に差し替えるための境界。
-func _save_container_list() -> Error:
-	return ResourceSaver.save(DEFINITION_LIST, DEFINITION_LIST_PATH)
-
-
-## テスト時に編集中のシーンを差し替えるための境界。
-func _get_edited_scene_root() -> Node:
-	return EditorInterface.get_edited_scene_root()
 
 
 ## テスト時に未保存化の呼び出し有無を記録するための境界。

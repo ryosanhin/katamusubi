@@ -17,7 +17,7 @@ func _run() -> void:
 	_test_root_scope_without_parent()
 	_test_child_scope_with_valid_parent()
 	await _test_child_scope_before_parent_is_added()
-	_test_scope_without_definition()
+	_test_scope_without_index_definition()
 	quit(_failures)
 
 
@@ -33,7 +33,7 @@ func _test_root_scope_without_parent() -> void:
 
 func _test_child_scope_with_valid_parent() -> void:
 	var parent_scope := _create_scope(ROOT_SCOPE_ID)
-	var child_scope := _create_scope(CHILD_SCOPE_ID)
+	var child_scope := _create_scope(CHILD_SCOPE_ID, ROOT_SCOPE_ID)
 	root.add_child(parent_scope)
 	root.add_child(child_scope)
 
@@ -45,12 +45,7 @@ func _test_child_scope_with_valid_parent() -> void:
 
 
 func _test_child_scope_before_parent_is_added() -> void:
-	var definition := ScopeDefinition.new(
-		"", &"DelayedChild", DELAYED_SCOPE_ID, ROOT_SCOPE_ID
-	)
-	ContainerScope.DEFINITION_LIST.add_scope_definition(definition)
-
-	var child_scope := _create_scope(DELAYED_SCOPE_ID)
+	var child_scope := _create_scope(DELAYED_SCOPE_ID, ROOT_SCOPE_ID)
 	root.add_child(child_scope)
 	_check(
 		child_scope.state == ContainerScope.State.NOT_INITIALIZED,
@@ -66,21 +61,21 @@ func _test_child_scope_before_parent_is_added() -> void:
 
 	child_scope.free()
 	parent_scope.free()
-	ContainerScope.DEFINITION_LIST.remove_scope_definition(DELAYED_SCOPE_ID)
 
 
-func _test_scope_without_definition() -> void:
+func _test_scope_without_index_definition() -> void:
 	var scope := _create_scope(UNKNOWN_SCOPE_ID)
 	root.add_child(scope)
 
-	_check(scope.state == ContainerScope.State.NOT_INITIALIZED, "定義がないスコープは初期化されない")
-	_check(scope._container == null, "定義がないスコープのコンテナは生成されない")
+	_check(scope.state == ContainerScope.State.INITIALIZED, "インデックス定義がなくても初期化される")
+	_check(scope._container != null, "スコープ自身の情報からコンテナが生成される")
 	scope.free()
 
 
-func _create_scope(id: StringName) -> ContainerScope:
+func _create_scope(id: StringName, parent_id: StringName = &"") -> ContainerScope:
 	var scope := TestScope.new() as ContainerScope
 	scope.scope_id = id
+	scope.parent_scope_id = parent_id
 	return scope
 
 
