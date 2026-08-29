@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3 uid="uid://yw1m03cfmwg6"]
 
 [ext_resource type="Script" uid="uid://cydi7jyr1tte6" path="res://addons/katamusubi/runtime/scope_definition.gd" id="1_6c5k7"]
-[ext_resource type="Script" uid="uid://duarhscov4x6r" path="res://addons/katamusubi/runtime/scope_index.gd" id="2_v8fuv"]
+[ext_resource type="Script" uid="uid://duarhscov4x6r" path="res://addons/katamusubi/editor/scope_index.gd" id="2_xutwp"]
 
 [sub_resource type="Resource" id="Resource_v8fuv"]
 script = ExtResource("1_6c5k7")
@@ -17,6 +17,6 @@ scope_id = &"UOt8McFn"
 parent_scope_id = &"0DQt1Eua"
 
 [resource]
-script = ExtResource("2_v8fuv")
+script = ExtResource("2_xutwp")
 save_path = "uid://yw1m03cfmwg6"
 scope_definitions = Array[ExtResource("1_6c5k7")]([SubResource("Resource_v8fuv"), SubResource("Resource_b6pmp")])

@@ -1,12 +1,12 @@
 @tool
 extends RefCounted
 
-const Const := preload("../runtime/plugin_const.gd")
-const ScopeIndex := preload("../runtime/scope_index.gd")
-const TscnScanner := preload("tscn_scanner.gd")
-const SceneSnapshotAnalyzer := preload("scene_snapshot_analyzer.gd")
-const IdGenerator := preload("scope_id_generator.gd")
-const RollbackAction := preload("rollback_action.gd")
+const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
+const ScopeIndex := preload("scope_index.gd")
+const TscnScanner := preload("scanning/tscn_scanner.gd")
+const SceneSnapshotAnalyzer := preload("scanning/scene_snapshot_analyzer.gd")
+const IdGenerator := preload("utility/scope_id_generator.gd")
+const RollbackAction := preload("utility/rollback_action.gd")
 
 var _scope_index: ScopeIndex
 

@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-const Const := preload("../runtime/plugin_const.gd")
+const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const SceneSnapshot := preload("scene_snapshot.gd")
 const ScannedEntry := preload("scanned_entry.gd")
 

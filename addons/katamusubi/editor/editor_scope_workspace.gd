@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-const ScopeIndex := preload("../runtime/scope_index.gd")
+const ScopeIndex := preload("scope_index.gd")
 
 ## インデックス読み込み時から変更がないスコープ定義
 var stable_scope_definitions: Array[ScopeDefinition] = []

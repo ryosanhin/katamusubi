@@ -3,14 +3,14 @@ extends EditorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
 
-const SceneSnapshotAnalyzer := preload("editor/scene_snapshot_analyzer.gd")
+const SceneSnapshotAnalyzer := preload("editor/scanning/scene_snapshot_analyzer.gd")
 
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 
 const ScopeContainerObserver := preload("editor/scope_container_observer.gd")
 var _scope_container_observer: ScopeContainerObserver
 
-const TscnScanner := preload("editor/tscn_scanner.gd")
+const TscnScanner := preload("editor/scanning/tscn_scanner.gd")
 
 func _build() -> bool:
 	var errors: PackedStringArray = []
