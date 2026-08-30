@@ -3,6 +3,7 @@ extends SceneTree
 
 const MethodReader := preload("res://addons/katamusubi/runtime/injection/method_reader.gd")
 const ArgumentData := preload("res://addons/katamusubi/runtime/injection/argument_data.gd")
+const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const NoInjectionMethod := preload(
 	"res://tests/fixtures/injection_targets/no_injection_method.gd"
 )
@@ -50,7 +51,7 @@ func _test_no_arguments() -> void:
 func _test_class_arguments_and_defaults() -> void:
 	_runner.change_test_name("class_arguments_and_defaults")
 	var arguments := _read(ClassArgumentsMethod)
-	var reflected_arguments := _get_reflected_arguments(ClassArgumentsMethod, &"inject_dependency")
+	var reflected_arguments := _get_reflected_arguments(ClassArgumentsMethod, Const.METHOD_NAME)
 
 	_runner.assert_equal(arguments.size(), 2, "デフォルト引数を含むすべての引数を返す")
 	_runner.assert_array(
@@ -66,7 +67,7 @@ func _test_class_arguments_and_defaults() -> void:
 func _test_builtin_arguments() -> void:
 	_runner.change_test_name("builtin_arguments")
 	var arguments := _read(BuiltinArgumentsMethod)
-	var reflected_arguments := _get_reflected_arguments(BuiltinArgumentsMethod, &"inject_dependency")
+	var reflected_arguments := _get_reflected_arguments(BuiltinArgumentsMethod, Const.METHOD_NAME)
 
 	_assert_matches_reflection(arguments, reflected_arguments)
 	for index in arguments.size():
@@ -101,10 +102,12 @@ func _test_argument_data_string() -> void:
 	_runner.assert_true(type_string(TYPE_OBJECT) in description, "文字列表現に型名を含む")
 
 
+## MethodReaderを使って引数を取得
 func _read(script: Script) -> Array[ArgumentData]:
-	return MethodReader.new(&"inject_dependency").get_injection_arguments(script)
+	return MethodReader.new(Const.METHOD_NAME).get_injection_arguments(script)
 
 
+## MethodReaderを使わないで引数を取得
 func _get_reflected_arguments(script: Script, method_name: StringName) -> Array:
 	for method: Dictionary in script.get_script_method_list():
 		if StringName(method.get("name", "")) == method_name:
@@ -112,8 +115,10 @@ func _get_reflected_arguments(script: Script, method_name: StringName) -> Array:
 	return []
 
 
+## 2パターンで取得した引数情報を比較
 func _assert_matches_reflection(arguments: Array[ArgumentData], reflected_arguments: Array) -> void:
 	_runner.assert_equal(arguments.size(), reflected_arguments.size(), "リフレクションと同じ引数数を返す")
+	
 	for index in mini(arguments.size(), reflected_arguments.size()):
 		var reflected: Dictionary = reflected_arguments[index]
 		var reflected_class := StringName(reflected.get("class_name", ""))
