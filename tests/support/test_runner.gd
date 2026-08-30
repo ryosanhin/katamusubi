@@ -20,20 +20,20 @@ func change_test_name(test_name: String) -> void:
 ## [param boolean]: 実際の値[br]
 ## [param message]: 成功時に表示するメッセージ
 func assert_true(
-	boolean: bool,
+	condition: bool,
 	message: String,
 ) -> void:
-	_record(boolean, message, true, boolean)
+	_record(condition, message, true, condition)
 
 
 ## 偽であるか。[br]
 ## [param boolean]: 実際の値[br]
 ## [param message]: 成功時に表示するメッセージ
 func assert_false(
-	boolean: bool,
+	condition: bool,
 	message: String,
 ) -> void:
-	_record(not boolean, message, false, boolean)
+	_record(not condition, message, false, condition)
 
 
 ## 等値であるか。[br]
