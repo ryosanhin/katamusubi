@@ -5,11 +5,9 @@ const BaseService := preload("res://tests/fixtures/services/base_service.gd")
 const DerivedService := preload("res://tests/fixtures/services/derived_service.gd")
 const UnrelatedService := preload("res://tests/fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("res://tests/fixtures/services/unnamed_service.gd")
+const TestRunnerScript := preload("res://tests/support/test_runner.gd")
 
-## falseにすると各成功項目を省略し、最終結果とエラーだけを表示します。
-const SHOW_PASSED_EXPECTATIONS := true
-
-var _failures: PackedStringArray = []
+var _runner := TestRunnerScript.new()
 
 
 func _init() -> void:
@@ -25,17 +23,11 @@ func _init() -> void:
 	_test_valid_registration()
 	_test_lifecycle_helpers()
 
-	if _failures.is_empty():
-		print("ServiceRegistration tests passed")
-		quit()
-		return
-
-	for failure in _failures:
-		push_error(failure)
-	quit(1)
+	await _runner.finish(self, "ServiceRegistration")
 
 
 func _test_create_class_registration() -> void:
+	_runner.begin_test("create_class_registration")
 	# クラス登録の生成時に実装型と公開型が一致し、指定した生成規則が保存されます。
 	var registration := ServiceRegistration.create_class_registration(
 		DerivedService,
@@ -48,6 +40,7 @@ func _test_create_class_registration() -> void:
 
 
 func _test_create_instance_registration() -> void:
+	_runner.begin_test("create_instance_registration")
 	# 外部生成した同じインスタンスを保持し、指定にかかわらずSingletonとして登録します。
 	var provided_instance := DerivedService.new()
 	var registration := ServiceRegistration.create_instance_registration(
@@ -55,13 +48,14 @@ func _test_create_instance_registration() -> void:
 		DerivedService,
 	)
 
-	_expect(registration.instance == provided_instance, "渡されたインスタンスそのものを保持する")
+	_runner.assert_same(registration.instance, provided_instance, "渡されたインスタンスそのものを保持する")
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
 	_expect(registration.lifecycle == Lifecycle.Type.SINGLETON, "インスタンスをSingleton登録する")
 
 
 func _test_fluent_updates() -> void:
+	_runner.begin_test("fluent_updates")
 	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
 	var registration := ServiceRegistration.create_class_registration(
 		DerivedService,
@@ -70,13 +64,14 @@ func _test_fluent_updates() -> void:
 	var as_type_result = registration.as_type(BaseService)
 	var with_key_result = registration.with_key(&"primary")
 
-	_expect(as_type_result == registration, "as_typeは同一登録オブジェクトを返す")
+	_runner.assert_same(as_type_result, registration, "as_typeは同一登録オブジェクトを返す")
 	_expect(registration.service_type == BaseService, "as_typeは公開型を更新する")
 	_expect(with_key_result == registration, "with_keyは同一登録オブジェクトを返す")
 	_expect(registration.key == &"primary", "with_keyは登録キーを更新する")
 
 
 func _test_valid_inheritance() -> void:
+	_runner.begin_test("valid_inheritance")
 	# 同じ型は自分自身を満たし、派生実装は基底の公開契約を満たします。
 	_expect(
 		ServiceRegistration.check_inheritance(BaseService, BaseService),
@@ -89,6 +84,7 @@ func _test_valid_inheritance() -> void:
 
 
 func _test_invalid_inheritance() -> void:
+	_runner.begin_test("invalid_inheritance")
 	# 無関係な型と、基底から派生という逆向きの判定はいずれも拒否されます。
 	_expect(
 		not ServiceRegistration.check_inheritance(UnrelatedService, BaseService),
@@ -101,6 +97,7 @@ func _test_invalid_inheritance() -> void:
 
 
 func _test_missing_types_and_invalid_lifecycle() -> void:
+	_runner.begin_test("missing_types_and_invalid_lifecycle")
 	# 必須型の欠落と未知のライフサイクルを拒否し、検証前の登録内容を維持します。
 	var missing_implementation := _valid_registration()
 	missing_implementation.implementation_type = null
@@ -117,6 +114,7 @@ func _test_missing_types_and_invalid_lifecycle() -> void:
 
 
 func _test_unnamed_types() -> void:
+	_runner.begin_test("unnamed_types")
 	# Godotのグローバルクラス名を持たないスクリプトは、実装型でも公開型でも拒否されます。
 	var unnamed_implementation := _valid_registration()
 	unnamed_implementation.implementation_type = UnnamedService
@@ -128,6 +126,7 @@ func _test_unnamed_types() -> void:
 
 
 func _test_unrelated_registration() -> void:
+	_runner.begin_test("unrelated_registration")
 	# 実装型が公開型を継承していない組み合わせをエラーとして返し、登録自体は書き換えません。
 	var registration := ServiceRegistration.create_class_registration(
 		UnrelatedService,
@@ -138,6 +137,7 @@ func _test_unrelated_registration() -> void:
 
 
 func _test_valid_registration() -> void:
+	_runner.begin_test("valid_registration")
 	# class_name、継承関係、ライフサイクルが正しい登録には検証エラーがありません。
 	var registration := _valid_registration()
 	var errors: PackedStringArray = registration.validate()
@@ -146,6 +146,7 @@ func _test_valid_registration() -> void:
 
 
 func _test_lifecycle_helpers() -> void:
+	_runner.begin_test("lifecycle_helpers")
 	# 全列挙値を有効と判定して名前へ変換し、列挙外の値はUNKNOWNとして扱います。
 	_expect(Lifecycle.is_valid(Lifecycle.Type.SINGLETON), "SINGLETONを有効と判定する")
 	_expect(Lifecycle.to_display_name(Lifecycle.Type.SINGLETON) == "SINGLETON", "SINGLETON名を返す")
@@ -163,7 +164,10 @@ func _valid_registration() -> ServiceRegistration:
 	).as_type(BaseService).with_key(&"fixture")
 
 
-func _expect_validation_rejected_without_mutation(registration: ServiceRegistration, expected_error: String) -> void:
+func _expect_validation_rejected_without_mutation(
+	registration: ServiceRegistration,
+	expected_error: String,
+) -> void:
 	# validate()の戻り値だけでなく、失敗しても入力した登録状態が変化しないことを比較します。
 	var implementation_before = registration.implementation_type
 	var service_before = registration.service_type
@@ -172,28 +176,21 @@ func _expect_validation_rejected_without_mutation(registration: ServiceRegistrat
 	var key_before = registration.key
 	var errors: PackedStringArray = registration.validate()
 
-	_expect(not errors.is_empty(), "%s: 検証エラーを返す" % expected_error)
-	_expect(_contains_error(errors, expected_error), "%s: 想定した検証エラーを返す" % expected_error)
-	_expect(registration.implementation_type == implementation_before, "%s: 実装型を変更しない" % expected_error)
+	_runner.assert_false(errors.is_empty(), "%s: 検証エラーを返す" % expected_error)
+	_runner.assert_expected_error(
+		errors,
+		expected_error,
+		"%s: 想定した検証エラーを返す" % expected_error,
+	)
+	_expect(
+		registration.implementation_type == implementation_before,
+		"%s: 実装型を変更しない" % expected_error,
+	)
 	_expect(registration.service_type == service_before, "%s: 公開型を変更しない" % expected_error)
 	_expect(registration.lifecycle == lifecycle_before, "%s: ライフサイクルを変更しない" % expected_error)
 	_expect(registration.instance == instance_before, "%s: インスタンスを変更しない" % expected_error)
 	_expect(registration.key == key_before, "%s: キーを変更しない" % expected_error)
 
 
-func _contains_error(errors: PackedStringArray, expected_error: String) -> bool:
-	# パスなどの可変部分を許容するため、期待する説明がいずれかのエラーに含まれるかを調べます。
-	for error in errors:
-		if expected_error in error:
-			return true
-	return false
-
-
 func _expect(condition: bool, message: String) -> void:
-	# 成功は設定に応じて都度表示し、失敗は最後にまとめて報告します。
-	if condition:
-		if SHOW_PASSED_EXPECTATIONS:
-			print("[PASS] %s" % message)
-		return
-
-	_failures.append(message)
+	_runner.assert_true(condition, message)

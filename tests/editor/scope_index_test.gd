@@ -2,11 +2,9 @@ extends SceneTree
 
 
 const ScopeIndex := preload("res://addons/katamusubi/editor/scope_index.gd")
+const TestRunnerScript := preload("res://tests/support/test_runner.gd")
 
-## falseにすると各成功項目を省略し、最終結果とエラーだけを表示します。
-const SHOW_PASSED_EXPECTATIONS := true
-
-var _failures: PackedStringArray = []
+var _runner := TestRunnerScript.new()
 
 
 func _init() -> void:
@@ -15,17 +13,11 @@ func _init() -> void:
 	_test_same_scene_duplicate_remains_build_visible()
 	_test_rollback_restores_copies()
 
-	if _failures.is_empty():
-		print("ScopeIndex tests passed")
-		quit()
-		return
-
-	for failure in _failures:
-		push_error(failure)
-	quit(1)
+	await _runner.finish(self, "ScopeIndex")
 
 
 func _test_replace_scene_snapshots() -> void:
+	_runner.begin_test("replace_scene_snapshots")
 	var index := ScopeIndex.new()
 	index.scope_snapshots = [
 		_definition(&"scene_a", &"old"),
@@ -35,13 +27,14 @@ func _test_replace_scene_snapshots() -> void:
 
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
 
-	_expect(action.operation_succeeded, "シーン単位の置換が成功する")
-	_expect(index.get_scope_snapshot(&"old") == null, "置換前の定義が除去される")
+	_runner.assert_true(action.operation_succeeded, "シーン単位の置換が成功する")
+	_runner.assert_null(index.get_scope_snapshot(&"old"), "置換前の定義が除去される")
 	_expect(index.get_scope_snapshot(&"new") != null, "置換後の定義が追加される")
 	_expect(index.get_scope_snapshot(&"other") != null, "他シーンの定義が維持される")
 
 
 func _test_duplicate_is_atomic() -> void:
+	_runner.begin_test("duplicate_is_atomic")
 	var index := ScopeIndex.new()
 	var original := _definition(&"scene_a", &"original")
 	index.scope_snapshots = [original, _definition(&"scene_b", &"duplicate")]
@@ -50,11 +43,12 @@ func _test_duplicate_is_atomic() -> void:
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
 
 	_expect(not action.operation_succeeded, "他シーンとのID重複を拒否する")
-	_expect(index.scope_snapshots.size() == 2, "重複時に一覧を変更しない")
-	_expect(index.scope_snapshots[0] == original, "重複時に元の定義を維持する")
+	_runner.assert_equal(index.scope_snapshots.size(), 2, "重複時に一覧を変更しない")
+	_runner.assert_same(index.scope_snapshots[0], original, "重複時に元の定義を維持する")
 
 
 func _test_same_scene_duplicate_remains_build_visible() -> void:
+	_runner.begin_test("same_scene_duplicate_remains_build_visible")
 	var index := ScopeIndex.new()
 	var replacements: Array[ScopeDefinition] = [
 		_definition(&"scene_a", &"duplicate"),
@@ -69,6 +63,7 @@ func _test_same_scene_duplicate_remains_build_visible() -> void:
 
 
 func _test_rollback_restores_copies() -> void:
+	_runner.begin_test("rollback_restores_copies")
 	var index := ScopeIndex.new()
 	var original := _definition(&"scene_a", &"original", &"parent")
 	index.scope_snapshots = [original]
@@ -80,8 +75,8 @@ func _test_rollback_restores_copies() -> void:
 
 	var restored := index.get_scope_snapshot(&"original")
 	_expect(restored != null, "ロールバックで置換前の定義を復元する")
-	_expect(restored != original, "ロールバックでは定義の複製を復元する")
-	_expect(restored.parent_scope_id == &"parent", "複製した全フィールドを復元する")
+	_runner.assert_not_equal(restored, original, "ロールバックでは定義の複製を復元する")
+	_runner.assert_equal(restored.parent_scope_id, &"parent", "複製した全フィールドを復元する")
 
 
 func _definition(
@@ -93,10 +88,4 @@ func _definition(
 
 
 func _expect(condition: bool, message: String) -> void:
-	# 成功は設定に応じて都度表示し、失敗は最後にまとめて報告します。
-	if condition:
-		if SHOW_PASSED_EXPECTATIONS:
-			print("[PASS] %s" % message)
-		return
-
-	_failures.append(message)
+	_runner.assert_true(condition, message)
