@@ -1,6 +1,10 @@
 extends SceneTree
 
+
 const ScopeIndex := preload("res://addons/katamusubi/editor/scope_index.gd")
+
+## falseにすると各成功項目を省略し、最終結果とエラーだけを表示します。
+const SHOW_PASSED_EXPECTATIONS := true
 
 var _failures: PackedStringArray = []
 
@@ -89,5 +93,10 @@ func _definition(
 
 
 func _expect(condition: bool, message: String) -> void:
-	if not condition:
-		_failures.append(message)
+	# 成功は設定に応じて都度表示し、失敗は最後にまとめて報告します。
+	if condition:
+		if SHOW_PASSED_EXPECTATIONS:
+			print("[PASS] %s" % message)
+		return
+
+	_failures.append(message)
