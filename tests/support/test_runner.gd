@@ -15,6 +15,11 @@ func _init(init_is_verbose: bool) -> void:
 
 func change_test_name(test_name: String) -> void:
 	_current_test_name = test_name
+	if _is_verbose:
+		print(
+				"---------------\nStart Test [%s]\n"
+				% _current_test_name
+		)
 
 ## 真であるか。[br]
 ## [param boolean]: 実際の値[br]
