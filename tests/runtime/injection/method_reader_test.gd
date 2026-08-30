@@ -51,7 +51,6 @@ func _test_no_arguments() -> void:
 func _test_class_arguments_and_defaults() -> void:
 	_runner.change_test_name("class_arguments_and_defaults")
 	var arguments := _read(ClassArgumentsMethod)
-	var reflected_arguments := _get_reflected_arguments(ClassArgumentsMethod, Const.METHOD_NAME)
 
 	_runner.assert_equal(arguments.size(), 2, "デフォルト引数を含むすべての引数を返す")
 	_runner.assert_array(
@@ -59,36 +58,51 @@ func _test_class_arguments_and_defaults() -> void:
 		[&"base_service", &"derived_service"],
 		"複数のクラス型引数を宣言順に返す",
 	)
-	_assert_matches_reflection(arguments, reflected_arguments)
+	_runner.assert_equal(arguments[0].arg_name, &"base_service", "第1引数の名前を保持する")
 	_runner.assert_equal(arguments[0].arg_class, &"TestBaseService", "グローバルクラス名を解決条件にする")
+	_runner.assert_equal(arguments[0].arg_type, TYPE_OBJECT, "第1引数の型を保持する")
+	_runner.assert_equal(arguments[1].arg_name, &"derived_service", "第2引数の名前を保持する")
 	_runner.assert_equal(arguments[1].arg_class, &"TestDerivedService", "各クラス型のグローバル名を保持する")
+	_runner.assert_equal(arguments[1].arg_type, TYPE_OBJECT, "第2引数の型を保持する")
 
 
 func _test_builtin_arguments() -> void:
 	_runner.change_test_name("builtin_arguments")
 	var arguments := _read(BuiltinArgumentsMethod)
-	var reflected_arguments := _get_reflected_arguments(BuiltinArgumentsMethod, Const.METHOD_NAME)
 
-	_assert_matches_reflection(arguments, reflected_arguments)
-	for index in arguments.size():
-		_runner.assert_equal(
-			arguments[index].arg_class,
-			StringName(type_string(arguments[index].arg_type)),
-			"class_nameが空の組み込み型はtype_string()を解決条件にする: %s" % index,
-		)
+	_runner.assert_equal(arguments.size(), 3, "すべての組み込み型引数を返す")
+	_runner.assert_array(
+		arguments.map(func(argument: ArgumentData) -> StringName: return argument.arg_name),
+		[&"count", &"display_name", &"position"],
+		"組み込み型引数を宣言順に返す",
+	)
+	_runner.assert_equal(arguments[0].arg_name, &"count", "第1引数の名前を保持する")
+	_runner.assert_equal(arguments[0].arg_class, &"int", "intを解決条件にする")
+	_runner.assert_equal(arguments[0].arg_type, TYPE_INT, "第1引数の型を保持する")
+	_runner.assert_equal(arguments[1].arg_name, &"display_name", "第2引数の名前を保持する")
+	_runner.assert_equal(arguments[1].arg_class, &"String", "Stringを解決条件にする")
+	_runner.assert_equal(arguments[1].arg_type, TYPE_STRING, "第2引数の型を保持する")
+	_runner.assert_equal(arguments[2].arg_name, &"position", "第3引数の名前を保持する")
+	_runner.assert_equal(arguments[2].arg_class, &"Vector2", "Vector2を解決条件にする")
+	_runner.assert_equal(arguments[2].arg_type, TYPE_VECTOR2, "第3引数の型を保持する")
 
 
 func _test_aliased_method() -> void:
 	_runner.change_test_name("aliased_method")
 	var arguments := MethodReader.new(&"provide_dependencies").get_injection_arguments(AliasedMethod)
-	var reflected_arguments := _get_reflected_arguments(AliasedMethod, &"provide_dependencies")
 
+	_runner.assert_equal(arguments.size(), 2, "指定したメソッドの引数だけを返す")
 	_runner.assert_array(
 		arguments.map(func(argument: ArgumentData) -> StringName: return argument.arg_name),
 		[&"service", &"enabled"],
 		"コンストラクタで指定したメソッドだけを解析する",
 	)
-	_assert_matches_reflection(arguments, reflected_arguments)
+	_runner.assert_equal(arguments[0].arg_name, &"service", "第1引数の名前を保持する")
+	_runner.assert_equal(arguments[0].arg_class, &"TestBaseService", "第1引数のクラス名を保持する")
+	_runner.assert_equal(arguments[0].arg_type, TYPE_OBJECT, "第1引数の型を保持する")
+	_runner.assert_equal(arguments[1].arg_name, &"enabled", "第2引数の名前を保持する")
+	_runner.assert_equal(arguments[1].arg_class, &"bool", "第2引数のクラス名を保持する")
+	_runner.assert_equal(arguments[1].arg_type, TYPE_BOOL, "第2引数の型を保持する")
 
 
 func _test_argument_data_string() -> void:
@@ -105,39 +119,3 @@ func _test_argument_data_string() -> void:
 ## MethodReaderを使って引数を取得
 func _read(script: Script) -> Array[ArgumentData]:
 	return MethodReader.new(Const.METHOD_NAME).get_injection_arguments(script)
-
-
-## MethodReaderを使わないで引数を取得
-func _get_reflected_arguments(script: Script, method_name: StringName) -> Array:
-	for method: Dictionary in script.get_script_method_list():
-		if StringName(method.get("name", "")) == method_name:
-			return method.get("args", [])
-	return []
-
-
-## 2パターンで取得した引数情報を比較
-func _assert_matches_reflection(arguments: Array[ArgumentData], reflected_arguments: Array) -> void:
-	_runner.assert_equal(arguments.size(), reflected_arguments.size(), "リフレクションと同じ引数数を返す")
-	
-	for index in mini(arguments.size(), reflected_arguments.size()):
-		var reflected: Dictionary = reflected_arguments[index]
-		var reflected_class := StringName(reflected.get("class_name", ""))
-		var reflected_type := int(reflected.get("type", TYPE_NIL))
-		if reflected_class == &"":
-			reflected_class = StringName(type_string(reflected_type))
-
-		_runner.assert_equal(
-			arguments[index].arg_name,
-			StringName(reflected.get("name", "")),
-			"arg_nameがGodotのメソッド情報と一致する: %s" % index,
-		)
-		_runner.assert_equal(
-			arguments[index].arg_class,
-			reflected_class,
-			"arg_classがGodotのメソッド情報と一致する: %s" % index,
-		)
-		_runner.assert_equal(
-			arguments[index].arg_type,
-			reflected_type,
-			"arg_typeがGodotのメソッド情報と一致する: %s" % index,
-		)
