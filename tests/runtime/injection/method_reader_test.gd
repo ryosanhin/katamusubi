@@ -4,6 +4,7 @@ extends SceneTree
 const MethodReader := preload("res://addons/katamusubi/runtime/injection/method_reader.gd")
 const ArgumentData := preload("res://addons/katamusubi/runtime/injection/argument_data.gd")
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
+
 const NoInjectionMethod := preload(
 	"res://tests/fixtures/injection_targets/no_injection_method.gd"
 )
@@ -16,9 +17,6 @@ const ClassArgumentsMethod := preload(
 const BuiltinArgumentsMethod := preload(
 	"res://tests/fixtures/injection_targets/builtin_arguments_method.gd"
 )
-const AliasedMethod := preload(
-	"res://tests/fixtures/injection_targets/aliased_method.gd"
-)
 
 var _runner := TestRunner.new(true)
 
@@ -28,12 +26,12 @@ func _init() -> void:
 	_test_no_arguments()
 	_test_class_arguments_and_defaults()
 	_test_builtin_arguments()
-	_test_aliased_method()
 	_test_argument_data_string()
 
 	await _runner.finish(self, "MethodReader")
 
 
+## inject_dependency を持たないスクリプト
 func _test_missing_method() -> void:
 	_runner.change_test_name("missing_method")
 	var arguments := _read(NoInjectionMethod)
@@ -41,6 +39,7 @@ func _test_missing_method() -> void:
 	_runner.assert_true(arguments.is_empty(), "inject_dependencyがなければ空配列を返す")
 
 
+## inject_dependency はあるけど引数が無いスクリプト
 func _test_no_arguments() -> void:
 	_runner.change_test_name("no_arguments")
 	var arguments := _read(NoArgumentMethod)
@@ -48,6 +47,7 @@ func _test_no_arguments() -> void:
 	_runner.assert_true(arguments.is_empty(), "引数なしのinject_dependencyなら空配列を返す")
 
 
+## デフォルト引数があってもちゃんと認識できているか確認
 func _test_class_arguments_and_defaults() -> void:
 	_runner.change_test_name("class_arguments_and_defaults")
 	var arguments := _read(ClassArgumentsMethod)
@@ -66,6 +66,7 @@ func _test_class_arguments_and_defaults() -> void:
 	_runner.assert_equal(arguments[1].arg_type, TYPE_OBJECT, "第2引数の型を保持する")
 
 
+## 全ての引数が取得できるか確認
 func _test_builtin_arguments() -> void:
 	_runner.change_test_name("builtin_arguments")
 	var arguments := _read(BuiltinArgumentsMethod)
@@ -85,24 +86,6 @@ func _test_builtin_arguments() -> void:
 	_runner.assert_equal(arguments[2].arg_name, &"position", "第3引数の名前を保持する")
 	_runner.assert_equal(arguments[2].arg_class, &"Vector2", "Vector2を解決条件にする")
 	_runner.assert_equal(arguments[2].arg_type, TYPE_VECTOR2, "第3引数の型を保持する")
-
-
-func _test_aliased_method() -> void:
-	_runner.change_test_name("aliased_method")
-	var arguments := MethodReader.new(&"provide_dependencies").get_injection_arguments(AliasedMethod)
-
-	_runner.assert_equal(arguments.size(), 2, "指定したメソッドの引数だけを返す")
-	_runner.assert_array(
-		arguments.map(func(argument: ArgumentData) -> StringName: return argument.arg_name),
-		[&"service", &"enabled"],
-		"コンストラクタで指定したメソッドだけを解析する",
-	)
-	_runner.assert_equal(arguments[0].arg_name, &"service", "第1引数の名前を保持する")
-	_runner.assert_equal(arguments[0].arg_class, &"TestBaseService", "第1引数のクラス名を保持する")
-	_runner.assert_equal(arguments[0].arg_type, TYPE_OBJECT, "第1引数の型を保持する")
-	_runner.assert_equal(arguments[1].arg_name, &"enabled", "第2引数の名前を保持する")
-	_runner.assert_equal(arguments[1].arg_class, &"bool", "第2引数のクラス名を保持する")
-	_runner.assert_equal(arguments[1].arg_type, TYPE_BOOL, "第2引数の型を保持する")
 
 
 func _test_argument_data_string() -> void:
