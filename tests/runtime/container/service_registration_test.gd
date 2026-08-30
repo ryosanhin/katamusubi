@@ -1,9 +1,6 @@
 extends SceneTree
 
-const ServiceRegistrationScript := preload(
-	"res://addons/katamusubi/runtime/container/service_registration.gd"
-)
-const LifecycleScript := preload("res://addons/katamusubi/runtime/container/lifecycle.gd")
+
 const BaseService := preload("res://tests/fixtures/services/base_service.gd")
 const DerivedService := preload("res://tests/fixtures/services/derived_service.gd")
 const UnrelatedService := preload("res://tests/fixtures/services/unrelated_service.gd")
@@ -37,20 +34,20 @@ func _init() -> void:
 
 func _test_create_class_registration() -> void:
 	# クラス登録の生成時に実装型と公開型が一致し、指定した生成規則が保存されます。
-	var registration := ServiceRegistrationScript.create_class_registration(
+	var registration := ServiceRegistration.create_class_registration(
 		DerivedService,
-		LifecycleScript.Type.TRANSIENT,
+		Lifecycle.Type.TRANSIENT,
 	)
 
 	_expect(registration.implementation_type == DerivedService, "クラス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "クラス登録は実装型自身を公開する")
-	_expect(registration.lifecycle == LifecycleScript.Type.TRANSIENT, "指定したライフサイクルを設定する")
+	_expect(registration.lifecycle == Lifecycle.Type.TRANSIENT, "指定したライフサイクルを設定する")
 
 
 func _test_create_instance_registration() -> void:
 	# 外部生成した同じインスタンスを保持し、指定にかかわらずSingletonとして登録します。
 	var provided_instance := DerivedService.new()
-	var registration := ServiceRegistrationScript.create_instance_registration(
+	var registration := ServiceRegistration.create_instance_registration(
 		provided_instance,
 		DerivedService,
 	)
@@ -58,14 +55,14 @@ func _test_create_instance_registration() -> void:
 	_expect(registration.instance == provided_instance, "渡されたインスタンスそのものを保持する")
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
-	_expect(registration.lifecycle == LifecycleScript.Type.SINGLETON, "インスタンスをSingleton登録する")
+	_expect(registration.lifecycle == Lifecycle.Type.SINGLETON, "インスタンスをSingleton登録する")
 
 
 func _test_fluent_updates() -> void:
 	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
-	var registration := ServiceRegistrationScript.create_class_registration(
+	var registration := ServiceRegistration.create_class_registration(
 		DerivedService,
-		LifecycleScript.Type.TRANSIENT,
+		Lifecycle.Type.TRANSIENT,
 	)
 	var as_type_result = registration.as_type(BaseService)
 	var with_key_result = registration.with_key(&"primary")
@@ -79,11 +76,11 @@ func _test_fluent_updates() -> void:
 func _test_valid_inheritance() -> void:
 	# 同じ型は自分自身を満たし、派生実装は基底の公開契約を満たします。
 	_expect(
-		ServiceRegistrationScript.check_inheritance(BaseService, BaseService),
+		ServiceRegistration.check_inheritance(BaseService, BaseService),
 		"実装型自身への継承判定が成功する",
 	)
 	_expect(
-		ServiceRegistrationScript.check_inheritance(DerivedService, BaseService),
+		ServiceRegistration.check_inheritance(DerivedService, BaseService),
 		"派生型から基底型への継承判定が成功する",
 	)
 
@@ -91,11 +88,11 @@ func _test_valid_inheritance() -> void:
 func _test_invalid_inheritance() -> void:
 	# 無関係な型と、基底から派生という逆向きの判定はいずれも拒否されます。
 	_expect(
-		not ServiceRegistrationScript.check_inheritance(UnrelatedService, BaseService),
+		not ServiceRegistration.check_inheritance(UnrelatedService, BaseService),
 		"無関係な型の継承判定が失敗する",
 	)
 	_expect(
-		not ServiceRegistrationScript.check_inheritance(BaseService, DerivedService),
+		not ServiceRegistration.check_inheritance(BaseService, DerivedService),
 		"逆方向の継承判定が失敗する",
 	)
 
@@ -129,9 +126,9 @@ func _test_unnamed_types() -> void:
 
 func _test_unrelated_registration() -> void:
 	# 実装型が公開型を継承していない組み合わせをエラーとして返し、登録自体は書き換えません。
-	var registration := ServiceRegistrationScript.create_class_registration(
+	var registration := ServiceRegistration.create_class_registration(
 		UnrelatedService,
-		LifecycleScript.Type.SINGLETON,
+		Lifecycle.Type.SINGLETON,
 	).as_type(BaseService)
 
 	_expect_validation_rejected_without_mutation(registration, "継承していません")
@@ -147,23 +144,23 @@ func _test_valid_registration() -> void:
 
 func _test_lifecycle_helpers() -> void:
 	# 全列挙値を有効と判定して名前へ変換し、列挙外の値はUNKNOWNとして扱います。
-	_expect(LifecycleScript.is_valid(LifecycleScript.Type.SINGLETON), "SINGLETONを有効と判定する")
-	_expect(LifecycleScript.to_display_name(LifecycleScript.Type.SINGLETON) == "SINGLETON", "SINGLETON名を返す")
-	_expect(LifecycleScript.is_valid(LifecycleScript.Type.TRANSIENT), "TRANSIENTを有効と判定する")
-	_expect(LifecycleScript.to_display_name(LifecycleScript.Type.TRANSIENT) == "TRANSIENT", "TRANSIENT名を返す")
-	_expect(not LifecycleScript.is_valid(999), "未知のライフサイクルを無効と判定する")
-	_expect(LifecycleScript.to_display_name(999) == "UNKNOWN(999)", "未知値を含む表示名を返す")
+	_expect(Lifecycle.is_valid(Lifecycle.Type.SINGLETON), "SINGLETONを有効と判定する")
+	_expect(Lifecycle.to_display_name(Lifecycle.Type.SINGLETON) == "SINGLETON", "SINGLETON名を返す")
+	_expect(Lifecycle.is_valid(Lifecycle.Type.TRANSIENT), "TRANSIENTを有効と判定する")
+	_expect(Lifecycle.to_display_name(Lifecycle.Type.TRANSIENT) == "TRANSIENT", "TRANSIENT名を返す")
+	_expect(not Lifecycle.is_valid(999), "未知のライフサイクルを無効と判定する")
+	_expect(Lifecycle.to_display_name(999) == "UNKNOWN(999)", "未知値を含む表示名を返す")
 
 
-func _valid_registration():
+func _valid_registration() -> ServiceRegistration:
 	# 各異常系テストの開始点となる、派生実装を基底型として公開する正常な登録です。
-	return ServiceRegistrationScript.create_class_registration(
+	return ServiceRegistration.create_class_registration(
 		DerivedService,
-		LifecycleScript.Type.TRANSIENT,
+		Lifecycle.Type.TRANSIENT,
 	).as_type(BaseService).with_key(&"fixture")
 
 
-func _expect_validation_rejected_without_mutation(registration, expected_error: String) -> void:
+func _expect_validation_rejected_without_mutation(registration: ServiceRegistration, expected_error: String) -> void:
 	# validate()の戻り値だけでなく、失敗しても入力した登録状態が変化しないことを比較します。
 	var implementation_before = registration.implementation_type
 	var service_before = registration.service_type
