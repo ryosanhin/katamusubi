@@ -6,6 +6,9 @@ const DerivedService := preload("res://tests/fixtures/services/derived_service.g
 const UnrelatedService := preload("res://tests/fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("res://tests/fixtures/services/unnamed_service.gd")
 
+# falseにすると各成功項目を省略し、最終結果とエラーだけを表示します。
+const SHOW_PASSED_EXPECTATIONS := true
+
 var _failures: PackedStringArray = []
 
 
@@ -187,6 +190,10 @@ func _contains_error(errors: PackedStringArray, expected_error: String) -> bool:
 
 
 func _expect(condition: bool, message: String) -> void:
-	# 失敗を最後にまとめて報告し、一度の実行ですべてのケースを確認できるようにします。
-	if not condition:
-		_failures.append(message)
+	# 成功は設定に応じて都度表示し、失敗は最後にまとめて報告します。
+	if condition:
+		if SHOW_PASSED_EXPECTATIONS:
+			print("[PASS] %s" % message)
+		return
+
+	_failures.append(message)
