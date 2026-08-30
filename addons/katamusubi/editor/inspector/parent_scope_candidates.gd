@@ -77,7 +77,7 @@ func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> boo
 	if scene_root == null:
 		push_error("編集中のシーンがありません。")
 		return false
-	if target != scene_root and not scene_root.is_ancestor_of(target):
+	if target != scene_root and target.owner != scene_root:
 		push_error("コンテナスコープは編集中のシーンに属していません。")
 		return false
 

@@ -63,6 +63,17 @@ func _select_parent_scope_id(
 			option_button.select(item_index)
 			return
 
+	# 親スコープが選択されているのにここまで来た = 無効な親スコープの選択がある
+	if not parent_scope_id.is_empty():
+		# 無効な選択であることを示すアイテムを追加
+		option_button.add_item("Missing parent scope: %s" % parent_scope_id)
+		option_button.set_item_metadata(option_button.item_count - 1, parent_scope_id)
+
+		# ユーザーは自らこの追加項目を選択することはできない = 無効な選択でイベントが再点火されない
+		option_button.set_item_disabled(option_button.item_count - 1, true)
+		option_button.select(option_button.item_count - 1)
+		return
+
 	option_button.select(0)
 
 
