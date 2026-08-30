@@ -1,64 +1,133 @@
-class_name TestRunner
 extends RefCounted
-
+class_name TestRunner
 
 ## falseにすると成功したアサーションの表示を省略します。
-var show_passed_assertions := true
+var _is_verbose := true
 ## 全テストの終了時にまとめて表示する失敗一覧です。
 var failures: PackedStringArray = []
 
-var _current_test := "(テスト名未設定)"
+var _current_test_name := "(テスト名未設定)"
+
+## コンストラクタ
+## [param init_is_verbose]: 詳細ログを表示するか
+func _init(init_is_verbose: bool) -> void:
+	_is_verbose = init_is_verbose
+
+func change_test_name(test_name: String) -> void:
+	_current_test_name = test_name
+
+## 真であるか。[br]
+## [param boolean]: 実際の値[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_true(
+	boolean: bool,
+	message: String,
+) -> void:
+	_record(boolean, message, true, boolean)
 
 
-func begin_test(test_name: String) -> void:
-	_current_test = test_name
+## 偽であるか。[br]
+## [param boolean]: 実際の値[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_false(
+	boolean: bool,
+	message: String,
+) -> void:
+	_record(not boolean, message, false, boolean)
 
 
-func assert_true(actual: bool, message: String = "真である") -> void:
-	_record(actual, message, true, actual)
-
-
-func assert_false(actual: bool, message: String = "偽である") -> void:
-	_record(not actual, message, false, actual)
-
-
-func assert_equal(actual: Variant, expected: Variant, message: String = "等しい") -> void:
+## 等値であるか。[br]
+## [param actual]: 実際の値[br]
+## [param expected]: 等しくなって欲しい値[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_equal(
+	actual: Variant,
+	expected: Variant,
+	message: String,
+) -> void:
 	_record(actual == expected, message, expected, actual)
 
 
-func assert_not_equal(actual: Variant, unexpected: Variant, message: String = "等しくない") -> void:
+## 非等値であるか。[br]
+## [param actual]: 実際の値[br]
+## [param expected]: 等しくなって欲しくない値[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_not_equal(
+	actual: Variant,
+	unexpected: Variant,
+	message: String,
+) -> void:
 	_record(actual != unexpected, message, "not %s" % _inspect(unexpected), actual)
 
 
-func assert_same(actual: Variant, expected: Variant, message: String = "同一参照である") -> void:
+## 同一インスタンスであるか。[br]
+## [param actual]: 実際の値[br]
+## [param expected]: 想定される値[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_same(
+	actual: Variant,
+	expected: Variant,
+	message: String,
+) -> void:
 	_record(is_same(actual, expected), message, expected, actual)
 
+## [param variant] がnullであるか。[br]
+## [param variant]: 対象[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_null(
+	variant: Variant,
+	message: String,
+) -> void:
+	_record(variant == null, message, null, variant)
 
-func assert_null(actual: Variant, message: String = "nullである") -> void:
-	_record(actual == null, message, null, actual)
 
-
-func assert_array(actual: Variant, expected: Array, message: String = "配列が等しい") -> void:
-	var is_array := actual is Array or actual is PackedByteArray or actual is PackedInt32Array \
-		or actual is PackedInt64Array or actual is PackedFloat32Array \
-		or actual is PackedFloat64Array or actual is PackedStringArray \
-		or actual is PackedVector2Array or actual is PackedVector3Array \
-		or actual is PackedVector4Array or actual is PackedColorArray
+## 指定した配列であるか。[br]
+## [param actual]: 実際の値[br]
+## [param expected]: 想定される値[br]
+## [param message]: 成功時に表示するメッセージ
+func assert_array(
+	actual: Variant,
+	expected: Array,
+	message: String,
+) -> void:
+	var is_array := (
+			actual is Array
+			or actual is PackedByteArray
+			or actual is PackedInt32Array
+			or actual is PackedInt64Array
+			or actual is PackedFloat32Array
+			or actual is PackedFloat64Array
+			or actual is PackedStringArray
+			or actual is PackedVector2Array
+			or actual is PackedVector3Array
+			or actual is PackedVector4Array
+			or actual is PackedColorArray
+	)
 	_record(is_array and Array(actual) == expected, message, expected, actual)
 
 
+## 想定したエラーであるか。[br]
+## [param actual]: 実際の値[br]
+## [param expected]: 想定される値[br]
+## [param message]: 成功時に表示するメッセージ
 func assert_expected_error(
 	actual_errors: Variant,
 	expected_error: String,
-	message: String = "期待したエラーを含む",
+	message: String,
 ) -> void:
 	var errors: Array[String] = []
+
 	if actual_errors is String or actual_errors is StringName:
+		# 単一の場合
 		errors.append(str(actual_errors))
 	elif actual_errors is Array or actual_errors is PackedStringArray:
+		# 文字などの配列の場合
 		for error in actual_errors:
 			errors.append(str(error))
+	
+	# 実際のエラーの中に想定されるエラーが一つでも含まれているか
 	var found := errors.any(func(error: String) -> bool: return expected_error in error)
+
 	_record(found, message, expected_error, errors)
 
 
@@ -75,15 +144,25 @@ func finish(tree: SceneTree, suite_name: String) -> void:
 	tree.quit(1)
 
 
+## 記録する。[br]
+## [param passed]: 成功したか[br]
+## [param message]: 表示メッセージ[br]
+## [param expected]: 想定される値[br]
+## [param actual]: 実際の値
 func _record(passed: bool, message: String, expected: Variant, actual: Variant) -> void:
 	if passed:
-		if show_passed_assertions:
-			print("[PASS] %s: %s" % [_current_test, message])
+		if _is_verbose:
+			print("[PASS] %s: %s" % [_current_test_name, message])
 		return
 
 	failures.append(
-		"[FAIL] %s: %s\n  expected: %s\n  actual: %s"
-		% [_current_test, message, _inspect(expected), _inspect(actual)],
+			"[FAIL] %s: %s\n  expected: %s\n  actual: %s"
+			% [
+					_current_test_name,
+					message,
+					_inspect(expected),
+					_inspect(actual)
+			],
 	)
 
 

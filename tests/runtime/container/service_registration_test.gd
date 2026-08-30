@@ -5,9 +5,8 @@ const BaseService := preload("res://tests/fixtures/services/base_service.gd")
 const DerivedService := preload("res://tests/fixtures/services/derived_service.gd")
 const UnrelatedService := preload("res://tests/fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("res://tests/fixtures/services/unnamed_service.gd")
-const TestRunnerScript := preload("res://tests/support/test_runner.gd")
 
-var _runner := TestRunnerScript.new()
+var _runner := TestRunner.new(true)
 
 
 func _init() -> void:
@@ -27,7 +26,7 @@ func _init() -> void:
 
 
 func _test_create_class_registration() -> void:
-	_runner.begin_test("create_class_registration")
+	_runner.change_test_name("create_class_registration")
 	# クラス登録の生成時に実装型と公開型が一致し、指定した生成規則が保存されます。
 	var registration := ServiceRegistration.create_class_registration(
 		DerivedService,
@@ -40,7 +39,7 @@ func _test_create_class_registration() -> void:
 
 
 func _test_create_instance_registration() -> void:
-	_runner.begin_test("create_instance_registration")
+	_runner.change_test_name("create_instance_registration")
 	# 外部生成した同じインスタンスを保持し、指定にかかわらずSingletonとして登録します。
 	var provided_instance := DerivedService.new()
 	var registration := ServiceRegistration.create_instance_registration(
@@ -55,7 +54,7 @@ func _test_create_instance_registration() -> void:
 
 
 func _test_fluent_updates() -> void:
-	_runner.begin_test("fluent_updates")
+	_runner.change_test_name("fluent_updates")
 	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
 	var registration := ServiceRegistration.create_class_registration(
 		DerivedService,
@@ -71,7 +70,7 @@ func _test_fluent_updates() -> void:
 
 
 func _test_valid_inheritance() -> void:
-	_runner.begin_test("valid_inheritance")
+	_runner.change_test_name("valid_inheritance")
 	# 同じ型は自分自身を満たし、派生実装は基底の公開契約を満たします。
 	_expect(
 		ServiceRegistration.check_inheritance(BaseService, BaseService),
@@ -84,7 +83,7 @@ func _test_valid_inheritance() -> void:
 
 
 func _test_invalid_inheritance() -> void:
-	_runner.begin_test("invalid_inheritance")
+	_runner.change_test_name("invalid_inheritance")
 	# 無関係な型と、基底から派生という逆向きの判定はいずれも拒否されます。
 	_expect(
 		not ServiceRegistration.check_inheritance(UnrelatedService, BaseService),
@@ -97,7 +96,7 @@ func _test_invalid_inheritance() -> void:
 
 
 func _test_missing_types_and_invalid_lifecycle() -> void:
-	_runner.begin_test("missing_types_and_invalid_lifecycle")
+	_runner.change_test_name("missing_types_and_invalid_lifecycle")
 	# 必須型の欠落と未知のライフサイクルを拒否し、検証前の登録内容を維持します。
 	var missing_implementation := _valid_registration()
 	missing_implementation.implementation_type = null
@@ -114,7 +113,7 @@ func _test_missing_types_and_invalid_lifecycle() -> void:
 
 
 func _test_unnamed_types() -> void:
-	_runner.begin_test("unnamed_types")
+	_runner.change_test_name("unnamed_types")
 	# Godotのグローバルクラス名を持たないスクリプトは、実装型でも公開型でも拒否されます。
 	var unnamed_implementation := _valid_registration()
 	unnamed_implementation.implementation_type = UnnamedService
@@ -126,7 +125,7 @@ func _test_unnamed_types() -> void:
 
 
 func _test_unrelated_registration() -> void:
-	_runner.begin_test("unrelated_registration")
+	_runner.change_test_name("unrelated_registration")
 	# 実装型が公開型を継承していない組み合わせをエラーとして返し、登録自体は書き換えません。
 	var registration := ServiceRegistration.create_class_registration(
 		UnrelatedService,
@@ -137,7 +136,7 @@ func _test_unrelated_registration() -> void:
 
 
 func _test_valid_registration() -> void:
-	_runner.begin_test("valid_registration")
+	_runner.change_test_name("valid_registration")
 	# class_name、継承関係、ライフサイクルが正しい登録には検証エラーがありません。
 	var registration := _valid_registration()
 	var errors: PackedStringArray = registration.validate()
@@ -146,7 +145,7 @@ func _test_valid_registration() -> void:
 
 
 func _test_lifecycle_helpers() -> void:
-	_runner.begin_test("lifecycle_helpers")
+	_runner.change_test_name("lifecycle_helpers")
 	# 全列挙値を有効と判定して名前へ変換し、列挙外の値はUNKNOWNとして扱います。
 	_expect(Lifecycle.is_valid(Lifecycle.Type.SINGLETON), "SINGLETONを有効と判定する")
 	_expect(Lifecycle.to_display_name(Lifecycle.Type.SINGLETON) == "SINGLETON", "SINGLETON名を返す")

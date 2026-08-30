@@ -1,10 +1,8 @@
 extends SceneTree
 
-
 const ScopeIndex := preload("res://addons/katamusubi/editor/scope_index.gd")
-const TestRunnerScript := preload("res://tests/support/test_runner.gd")
 
-var _runner := TestRunnerScript.new()
+var _runner := TestRunner.new(true)
 
 
 func _init() -> void:
@@ -17,7 +15,7 @@ func _init() -> void:
 
 
 func _test_replace_scene_snapshots() -> void:
-	_runner.begin_test("replace_scene_snapshots")
+	_runner.change_test_name("replace_scene_snapshots")
 	var index := ScopeIndex.new()
 	index.scope_snapshots = [
 		_definition(&"scene_a", &"old"),
@@ -34,7 +32,7 @@ func _test_replace_scene_snapshots() -> void:
 
 
 func _test_duplicate_is_atomic() -> void:
-	_runner.begin_test("duplicate_is_atomic")
+	_runner.change_test_name("duplicate_is_atomic")
 	var index := ScopeIndex.new()
 	var original := _definition(&"scene_a", &"original")
 	index.scope_snapshots = [original, _definition(&"scene_b", &"duplicate")]
@@ -48,7 +46,7 @@ func _test_duplicate_is_atomic() -> void:
 
 
 func _test_same_scene_duplicate_remains_build_visible() -> void:
-	_runner.begin_test("same_scene_duplicate_remains_build_visible")
+	_runner.change_test_name("same_scene_duplicate_remains_build_visible")
 	var index := ScopeIndex.new()
 	var replacements: Array[ScopeDefinition] = [
 		_definition(&"scene_a", &"duplicate"),
@@ -63,7 +61,7 @@ func _test_same_scene_duplicate_remains_build_visible() -> void:
 
 
 func _test_rollback_restores_copies() -> void:
-	_runner.begin_test("rollback_restores_copies")
+	_runner.change_test_name("rollback_restores_copies")
 	var index := ScopeIndex.new()
 	var original := _definition(&"scene_a", &"original", &"parent")
 	index.scope_snapshots = [original]
