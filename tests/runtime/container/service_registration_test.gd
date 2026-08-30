@@ -6,7 +6,7 @@ const DerivedService := preload("res://tests/fixtures/services/derived_service.g
 const UnrelatedService := preload("res://tests/fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("res://tests/fixtures/services/unnamed_service.gd")
 
-# falseにすると各成功項目を省略し、最終結果とエラーだけを表示します。
+## falseにすると各成功項目を省略し、最終結果とエラーだけを表示します。
 const SHOW_PASSED_EXPECTATIONS := true
 
 var _failures: PackedStringArray = []
