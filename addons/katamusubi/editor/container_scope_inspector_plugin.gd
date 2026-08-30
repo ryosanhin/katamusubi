@@ -2,14 +2,10 @@
 extends EditorInspectorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
+const ParentScopeCandidates := preload("inspector/parent_scope_candidates.gd")
+const ParentScopePicker := preload("inspector/parent_scope_picker.gd")
 
-const EditorScopeWorkspace := preload("editor_scope_workspace.gd")
-
-var _editor_scope_workspace: EditorScopeWorkspace
-
-
-func _init() -> void:
-	_editor_scope_workspace = EditorScopeWorkspace.new(SCOPE_INDEX)
+var _parent_scope_candidate_provider := ParentScopeCandidates.new(SCOPE_INDEX)
 
 
 func _can_handle(object: Object) -> bool:
@@ -18,6 +14,7 @@ func _can_handle(object: Object) -> bool:
 
 func _parse_begin(object: Object) -> void:
 	var target := object as ContainerScope
+	var scene_root := EditorInterface.get_edited_scene_root()
 	var inspector_container := VBoxContainer.new()
 
 	# スコープIDの表示
@@ -28,38 +25,21 @@ func _parse_begin(object: Object) -> void:
 	inspector_container.add_child(scope_id_display)
 
 	# 親スコープ選択プルダウンメニューの説明
-	var pulldown_description := Label.new()
-	pulldown_description.text = (
-		"Select parent scope"
+	var parent_scope_label := Label.new()
+	parent_scope_label.text = (
+		"Current parent scope"
 	)
-	inspector_container.add_child(pulldown_description)
+	inspector_container.add_child(parent_scope_label)
 
-	# 親スコープ選択プルダウンメニュー
-	var pulldown_menu := OptionButton.new()
-	# デフォルトの値を設定
-	pulldown_menu.add_item("None")
-	pulldown_menu.set_item_metadata(
-			0,
-			&"",
+	var pulldown_factory := ParentScopePicker.new(
+			target.scope_id,
+			target.parent_scope_id,
 	)
-	
-	for scope_definition in _editor_scope_workspace.get_scope_definitions():
-		if scope_definition.scope_id == target.scope_id:
-			continue
-		
-		var scene_path := (
-					"unsaved" if scope_definition.scene_uid.is_empty()
-					else ResourceUID.uid_to_path(scope_definition.scene_uid)
-		)
-
-		var scene_name := scene_path.get_file()
-
-		pulldown_menu.add_item("%s::%s" % [scene_name, scope_definition.scope_name])
-		var index := pulldown_menu.item_count - 1
-		pulldown_menu.set_item_metadata(
-				index,
-				scope_definition.scope_id,
-		)
+	# 親スコープ選択プルダウンメニューを作成
+	var pulldown_menu := pulldown_factory.create(
+			_parent_scope_candidate_provider.get_candidates(target, scene_root),
+			scene_root,
+	)
 	pulldown_menu.item_selected.connect(
 			_select_parent_scope.bind(pulldown_menu, target)
 	)
@@ -68,50 +48,29 @@ func _parse_begin(object: Object) -> void:
 	# UI全体を登録
 	add_custom_control(inspector_container)
 
-	# 初期値を確認
-	var parent_scope_id := target.parent_scope_id
-
-	if parent_scope_id.is_empty():
-		pulldown_menu.select(0)
-		return
-
-	for item_index in pulldown_menu.item_count:
-		if pulldown_menu.get_item_metadata(item_index) == parent_scope_id:
-			pulldown_menu.select(item_index)
-			return
-
-	pulldown_menu.select(0)
-
 
 func _select_parent_scope(
-		index: int,
-		pulldown_menu: OptionButton,
-		target: ContainerScope,
+	index: int,
+	pulldown_menu: OptionButton,
+	target: ContainerScope,
 ) -> void:
 	var parent_scope_id: StringName = pulldown_menu.get_item_metadata(index)
 	if parent_scope_id == target.scope_id:
 		push_error("自身のスコープを親スコープにすることはできません。")
 		return
 
-	var parent_scope := _editor_scope_workspace.get_scope_snapshot(parent_scope_id)
+	var scene_root := EditorInterface.get_edited_scene_root()
+	var parent_scope := _parent_scope_candidate_provider.get_candidate(
+		parent_scope_id,
+		target,
+		scene_root,
+	)
 	if not parent_scope_id.is_empty() and parent_scope == null:
 		push_error("指定されたID %s は登録されていません。" % parent_scope_id)
 		return
 
 	target.parent_scope_id = parent_scope_id
 	_mark_scene_as_unsaved()
-
-
-func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> bool:
-	if scene_root == null:
-		push_error("編集中のシーンがありません。")
-		return false
-	if target != scene_root and not scene_root.is_ancestor_of(target):
-		push_error("コンテナスコープは編集中のシーンに属していません。")
-		return false
-
-	return true
-
 
 ## テスト時に未保存化の呼び出し有無を記録するための境界。
 func _mark_scene_as_unsaved() -> void:
