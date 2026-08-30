@@ -38,9 +38,12 @@ func _test_duplicate_is_atomic() -> void:
 	index.scope_snapshots = [original, _definition(&"scene_b", &"duplicate")]
 	var replacements: Array[ScopeDefinition] = [_definition(&"scene_a", &"duplicate")]
 
+	var capture := ErrorCapture.new()
+	capture.start()
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
+	capture.stop()
+	_runner.assert_true(capture.contains("既にスコープIDが登録されています"), "他シーンとのID重複を拒否する")
 
-	_expect(not action.operation_succeeded, "他シーンとのID重複を拒否する")
 	_runner.assert_equal(index.scope_snapshots.size(), 2, "重複時に一覧を変更しない")
 	_runner.assert_same(index.scope_snapshots[0], original, "重複時に元の定義を維持する")
 

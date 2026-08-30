@@ -14,9 +14,9 @@ func stop() -> void:
 	OS.remove_logger(self)
 
 
-func contains(expected: String) -> bool:
+func contains(expected_message: String) -> bool:
 	for message in errors:
-		if expected in message:
+		if expected_message in message:
 			return true
 	return false
 
