@@ -8,6 +8,7 @@ const SceneSnapshotAnalyzer := preload("editor/scanning/scene_snapshot_analyzer.
 var _container_scope_inspector_plugin: EditorInspectorPlugin
 
 const ScopeContainerObserver := preload("editor/scope_container_observer.gd")
+## スコープの変更等を監視するスクリプト
 var _scope_container_observer: ScopeContainerObserver
 
 const TscnScanner := preload("editor/scanning/tscn_scanner.gd")
@@ -62,6 +63,10 @@ func _enter_tree() -> void:
 	#シーン保存時のシグナルを接続
 	scene_saved.connect(_scope_container_observer.on_scene_saved)
 
+	# ファイルシステム変更時のシグナルを接続
+	var fs := EditorInterface.get_resource_filesystem()
+	fs.filesystem_changed.connect(_scope_container_observer.on_filesystem_changed)
+
 	# ここまで今後追加で開くシーンへの接続の設定はしたけど
 	# 現在開いているシーンにはシグナルが来ないので手動で呼び出し
 	var current_root_node := EditorInterface.get_edited_scene_root()
@@ -76,7 +81,7 @@ func _exit_tree() -> void:
 	
 	
 	if _scope_container_observer != null:
-		# 編集中のシーン切り替え時
+		# 編集中のシーン切り替え時のシグナルを切断
 		if scene_changed.is_connected(_scope_container_observer.on_scene_changed):
 			scene_changed.disconnect(_scope_container_observer.on_scene_changed)
 			
@@ -84,8 +89,13 @@ func _exit_tree() -> void:
 		if get_tree().node_added.is_connected(_scope_container_observer.on_node_added):
 			get_tree().node_added.disconnect(_scope_container_observer.on_node_added)
 		
-		#シーン保存時のシグナルを接続
+		#シーン保存時のシグナルを切断
 		if scene_saved.is_connected(_scope_container_observer.on_scene_saved):
 			scene_saved.disconnect(_scope_container_observer.on_scene_saved)
 		
+		# ファイルシステム変更時のシグナルを切断
+		var fs := EditorInterface.get_resource_filesystem()
+		if fs.filesystem_changed.is_connected(_scope_container_observer.on_filesystem_changed):
+			fs.filesystem_changed.disconnect(_scope_container_observer.on_filesystem_changed)
+
 		_scope_container_observer = null
