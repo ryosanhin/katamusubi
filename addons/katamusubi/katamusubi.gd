@@ -15,7 +15,7 @@ const TscnScanner := preload("editor/scanning/tscn_scanner.gd")
 func _build() -> bool:
 	var errors: PackedStringArray = []
 	# シーンUIDごとに所属スコープ定義をまとめる
-	# Array は Array[ScopeDefinition]
+	# Array は Array[ScopeSnapshot]
 	var snapshots_by_scene: Dictionary[StringName, Array] = {}
 	for snapshot in SCOPE_INDEX.scope_snapshots:
 		if not snapshots_by_scene.has(snapshot.scene_uid):
@@ -23,7 +23,7 @@ func _build() -> bool:
 		snapshots_by_scene[snapshot.scene_uid].append(snapshot)
 
 	for scene_uid in snapshots_by_scene:
-		var scope_snapshots: Array[ScopeDefinition] = []
+		var scope_snapshots: Array[ScopeSnapshot] = []
 		scope_snapshots.assign(snapshots_by_scene[scene_uid])
 		var scene_snapshot := TscnScanner.scan(scene_uid)
 		if scene_snapshot == null:

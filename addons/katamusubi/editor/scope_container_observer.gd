@@ -130,7 +130,7 @@ func on_filesystem_changed() -> void:
 			removed_scene_uids[definition.scene_uid] = true
 
 	for scene_uid in removed_scene_uids:
-		var empty_snapshots: Array[ScopeDefinition] = []
+		var empty_snapshots: Array[ScopeSnapshot] = []
 		var rollback_action := _scope_index.replace_scene_snapshots(
 				scene_uid,
 				empty_snapshots,
@@ -150,9 +150,9 @@ func on_scene_saved(path: String) -> void:
 		push_error("シーン %s が読み込めませんでした。" % path)
 		return
 	
-	var snapshots: Array[ScopeDefinition] = []
+	var snapshots: Array[ScopeSnapshot] = []
 	for scanned_entry in snapshot.entries:
-		snapshots.append(ScopeDefinition.new(
+		snapshots.append(ScopeSnapshot.new(
 				scanned_entry.scene_uid,
 				scanned_entry.scope_name,
 				scanned_entry.scope_id,

@@ -27,7 +27,7 @@ func _test_replace_scene_snapshots() -> void:
 		_definition(&"scene_a", &"old"),
 		_definition(&"scene_b", &"other"),
 	]
-	var replacements: Array[ScopeDefinition] = [_definition(&"scene_a", &"new")]
+	var replacements: Array[ScopeSnapshot] = [_definition(&"scene_a", &"new")]
 
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
 
@@ -41,7 +41,7 @@ func _test_duplicate_is_atomic() -> void:
 	var index := ScopeIndex.new()
 	var original := _definition(&"scene_a", &"original")
 	index.scope_snapshots = [original, _definition(&"scene_b", &"duplicate")]
-	var replacements: Array[ScopeDefinition] = [_definition(&"scene_a", &"duplicate")]
+	var replacements: Array[ScopeSnapshot] = [_definition(&"scene_a", &"duplicate")]
 
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
 
@@ -52,7 +52,7 @@ func _test_duplicate_is_atomic() -> void:
 
 func _test_same_scene_duplicate_remains_build_visible() -> void:
 	var index := ScopeIndex.new()
-	var replacements: Array[ScopeDefinition] = [
+	var replacements: Array[ScopeSnapshot] = [
 		_definition(&"scene_a", &"duplicate"),
 		_definition(&"scene_a", &"duplicate"),
 	]
@@ -68,7 +68,7 @@ func _test_rollback_restores_copies() -> void:
 	var index := ScopeIndex.new()
 	var original := _definition(&"scene_a", &"original", &"parent")
 	index.scope_snapshots = [original]
-	var replacements: Array[ScopeDefinition] = [_definition(&"scene_a", &"new")]
+	var replacements: Array[ScopeSnapshot] = [_definition(&"scene_a", &"new")]
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
 	original.parent_scope_id = &"mutated_after_replace"
 
@@ -84,8 +84,8 @@ func _definition(
 	scene_uid: StringName,
 	scope_id: StringName,
 	parent_scope_id: StringName = &"",
-) -> ScopeDefinition:
-	return ScopeDefinition.new(scene_uid, scope_id, scope_id, parent_scope_id)
+) -> ScopeSnapshot:
+	return ScopeSnapshot.new(scene_uid, scope_id, scope_id, parent_scope_id)
 
 
 func _expect(condition: bool, message: String) -> void:

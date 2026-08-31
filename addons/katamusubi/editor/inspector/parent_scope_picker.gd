@@ -16,7 +16,7 @@ func _init(
 
 
 func create(
-	candidates: Array[ScopeDefinition],
+	candidates: Array[ScopeSnapshot],
 	scene_root: Node,
 ) -> OptionButton:
 	var option_button := OptionButton.new()

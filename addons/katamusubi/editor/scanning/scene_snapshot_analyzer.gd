@@ -9,7 +9,7 @@ var analyzed_scene_uid: StringName:
 		return _snapshot.scene_uid
 
 var _snapshot: SceneSnapshot
-var _comparable_snapshots: Array[ScopeDefinition]
+var _comparable_snapshots: Array[ScopeSnapshot]
 
 ## コンストラクタ[br]
 ## [param init_snapshot]: シーンのスナップショット
@@ -17,13 +17,13 @@ var _comparable_snapshots: Array[ScopeDefinition]
 ## コンストラクタ内でスキャンされたシーンUIDでフィルタリングするため全定義を引数としても問題ない。[br]
 func _init(
 	init_snapshot: SceneSnapshot,
-	init_comparable_snapshots: Array[ScopeDefinition],
+	init_comparable_snapshots: Array[ScopeSnapshot],
 ) -> void:
 	_snapshot = init_snapshot
 
 	# まとめて渡されるスコープ定義の内、シーンUIDが一致して比較できるものだけを取り出す
 	_comparable_snapshots = init_comparable_snapshots.filter(
-			func(def: ScopeDefinition) -> bool:
+			func(def: ScopeSnapshot) -> bool:
 				return def.scene_uid == init_snapshot.scene_uid
 	)
 
