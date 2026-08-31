@@ -2,7 +2,7 @@ extends RefCounted
 ## スクリプトから[code]inject_dependency[/code]メソッドを探して引数を抽出
 
 const ArgumentData := preload("argument_data.gd")
-const Const := preload("plugin_const.gd")
+const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 
 var _method_name: StringName
 

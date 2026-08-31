@@ -2,8 +2,8 @@
 extends Node
 class_name ContainerScope
 
-const Const := preload("plugin_const.gd")
-const InstanceInjector := preload("instance_injector.gd")
+const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
+const InstanceInjector := preload("../injection/instance_injector.gd")
 
 ## コンテナ初期化の内部状態
 enum State {
@@ -19,14 +19,15 @@ var _container: InjectionContainer
 ## 重複初期化と親子間の再帰初期化を防ぐ状態
 var state: State = State.NOT_INITIALIZED
 
-## プロジェクト内のコンテナ情報のリスト
-const DEFINITION_LIST := preload("res://addons/katamusubi/scope_definition_list.tres")
-
 var scope_name: StringName:
 	get:
 		return name
 
+## 自身のスコープID
 @export_storage var scope_id: StringName
+
+## 親スコープID
+@export_storage var parent_scope_id: StringName
 
 ## 注入対象
 @export var _inject_target: Array[Node] = []
@@ -48,9 +49,6 @@ func _exit_tree() -> void:
 
 ## 論理IDが一致する親スコープを取得
 func _find_parent_scope() -> ContainerScope:
-	var parent_scope_id := get_parent_scope_id()
-	var parent_scope := DEFINITION_LIST.get_scope_definition(parent_scope_id)
-
 	if parent_scope_id.is_empty():
 		return null
 
@@ -68,8 +66,8 @@ func _find_parent_scope() -> ContainerScope:
 
 	if matched.size() != 1:
 		push_error(
-				"親スコープ '%s' は1個必要ですが、%d個見つかりました。"
-				% [parent_scope.scope_name, matched.size()]
+				"親スコープID '%s' は1個必要ですが、%d個見つかりました。"
+				% [parent_scope_id, matched.size()]
 		)
 		return null
 	
@@ -88,18 +86,11 @@ func _ensure_initialized() -> void:
 
 	state = State.INITIALIZING
 
-	var definition := get_scope_definition()
-	if definition == null:
-		push_error("スコープID '%s' に対応する定義がありません。" % scope_id)
-		state = State.NOT_INITIALIZED
-		_stop_initialization_retry()
-		return
-
 	var parent_container: InjectionContainer = null
-	if not definition.parent_scope_id.is_empty():
+	if not parent_scope_id.is_empty():
 		var parent_scope := _find_parent_scope()
 		
-		# 親スコープが未設定の場合		
+		# 親スコープが見つからない（未初期化など）場合	
 		if parent_scope == null:
 			state = State.NOT_INITIALIZED
 			_start_initialization_retry()
@@ -160,19 +151,6 @@ func _on_node_added(_node: Node) -> void:
 	# node_added の発火中では候補の _enter_tree() が完了していない場合がある
 	# node_added が全部終わってから、ツリーへの追加が終わってから実行する
 	_ensure_initialized.call_deferred()
-
-
-## 自身のスコープ定義を取得
-func get_scope_definition() -> ScopeDefinition:
-	return DEFINITION_LIST.get_scope_definition(scope_id)
-
-
-## 親スコープのIDを取得
-func get_parent_scope_id() -> StringName:
-	var definition := get_scope_definition()
-	if definition == null:
-		return &""
-	return definition.parent_scope_id
 
 
 ## 具体コンテナが登録内容を定義

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" format=3 uid="uid://yw1m03cfmwg6"]
+
+[ext_resource type="Script" uid="uid://cydi7jyr1tte6" path="res://addons/katamusubi/editor/scope_snapshot.gd" id="1_xutwp"]
+[ext_resource type="Script" uid="uid://duarhscov4x6r" path="res://addons/katamusubi/editor/scope_index.gd" id="2_xutwp"]
+
+[resource]
+script = ExtResource("2_xutwp")
+save_path = "uid://yw1m03cfmwg6"

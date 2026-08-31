@@ -1,7 +1,7 @@
 extends RefCounted
 ## インスタンス注入だけを担当
 
-const Const := preload("plugin_const.gd")
+const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const MethodReader := preload("method_reader.gd")
 
 var _scope_name: StringName

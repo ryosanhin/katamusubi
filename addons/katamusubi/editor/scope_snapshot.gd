@@ -1,6 +1,9 @@
 @tool
 extends Resource
-class_name ScopeDefinition
+class_name ScopeSnapshot
+
+## 保存時点のスコープ情報を保持する読み取り用スナップショット。
+## 値の正本は保存済みシーン内の[ContainerScope]。
 
 ## スコープのノードが存在するシーンのuid
 @export var scene_uid: StringName
