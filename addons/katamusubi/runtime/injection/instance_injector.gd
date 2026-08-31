@@ -27,7 +27,7 @@ func try_inject_arguments(target: Node) -> bool:
 
 	for argument in arguments:
 		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
-		var resolved_service: Variant = _container.resolve_with_string_name(
+		var resolved_service: Variant = _container.resolve(
 				argument.arg_class,
 				argument.arg_name
 		)
@@ -35,7 +35,12 @@ func try_inject_arguments(target: Node) -> bool:
 		if resolved_service == null:
 			push_error(
 					"サービスを解決できませんでした: 対象=%s, 引数=%s, 要求型=%s, スコープ名=%s"
-					% [target.get_path(), argument.arg_name, argument.arg_class, _scope_name]
+					% [
+							target.get_path(),
+							argument.arg_name,
+							argument.service_type.get_global_name(),
+							_scope_name,
+					]
 			)
 			return false
 		

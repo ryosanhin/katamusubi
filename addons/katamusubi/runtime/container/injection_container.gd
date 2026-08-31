@@ -7,7 +7,8 @@ const ResolveEntry := preload("resolve_entry.gd")
 var _parent: InjectionContainer
 
 ## 「公開型class_name + ID」をキーにしたローカル登録
-var _entries: Dictionary[String, ResolveEntry] = {}
+## Dictionary は内部的には Dictionary[String, ResolveEntry]
+var _entries: Dictionary[Script, Dictionary] = {}
 
 ## 任意の親コンテナを指定してスコープを生成
 func _init(parent: InjectionContainer) -> void:
@@ -22,9 +23,12 @@ func register(registration: ServiceRegistration) -> void:
 		push_error("登録情報が不正です:\n%s" % errors)
 		return
 
-	# 同じ契約型とIDの組み合わせは一意である必要
-	var key := _make_key(registration.service_name, registration.key)
-	if _entries.has(key):
+	if not _entries.has(registration.service_type):
+		_entries[registration.service_type] = {}
+	
+	var entries: Dictionary[String, ResolveEntry] = _entries[registration.service_type]
+
+	if entries.has(registration.key):
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
 				registration.service_name,
@@ -33,43 +37,47 @@ func register(registration: ServiceRegistration) -> void:
 		)
 		return
 
-	_entries[key] = ResolveEntry.new(registration)
+	entries[registration.key] = ResolveEntry.new(registration)
 
 
-func resolve_with_string_name(
-	service_name: StringName,
+func resolve(
+	service_type: Script,
 	key: StringName,
 ) -> Variant:
-	# 引数名などで明示されたKeyを最優先する
+	var entry: ResolveEntry = null
+
 	if not key.is_empty():
-		var keyed_entry_key := _make_key(service_name, key)
-		if _entries.has(keyed_entry_key):
-			return _entries[keyed_entry_key].resolve()
+		entry = find_resolve_entry(service_type, key)
+	
+	if entry == null:
+		entry = find_resolve_entry(service_type, &"")
 
-	# Key付き登録がなければ、このコンテナのデフォルト登録を利用する
-	var default_entry_key := _make_key(service_name, &"")
-	if _entries.has(default_entry_key):
-		return _entries[default_entry_key].resolve()
-
-	# ローカル登録を調べ終わった後に同じ解決条件を親へ引き継ぐ
 	if _parent != null:
-		return _parent.resolve_with_string_name(service_name, key)
+		return _parent.resolve(service_type, key)
 
 	push_error(
 		"登録が見つかりません: 型=%s, id=%s" % [
-			service_name,
+			service_type.get_global_name(),
 			_display_id(key),
 		]
 	)
 	return null
 
-## 公開型とIDに対応するインスタンスを解決
-func resolve_with_script(
+
+func find_resolve_entry(
 	service_type: Script,
-	key: StringName = &"",
-) -> Variant:
-	var service_name := service_type.get_global_name()
-	return resolve_with_string_name(service_name, key)
+	key: StringName,
+) -> ResolveEntry:
+	var extracted_entries: Dictionary[String, ResolveEntry] = _entries.get(service_type, {})
+
+	if not extracted_entries.is_empty():
+		if extracted_entries.has(key):
+			return extracted_entries[key]
+
+	if _parent != null:
+		return _parent.find_resolve_entry(service_type, key)
+
+	return null
 
 
 ## Singleton参照とローカル登録を解放します。
@@ -78,11 +86,6 @@ func clear() -> void:
 		entry.clear()
 	_entries.clear()
 	_parent = null
-
-
-## 公開型とIDからDictionary用の一意キーを生成
-static func _make_key(type_name: StringName, id: StringName) -> String:
-	return "%s::%s" % [String(type_name), String(id)]
 
 
 ## 空IDをログ上で判別しやすい文字列に変換
