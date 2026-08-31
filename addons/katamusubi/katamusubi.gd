@@ -96,6 +96,6 @@ func _exit_tree() -> void:
 		# ファイルシステム変更時のシグナルを切断
 		var fs := EditorInterface.get_resource_filesystem()
 		if fs.filesystem_changed.is_connected(_scope_container_observer.on_filesystem_changed):
-			fs.filesystem_changed.connect(_scope_container_observer.on_filesystem_changed)
+			fs.filesystem_changed.disconnect(_scope_container_observer.on_filesystem_changed)
 
 		_scope_container_observer = null
