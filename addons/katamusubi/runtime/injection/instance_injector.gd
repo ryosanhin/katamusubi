@@ -16,7 +16,7 @@ func _init(
 
 
 ## 1ノード分の引数を宣言順に解決し、すべて揃った場合だけ注入メソッドを呼ぶ
-func try_inject_arguments(target: Node) -> bool:
+func try_inject_arguments(target: Variant) -> bool:
 	if not _is_injectable(target):
 		return false
 	
@@ -53,13 +53,17 @@ func try_inject_arguments(target: Node) -> bool:
 	return true
 
 
-func _is_injectable(target: Node) -> bool:
+func _is_injectable(target: Variant) -> bool:
 	if target == null:
 		push_error("対象が null です: スコープ名=%s" % _scope_name)
 		return false
 
 	if not is_instance_valid(target):
 		push_error("対象は既に解放されています: スコープ名=%s" % _scope_name)
+		return false
+
+	if not target is Node:
+		push_error("対象はNodeではありません: スコープ名=%s" % _scope_name)
 		return false
 	
 	if not target.is_inside_tree():
