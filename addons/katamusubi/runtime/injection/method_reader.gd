@@ -32,11 +32,10 @@ func _get_arguments(method_data: Dictionary) -> Array[ArgumentData]:
 		var arg_name := StringName(argument_data.get(KEY_NAME, ""))
 		var arg_class_name := StringName(argument_data.get(KEY_CLASS_NAME, ""))
 		var arg_variant_type := int(argument_data.get(KEY_TYPE, TYPE_NIL))
-		if arg_class_name == &"":
-			arg_class_name = StringName(type_string(arg_variant_type)) 
+		var service_type := _get_global_class_script(arg_class_name)
 
 		arguments.append(
-				ArgumentData.new(arg_name, arg_class_name, arg_variant_type)
+				ArgumentData.new(arg_name, service_type, arg_variant_type)
 		)
 
 	return arguments
@@ -46,3 +45,14 @@ func _get_arguments(method_data: Dictionary) -> Array[ArgumentData]:
 func get_injection_arguments(script: Script) -> Array[ArgumentData]:
 	var method_data := _find_injection_method(script)
 	return _get_arguments(method_data)
+
+
+## グローバルクラス名からスクリプトを取得。[br]
+## 存在しない場合は[code]null[/code]を返す。
+func _get_global_class_script(arg_class_name: StringName) -> Script:
+	for class_data in ProjectSettings.get_global_class_list():
+		if StringName(class_data["class"]) == arg_class_name:
+			return load(class_data["path"]) as Script
+	
+	push_error("%s に該当するスクリプトが見つかりません" % arg_class_name)
+	return null
