@@ -1,15 +1,13 @@
 @tool
 extends RefCounted
 
-const ScannedEntry := preload("scanned_entry.gd")
-
 var scene_uid: StringName
-var entries: Array[ScannedEntry] = []
+var entries: Array[ScopeSnapshot] = []
 
 
 func _init(
 	init_scene_uid: StringName,
-	init_entries: Array[ScannedEntry]
+	init_entries: Array[ScopeSnapshot]
 ) -> void:
 	scene_uid = init_scene_uid
 	if init_entries.size() < 1:
@@ -57,7 +55,7 @@ func get_duplicated_count(scope_id: StringName) -> int:
 
 ## スコープIDをキーとして該当するシーン内のスキャンした情報を返す。[br]
 ## 該当情報が無い場合は[code]null[/code]を返す。
-func get_entry(scope_id: StringName) -> ScannedEntry:
+func get_entry(scope_id: StringName) -> ScopeSnapshot:
 	for entry in entries:
 		if entry.scope_id == scope_id:
 			return entry

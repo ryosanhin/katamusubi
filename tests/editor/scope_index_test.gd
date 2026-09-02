@@ -9,6 +9,7 @@ func _init() -> void:
 	_test_replace_scene_snapshots()
 	_test_duplicate_is_atomic()
 	_test_same_scene_duplicate_remains_build_visible()
+	_test_scan_only_fields_are_not_retained()
 	_test_rollback_restores_copies()
 
 	if _failures.is_empty():
@@ -62,6 +63,29 @@ func _test_same_scene_duplicate_remains_build_visible() -> void:
 	_expect(action.operation_succeeded, "同一シーン内の重複はシーンの登録を維持する")
 	_expect(index.scope_snapshots.size() == 1, "重複IDの代表スナップショットを1件登録する")
 	_expect(index.scope_snapshots[0].scene_uid == &"scene_a", "ビルド時の再スキャン対象を維持する")
+
+
+func _test_scan_only_fields_are_not_retained() -> void:
+	var index := ScopeIndex.new()
+	var scanned := ScopeSnapshot.new(
+			&"scene_a",
+			&"scope",
+			&"id",
+			&"parent",
+			^"Root/Scope",
+			true,
+			true,
+	)
+	var replacements: Array[ScopeSnapshot] = [scanned]
+
+	var action := index.replace_scene_snapshots(&"scene_a", replacements)
+	var stored := index.get_scope_snapshot(&"id")
+
+	_expect(action.operation_succeeded, "スキャン結果を直接登録できる")
+	_expect(stored != scanned, "索引用のスナップショットに変換する")
+	_expect(stored.node_path.is_empty(), "ノードパスを索引に持ち込まない")
+	_expect(not stored.has_script, "Script有無の検証結果を索引に持ち込まない")
+	_expect(not stored.inherits_container_scope, "Script継承の検証結果を索引に持ち込まない")
 
 
 func _test_rollback_restores_copies() -> void:
