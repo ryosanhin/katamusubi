@@ -28,7 +28,7 @@ func try_inject_arguments(target: Node) -> bool:
 	for argument in arguments:
 		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
 		var resolved_service: Variant = _container.resolve(
-				argument.arg_class,
+				argument.service_type,
 				argument.arg_name
 		)
 		

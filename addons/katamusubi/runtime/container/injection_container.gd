@@ -52,8 +52,8 @@ func resolve(
 	if entry == null:
 		entry = find_resolve_entry(service_type, &"")
 
-	if _parent != null:
-		return _parent.resolve(service_type, key)
+	if entry != null:
+		return entry.resolve()
 
 	push_error(
 		"登録が見つかりません: 型=%s, id=%s" % [
