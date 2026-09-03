@@ -11,6 +11,7 @@ enum State {
 	INITIALIZING,
 	INITIALIZED,
 	CIRCULAR,
+	FAILED,
 }
 
 ## このシーンスコープで利用する依存コンテナ
@@ -34,12 +35,10 @@ var scope_name: StringName:
 
 
 func _ready() -> void:
-	_ensure_initialized()
+	_initialize_scope()
 
 
 func _exit_tree() -> void:
-	_stop_initialization_retry()
-
 	if _container != null:
 		_container.clear()
 
@@ -75,14 +74,15 @@ func _find_parent_scope() -> ContainerScope:
 
 
 ## 親コンテナを先に構築し、このスコープを一度だけ初期化
-func _ensure_initialized() -> void:
+func _initialize_scope() -> bool:
 	if state == State.INITIALIZED:
-		return
+		return true
+	if state == State.FAILED or state == State.CIRCULAR:
+		return false
 	if state == State.INITIALIZING:
 		push_error("コンテナの親子関係が循環しています: %s" % scope_name)
 		state = State.CIRCULAR
-		_stop_initialization_retry()
-		return
+		return false
 
 	state = State.INITIALIZING
 
@@ -90,21 +90,23 @@ func _ensure_initialized() -> void:
 	if not parent_scope_id.is_empty():
 		var parent_scope := _find_parent_scope()
 		
-		# 親スコープが見つからない（未初期化など）場合	
+		# 親スコープが見つからない場合は初期化を失敗させる
 		if parent_scope == null:
-			state = State.NOT_INITIALIZED
-			_start_initialization_retry()
-			return
+			push_error(
+				"スコープ '%s' (scope_id: '%s') が要求する親スコープ (parent_scope_id: '%s') が見つかりません。"
+				% [scope_name, scope_id, parent_scope_id]
+			)
+			state = State.FAILED
+			return false
 
 		# 先に親スコープを初期化
-		parent_scope._ensure_initialized()
-
-		# 親スコープが初期化されていなかった場合
-		if parent_scope.state != State.INITIALIZED:
-			# このスコープは初期化できないので再度初期化できるタイミングを待つ
-			state = State.NOT_INITIALIZED
-			_start_initialization_retry()
-			return
+		if not parent_scope._initialize_scope():
+			push_error(
+				"スコープ '%s' (scope_id: '%s') は親スコープ (parent_scope_id: '%s') の初期化に失敗したため初期化できません。"
+				% [scope_name, scope_id, parent_scope_id]
+			)
+			state = State.FAILED
+			return false
 		# 親スコープのコンテナを取得
 		parent_container = parent_scope._container
 
@@ -116,11 +118,10 @@ func _ensure_initialized() -> void:
 	if not _inject_dependencies():
 		_container.clear()
 		_container = null
-		state = State.NOT_INITIALIZED
-		return
+		state = State.FAILED
+		return false
 	state = State.INITIALIZED
-	
-	_stop_initialization_retry()
+	return true
 
 
 func _inject_dependencies() -> bool:
@@ -131,26 +132,6 @@ func _inject_dependencies() -> bool:
 			return false
 	
 	return true
-
-
-# 後から追加されたのが親スコープかもしれないのでツリーへの追加を監視
-func _start_initialization_retry() -> void:
-	var node_added := get_tree().node_added
-	if not node_added.is_connected(_on_node_added):
-		node_added.connect(_on_node_added)
-
-
-# 親スコープを確認できたのでツリー監視の必要はもうない
-func _stop_initialization_retry() -> void:
-	var node_added := get_tree().node_added
-	if node_added.is_connected(_on_node_added):
-		node_added.disconnect(_on_node_added)
-
-
-func _on_node_added(_node: Node) -> void:
-	# node_added の発火中では候補の _enter_tree() が完了していない場合がある
-	# node_added が全部終わってから、ツリーへの追加が終わってから実行する
-	_ensure_initialized.call_deferred()
 
 
 ## 具体コンテナが登録内容を定義
