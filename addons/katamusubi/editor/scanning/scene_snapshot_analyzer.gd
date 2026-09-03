@@ -2,7 +2,6 @@
 extends RefCounted
 
 const SceneSnapshot := preload("scene_snapshot.gd")
-const ScannedEntry := preload("scanned_entry.gd")
 
 var analyzed_scene_uid: StringName:
 	get:
@@ -34,7 +33,7 @@ func validate() -> PackedStringArray:
 	var scene_path := ResourceUID.uid_to_path(analyzed_scene_uid)
 
 	for snapshot in _comparable_snapshots:
-		var matched_entries: Array[ScannedEntry] = []
+		var matched_entries: Array[ScopeSnapshot] = []
 		for entry in _snapshot.entries:
 			if entry.scope_id == snapshot.scope_id:
 				matched_entries.append(entry)

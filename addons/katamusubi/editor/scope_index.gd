@@ -76,12 +76,7 @@ func _duplicate_snapshots(
 
 
 func _duplicate_snapshot(snapshot: ScopeSnapshot) -> ScopeSnapshot:
-	return ScopeSnapshot.new(
-		snapshot.scene_uid,
-		snapshot.scope_name,
-		snapshot.scope_id,
-		snapshot.parent_scope_id,
-	)
+	return snapshot.to_saved_snapshot()
 
 
 ## スコープIDの一覧を生成
