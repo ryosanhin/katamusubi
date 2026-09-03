@@ -82,8 +82,10 @@ func find_resolve_entry(
 
 ## Singleton参照とローカル登録を解放します。
 func clear() -> void:
-	for entry: ResolveEntry in _entries.values():
-		entry.clear()
+	for entries: Dictionary[String, ResolveEntry] in _entries.values():
+		for entry: ResolveEntry in entries.values():
+			entry.clear()
+		entries.clear()
 	_entries.clear()
 	_parent = null
 

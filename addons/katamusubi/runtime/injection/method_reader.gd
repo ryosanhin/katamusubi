@@ -47,8 +47,12 @@ func get_injection_arguments(script: Script) -> Array[ArgumentData]:
 	return _get_arguments(method_data)
 
 
+## グローバルクラス名からスクリプトを取得。[br]
+## 存在しない場合は[code]null[/code]を返す。
 func _get_global_class_script(arg_class_name: StringName) -> Script:
 	for class_data in ProjectSettings.get_global_class_list():
 		if StringName(class_data["class"]) == arg_class_name:
 			return load(class_data["path"]) as Script
+	
+	push_error("%s に該当するスクリプトが見つかりません" % arg_class_name)
 	return null
