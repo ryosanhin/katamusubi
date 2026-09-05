@@ -21,9 +21,15 @@ func try_inject_arguments(target: Node) -> bool:
 		return false
 	
 	var script := target.get_script() as Script
-	var method_reader := MethodReader.new(Const.METHOD_NAME)
+	var method_reader := MethodReader.new(Const.INJECTION_METHOD_NAME)
 	var arguments := method_reader.get_injection_arguments(script)
 	var resolved_arguments: Array = []
+
+	# ここで引数の型のオーバーライドを取得
+	var args_override_dict: Dictionary[StringName, Script] = {}
+	if target.has_method(Const.OVERRIDE_METHOD_NAME):
+		var callable := Callable(target, Const.OVERRIDE_METHOD_NAME)
+		args_override_dict = callable.call()
 
 	for argument in arguments:
 		if argument.service_type == null:
@@ -37,10 +43,16 @@ func try_inject_arguments(target: Node) -> bool:
 			)
 			return false
 		
+		var service_type := argument.service_type
+		var key := argument.arg_name
+
+		if args_override_dict.has(key):
+			service_type = args_override_dict[key]
+
 		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
 		var resolved_service: Variant = _container.resolve(
-				argument.service_type,
-				argument.arg_name
+				service_type,
+				key
 		)
 		
 		if resolved_service == null:
@@ -48,16 +60,15 @@ func try_inject_arguments(target: Node) -> bool:
 					"サービスを解決できませんでした: 対象=%s, 引数=%s, 要求型=%s, スコープ名=%s"
 					% [
 							target.get_path(),
-							argument.arg_name,
-							argument.service_type.get_global_name(),
+							key,
+							service_type.get_global_name(),
 							_scope_name,
 					]
 			)
 			return false
-		
 		resolved_arguments.append(resolved_service)
 
-	var injection_method := Callable(target, Const.METHOD_NAME)
+	var injection_method := Callable(target, Const.INJECTION_METHOD_NAME)
 	if not injection_method.is_valid():
 		push_error(
 				"依存注入メソッドを呼び出せません: 対象=%s, スコープ名=%s"
