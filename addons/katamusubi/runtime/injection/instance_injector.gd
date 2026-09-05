@@ -32,17 +32,6 @@ func try_inject_arguments(target: Node) -> bool:
 		args_override_dict = callable.call()
 
 	for argument in arguments:
-		if argument.service_type == null:
-			push_error(
-					"グローバルクラスとして宣言されていません: 対象=%s, 引数=%s, スコープ名=%s"
-					% [
-							target.get_path(),
-							argument.arg_name,
-							_scope_name,
-					]
-			)
-			return false
-		
 		var service_type := argument.service_type
 		var key := argument.arg_name
 
@@ -54,6 +43,17 @@ func try_inject_arguments(target: Node) -> bool:
 				service_type,
 				key
 		)
+
+		if service_type == null:
+			push_error(
+					"グローバルクラスとして宣言されていません: 対象=%s, 引数=%s, スコープ名=%s"
+					% [
+							target.get_path(),
+							argument.arg_name,
+							_scope_name,
+					]
+			)
+			return false
 		
 		if resolved_service == null:
 			push_error(
