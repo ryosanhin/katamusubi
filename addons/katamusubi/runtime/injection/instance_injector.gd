@@ -21,14 +21,33 @@ func try_inject_arguments(target: Node) -> bool:
 		return false
 	
 	var script := target.get_script() as Script
-	var method_reader := MethodReader.new(Const.METHOD_NAME)
+	var method_reader := MethodReader.new(Const.INJECTION_METHOD_NAME)
 	var arguments := method_reader.get_injection_arguments(script)
 	var resolved_arguments: Array = []
 
+	# ここで引数の型のオーバーライドの辞書を取得
+	var args_override_dict: Dictionary[StringName, Script] = {}
+	if target.has_method(Const.OVERRIDE_METHOD_NAME):
+		var callable := Callable(target, Const.OVERRIDE_METHOD_NAME)
+		args_override_dict = callable.call()
+
 	for argument in arguments:
-		if argument.service_type == null:
+		var service_type := argument.service_type
+		var key := argument.arg_name
+
+		# 型のオーバーライドが可能なら実行
+		if args_override_dict.has(key):
+			var override_type := args_override_dict[key]
+			if service_type == null:
+				service_type = override_type
+			else:
+				if _check_inheritance(override_type, service_type):
+					service_type = override_type
+
+		if service_type == null:
 			push_error(
-					"グローバルクラスとして宣言されていません: 対象=%s, 引数=%s, スコープ名=%s"
+					"引数の型がグローバルクラスとして宣言されていないか、\
+					型オーバーライドが指定されていません: 対象=%s, 引数=%s, スコープ名=%s"
 					% [
 							target.get_path(),
 							argument.arg_name,
@@ -39,25 +58,24 @@ func try_inject_arguments(target: Node) -> bool:
 		
 		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
 		var resolved_service: Variant = _container.resolve(
-				argument.service_type,
-				argument.arg_name
+				service_type,
+				key
 		)
-		
+
 		if resolved_service == null:
 			push_error(
 					"サービスを解決できませんでした: 対象=%s, 引数=%s, 要求型=%s, スコープ名=%s"
 					% [
 							target.get_path(),
-							argument.arg_name,
-							argument.service_type.get_global_name(),
+							key,
+							service_type.get_global_name(),
 							_scope_name,
 					]
 			)
 			return false
-		
 		resolved_arguments.append(resolved_service)
 
-	var injection_method := Callable(target, Const.METHOD_NAME)
+	var injection_method := Callable(target, Const.INJECTION_METHOD_NAME)
 	if not injection_method.is_valid():
 		push_error(
 				"依存注入メソッドを呼び出せません: 対象=%s, スコープ名=%s"
@@ -87,3 +105,17 @@ func _is_injectable(target: Node) -> bool:
 		return false
 
 	return true
+
+
+## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
+## [param inherits]: サブクラス[br]
+## [param inherited]: スーパークラス
+func _check_inheritance(inherits: Script, inherited: Script) -> bool:
+	var current: Script = inherits
+
+	while current != null:
+		if current == inherited:
+			return true
+		current = current.get_base_script()
+
+	return false
