@@ -2,8 +2,6 @@ extends RefCounted
 ## スクリプトから[code]inject_dependency[/code]メソッドを探して引数を抽出
 
 const ArgumentData := preload("argument_data.gd")
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
-
 var _method_name: StringName
 
 
@@ -53,6 +51,5 @@ func _get_global_class_script(arg_class_name: StringName) -> Script:
 	for class_data in ProjectSettings.get_global_class_list():
 		if StringName(class_data["class"]) == arg_class_name:
 			return load(class_data["path"]) as Script
-	
-	push_error("%s に該当するスクリプトが見つかりません" % arg_class_name)
+
 	return null

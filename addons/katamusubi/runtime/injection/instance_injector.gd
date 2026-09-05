@@ -51,7 +51,8 @@ func try_inject_arguments(target: Node) -> bool:
 
 		if service_type == null:
 			push_error(
-					"グローバルクラスとして宣言されていません: 対象=%s, 引数=%s, スコープ名=%s"
+					"引数の型がグローバルクラスとして宣言されていないか、\
+					型オーバーライドが指定されていません: 対象=%s, 引数=%s, スコープ名=%s"
 					% [
 							target.get_path(),
 							argument.arg_name,
