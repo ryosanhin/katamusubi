@@ -150,16 +150,7 @@ func on_scene_saved(path: String) -> void:
 		push_error("シーン %s が読み込めませんでした。" % path)
 		return
 	
-	var snapshots: Array[ScopeSnapshot] = []
-	for scanned_entry in snapshot.entries:
-		snapshots.append(ScopeSnapshot.new(
-				scanned_entry.scene_uid,
-				scanned_entry.scope_name,
-				scanned_entry.scope_id,
-				scanned_entry.parent_scope_id,
-		))
-
-	var rollback_action := _scope_index.replace_scene_snapshots(scene_uid, snapshots)
+	var rollback_action := _scope_index.replace_scene_snapshots(scene_uid, snapshot.entries)
 	if not rollback_action.operation_succeeded:
 		return
 

@@ -3,7 +3,6 @@ extends RefCounted
 
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const SceneSnapshot := preload("scene_snapshot.gd")
-const ScannedEntry := preload("scanned_entry.gd")
 
 ## シーンファイルを走査し、ファイルから読み取れるスコープの情報を返す。
 ## シーンUIDが無効なときは[code]null[/code]を返す。
@@ -12,7 +11,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 	const PARENT_SCOPE_ID_STRING_NAME := &"parent_scope_id"
 	const SCRIPT_STRING_NAME := &"script"
 
-	var entries: Array[ScannedEntry] = []
+	var entries: Array[ScopeSnapshot] = []
 	var packed_scene := load(scene_uid) as PackedScene
 
 	if packed_scene == null:
@@ -53,7 +52,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 		if scope_id.is_empty():
 			continue
 
-		entries.append(ScannedEntry.new(
+		entries.append(ScopeSnapshot.new(
 			scene_uid,
 			scene_state.get_node_name(node_index),
 			scope_id,
