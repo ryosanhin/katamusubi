@@ -25,7 +25,7 @@ func try_inject_arguments(target: Node) -> bool:
 	var arguments := method_reader.get_injection_arguments(script)
 	var resolved_arguments: Array = []
 
-	# ここで引数の型のオーバーライドを取得
+	# ここで引数の型のオーバーライドの辞書を取得
 	var args_override_dict: Dictionary[StringName, Script] = {}
 	if target.has_method(Const.OVERRIDE_METHOD_NAME):
 		var callable := Callable(target, Const.OVERRIDE_METHOD_NAME)
@@ -35,14 +35,19 @@ func try_inject_arguments(target: Node) -> bool:
 		var service_type := argument.service_type
 		var key := argument.arg_name
 
+		# 型のオーバーライドが可能なら実行
 		if args_override_dict.has(key):
-			service_type = args_override_dict[key]
-
-		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
-		var resolved_service: Variant = _container.resolve(
-				service_type,
-				key
-		)
+			var override_type := args_override_dict[key]
+			if service_type == null:
+				service_type = override_type
+			else:
+				if (
+						# override_type --|> service_type のパターン
+						_check_inheritance(override_type, service_type)
+						# service_type --|> override_type のパターン
+						or _check_inheritance(service_type, override_type)
+				):
+					service_type = override_type
 
 		if service_type == null:
 			push_error(
@@ -55,6 +60,12 @@ func try_inject_arguments(target: Node) -> bool:
 			)
 			return false
 		
+		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
+		var resolved_service: Variant = _container.resolve(
+				service_type,
+				key
+		)
+
 		if resolved_service == null:
 			push_error(
 					"サービスを解決できませんでした: 対象=%s, 引数=%s, 要求型=%s, スコープ名=%s"
@@ -98,3 +109,17 @@ func _is_injectable(target: Node) -> bool:
 		return false
 
 	return true
+
+
+## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
+## [param inherits]: サブクラス[br]
+## [param inherited]: スーパークラス
+func _check_inheritance(inherits: Script, inherited: Script) -> bool:
+	var current: Script = inherits
+
+	while current != null:
+		if current == inherited:
+			return true
+		current = current.get_base_script()
+
+	return false

@@ -73,7 +73,7 @@ func validate() -> PackedStringArray:
 	if not Lifecycle.is_valid(lifecycle):
 		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(lifecycle))
 
-	if not check_inheritance(implementation_type, service_type):
+	if not _check_inheritance(implementation_type, service_type):
 		errors.append(
 			"生成するクラス %s は公開するクラス %s を継承していません。" % [
 				implementation_type.get_global_name(),
@@ -84,8 +84,10 @@ func validate() -> PackedStringArray:
 	return errors
 
 
-## 生成するクラスが公開するクラス自身か派生型であるか調べる
-static func check_inheritance(inherits: Script, inherited: Script) -> bool:
+## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
+## [param inherits]: サブクラス[br]
+## [param inherited]: スーパークラス
+func _check_inheritance(inherits: Script, inherited: Script) -> bool:
 	var current: Script = inherits
 
 	while current != null:
