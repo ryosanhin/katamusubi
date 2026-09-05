@@ -41,12 +41,7 @@ func try_inject_arguments(target: Node) -> bool:
 			if service_type == null:
 				service_type = override_type
 			else:
-				if (
-						# override_type --|> service_type のパターン
-						_check_inheritance(override_type, service_type)
-						# service_type --|> override_type のパターン
-						or _check_inheritance(service_type, override_type)
-				):
+				if _check_inheritance(override_type, service_type):
 					service_type = override_type
 
 		if service_type == null:
