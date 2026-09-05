@@ -73,12 +73,6 @@ func validate() -> PackedStringArray:
 	if not Lifecycle.is_valid(lifecycle):
 		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(lifecycle))
 
-	if implementation_type.get_global_name().is_empty():
-		errors.append("生成するクラスにはclass_nameが必要です: %s" % implementation_type.resource_path)
-
-	if service_type.get_global_name().is_empty():
-		errors.append("公開するクラスにはclass_nameが必要です: %s" % service_type.resource_path)
-
 	if not check_inheritance(implementation_type, service_type):
 		errors.append(
 			"生成するクラス %s は公開するクラス %s を継承していません。" % [
