@@ -39,6 +39,11 @@ func _parse_begin(object: Object) -> void:
 	var pulldown_menu := pulldown_factory.create(
 			_parent_scope_candidate_provider.get_candidates(target, scene_root),
 			scene_root,
+			_parent_scope_candidate_provider.get_existing_scope(
+					target.parent_scope_id,
+					target,
+					scene_root,
+			) != null,
 	)
 	pulldown_menu.item_selected.connect(
 			_select_parent_scope.bind(pulldown_menu, target)

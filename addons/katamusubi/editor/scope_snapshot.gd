@@ -18,6 +18,9 @@ class_name ScopeSnapshot
 ## 親スコープのID
 @export var parent_scope_id: StringName
 
+## 親スコープ候補として公開されているか
+@export var selectable_as_parent: bool
+
 ## スキャン時のノードパス。索引には保存しない。
 var node_path: NodePath
 
@@ -33,6 +36,7 @@ var inherits_container_scope: bool
 ## [param init_scope_name]: スコープのノードの名前[br]
 ## [param init_scope_id]: スコープのID[br]
 ## [param init_parent_scope_id]: 親スコープのID[br]
+## [param init_selectable_as_parent]: 親スコープ候補として公開されているか[br]
 ## [param init_node_path]: スキャン時のノードパス[br]
 ## [param init_has_script]: スキャン時にScriptが設定されていたか[br]
 ## [param init_inherits_container_scope]: Scriptが[ContainerScope]を継承していたか
@@ -41,6 +45,7 @@ func _init(
 	init_scope_name: StringName = &"",
 	init_scope_id: StringName = &"",
 	init_parent_scope_id: StringName = &"",
+	init_selectable_as_parent: bool = false,
 	init_node_path: NodePath = NodePath(),
 	init_has_script: bool = false,
 	init_inherits_container_scope: bool = false,
@@ -49,6 +54,7 @@ func _init(
 	scope_name = init_scope_name
 	scope_id = init_scope_id
 	parent_scope_id = init_parent_scope_id
+	selectable_as_parent = init_selectable_as_parent
 	node_path = init_node_path
 	has_script = init_has_script
 	inherits_container_scope = init_inherits_container_scope
@@ -61,6 +67,7 @@ func to_saved_snapshot() -> ScopeSnapshot:
 			scope_name,
 			scope_id,
 			parent_scope_id,
+			selectable_as_parent,
 	)
 
 func _to_string() -> String:
@@ -70,9 +77,11 @@ func _to_string() -> String:
 		scope_name: %s
 		scope_id: %s
 		parent_scope_id: %s
+		selectable_as_parent: %s
 	""" % [
 		path,
 		scope_name,
 		scope_id,
 		parent_scope_id,
+		selectable_as_parent,
 	]

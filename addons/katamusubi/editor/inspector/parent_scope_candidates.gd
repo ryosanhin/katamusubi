@@ -22,20 +22,21 @@ func get_candidates(
 
 	var edited_scene_uid := _get_edited_scene_uid(scene_root)
 	for snapshot in _scope_index.scope_snapshots:
-		if snapshot.scope_id.is_empty():
+		if snapshot.scope_id.is_empty() or not snapshot.selectable_as_parent:
 			continue
 		if not edited_scene_uid.is_empty() and snapshot.scene_uid == edited_scene_uid:
 			continue
 		candidates.append(snapshot)
 
 	for scope in _get_edited_scene_scopes(scene_root):
-		if scope.scope_id.is_empty():
+		if scope.scope_id.is_empty() or not scope.selectable_as_parent:
 			continue
 		candidates.append(ScopeSnapshot.new(
 			edited_scene_uid,
 			scope.name,
 			scope.scope_id,
 			scope.parent_scope_id,
+			scope.selectable_as_parent,
 		))
 
 	return candidates
@@ -49,6 +50,33 @@ func get_candidate(
 	for candidate in get_candidates(target, scene_root):
 		if candidate.scope_id == scope_id:
 			return candidate
+	return null
+
+
+## 選択可否にかかわらず、指定IDのスコープが実在するかを検索する。
+func get_existing_scope(
+	scope_id: StringName,
+	target: ContainerScope,
+	scene_root: Node,
+) -> ScopeSnapshot:
+	if not _is_target_in_edited_scene(target, scene_root):
+		return null
+
+	var edited_scene_uid := _get_edited_scene_uid(scene_root)
+	for snapshot in _scope_index.scope_snapshots:
+		if snapshot.scope_id == scope_id:
+			if edited_scene_uid.is_empty() or snapshot.scene_uid != edited_scene_uid:
+				return snapshot
+
+	for scope in _get_edited_scene_scopes(scene_root):
+		if scope.scope_id == scope_id:
+			return ScopeSnapshot.new(
+				edited_scene_uid,
+				scope.name,
+				scope.scope_id,
+				scope.parent_scope_id,
+				scope.selectable_as_parent,
+			)
 	return null
 
 
