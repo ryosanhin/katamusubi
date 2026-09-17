@@ -22,6 +22,9 @@ var lifecycle: Lifecycle.Type = Lifecycle.Type.SINGLETON
 ## 外部インスタンス
 var instance: Variant
 
+## 外部インスタンスを利用する登録かどうか
+var _is_instance_registration := false
+
 ## シーンに存在するインスタンスを登録
 static func create_instance_registration(
 	provided_instance: Variant,
@@ -29,6 +32,7 @@ static func create_instance_registration(
 ) -> ServiceRegistration:
 	var registration := ServiceRegistration.new()
 	registration.instance = provided_instance
+	registration._is_instance_registration = true
 	registration.implementation_type = type
 	registration.service_type = type
 	registration.lifecycle = Lifecycle.Type.SINGLETON
@@ -70,6 +74,30 @@ func validate() -> PackedStringArray:
 		errors.append("公開するクラスが指定されていません。")
 		return errors
 
+	if _is_instance_registration:
+		if instance == null:
+			errors.append("外部インスタンスに null は指定できません。")
+			return errors
+
+		if not (instance is Object) or not is_instance_valid(instance):
+			errors.append("外部インスタンスが有効な Object ではありません。")
+			return errors
+
+		var actual_type: Script = instance.get_script()
+		if actual_type == null:
+			errors.append("外部インスタンスにスクリプトがアタッチされていません。")
+			return errors
+
+		if not _check_inheritance(actual_type, implementation_type) \
+				or not _check_inheritance(actual_type, service_type):
+			errors.append(
+				"外部インスタンスの型が登録型と互換性がありません: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
+					_display_script_name(actual_type),
+					_display_script_name(implementation_type),
+					_display_script_name(service_type),
+				]
+			)
+
 	if not Lifecycle.is_valid(lifecycle):
 		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(lifecycle))
 
@@ -82,6 +110,12 @@ func validate() -> PackedStringArray:
 		)
 
 	return errors
+
+
+## 診断に利用できるスクリプト名を返す
+func _display_script_name(type: Script) -> String:
+	var global_name := type.get_global_name()
+	return global_name if not global_name.is_empty() else type.resource_path
 
 
 ## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
