@@ -11,6 +11,7 @@ var _runner := TestRunner.new(true)
 
 func _init() -> void:
 	_test_default_resolution()
+	_test_registration_error_state_transitions()
 	_test_singleton()
 	_test_transient()
 	_test_instance_registration()
@@ -36,6 +37,30 @@ func _test_default_resolution() -> void:
 	var resolved = container.resolve(TrackedService, &"")
 	_runner.assert_true(succeeded, "正常な登録は成功を返す")
 	_runner.assert_true(resolved is InjectionContainerTestTrackedService, "Scriptからデフォルト登録を解決する")
+
+
+func _test_registration_error_state_transitions() -> void:
+	_runner.change_test_name("registration_error_state_transitions")
+	var container := InjectionContainer.new(null)
+	_runner.assert_false(container.has_registration_errors, "新規コンテナには登録エラーがない")
+
+	container.register(_instance_as(DerivedService.new(), DerivedService, BaseService, &"first"))
+	_runner.assert_false(container.has_registration_errors, "正常登録では登録エラー状態を変更しない")
+
+	var capture := ErrorCapture.new()
+	capture.start()
+	container.register(ServiceRegistration.new())
+	_runner.assert_true(container.has_registration_errors, "不正登録で登録エラー状態になる")
+
+	container.register(_instance_as(DerivedService.new(), DerivedService, BaseService, &"first"))
+	_runner.assert_true(container.has_registration_errors, "重複登録後も登録エラー状態である")
+
+	var succeeded := container.register(
+		_instance_as(DerivedService.new(), DerivedService, BaseService, &"after_failure")
+	)
+	capture.stop()
+	_runner.assert_true(succeeded, "失敗後でも別の正常な登録は成功する")
+	_runner.assert_true(container.has_registration_errors, "後続の正常登録は累積エラー状態を解除しない")
 
 
 func _test_singleton() -> void:
@@ -138,6 +163,7 @@ func _test_duplicate_registrations() -> void:
 	var succeeded := container.register(_instance_as(rejected, DerivedService, BaseService, &"same"))
 	capture.stop()
 	_runner.assert_false(succeeded, "重複登録は失敗を返す")
+	_runner.assert_true(container.has_registration_errors, "重複登録を累積エラー状態へ反映する")
 	_runner.assert_true(capture.contains("登録が重複しています"), "重複登録がpush_errorを発生させる")
 	_runner.assert_same(container.resolve(BaseService, &"same"), first, "先に登録したサービスを維持する")
 
@@ -169,6 +195,7 @@ func _test_invalid_registration() -> void:
 
 	_runner.assert_true(capture.contains("登録情報が不正です"), "不正登録がpush_errorを発生させる")
 	_runner.assert_false(succeeded, "不正登録は失敗を返す")
+	_runner.assert_true(container.has_registration_errors, "不正登録を累積エラー状態へ反映する")
 	_runner.assert_true(capture.contains("登録が見つかりません"), "不正登録のエントリが追加されていない")
 	_runner.assert_null(result, "不正登録を解決できない")
 
@@ -182,6 +209,7 @@ func _test_null_registration() -> void:
 	capture.stop()
 
 	_runner.assert_false(succeeded, "nullの登録は失敗を返す")
+	_runner.assert_true(container.has_registration_errors, "null登録を累積エラー状態へ反映する")
 	_runner.assert_true(capture.contains("ServiceRegistration に null は指定できません"), "nullの拒否理由を報告する")
 
 

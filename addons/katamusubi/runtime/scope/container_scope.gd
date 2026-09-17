@@ -118,7 +118,8 @@ func _initialize_scope() -> bool:
 
 	_container = InjectionContainer.new(parent_container)
 	
-	if not _register_instance(_container):
+	_register_instance(_container)
+	if _container.has_registration_errors:
 		_container.clear()
 		_container = null
 		state = State.FAILED
@@ -144,6 +145,6 @@ func _inject_dependencies() -> bool:
 	return true
 
 
-## 具体コンテナが登録内容を定義し、すべて登録できたかを返します。
+## 具体コンテナが登録内容を定義します。
 @abstract
-func _register_instance(container: InjectionContainer) -> bool
+func _register_instance(container: InjectionContainer) -> void
