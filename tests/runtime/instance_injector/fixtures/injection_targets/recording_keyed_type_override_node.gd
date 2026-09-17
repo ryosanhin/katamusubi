@@ -1,6 +1,6 @@
 extends Node
 
-const DerivedService := preload("res://tests/runtime/instance_injector/fixtures/services/derived_service.gd")
+const DerivedService := preload("../services/derived_service.gd")
 
 var injection_count := 0
 var received_service: InstanceInjectorTestBaseService

@@ -1,8 +1,8 @@
 extends Node
 
-const LocalService := preload("res://tests/runtime/instance_injector/fixtures/services/unnamed_service.gd")
-const DerivedService := preload("res://tests/runtime/instance_injector/fixtures/services/derived_service.gd")
-const UnrelatedService := preload("res://tests/runtime/instance_injector/fixtures/services/unrelated_service.gd")
+const LocalService := preload("../services/unnamed_service.gd")
+const DerivedService := preload("../services/derived_service.gd")
+const UnrelatedService := preload("../services/unrelated_service.gd")
 
 var injection_count := 0
 var received_local_service: LocalService

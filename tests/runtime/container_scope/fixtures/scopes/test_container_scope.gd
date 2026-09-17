@@ -1,8 +1,8 @@
 extends ContainerScope
 class_name ContainerScopeTestContainerScope
 
-const BaseService := preload("res://tests/runtime/container_scope/fixtures/services/base_service.gd")
-const DerivedService := preload("res://tests/runtime/container_scope/fixtures/services/derived_service.gd")
+const BaseService := preload("../services/base_service.gd")
+const DerivedService := preload("../services/derived_service.gd")
 
 @export var registration_key: StringName = &""
 @export var registration_label := ""
