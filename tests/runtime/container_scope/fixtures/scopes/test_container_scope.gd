@@ -5,6 +5,9 @@ const BaseService := preload("../services/base_service.gd")
 const DerivedService := preload("../services/derived_service.gd")
 
 @export var registration_key: StringName = &""
+@export var add_invalid_registration := false
+@export var add_duplicate_registration := false
+@export var add_valid_registration_after_failure := false
 
 var registration_count := 0
 var registered_service: ContainerScopeTestDerivedService
@@ -39,3 +42,19 @@ func _register_instance(container: InjectionContainer) -> void:
 			DerivedService,
 		).as_type(BaseService).with_key(registration_key)
 	)
+	if add_invalid_registration:
+		container.register(ServiceRegistration.new())
+	if add_duplicate_registration:
+		container.register(
+			ServiceRegistration.create_instance_registration(
+				DerivedService.new(),
+				DerivedService,
+			).as_type(BaseService).with_key(registration_key)
+		)
+	if add_valid_registration_after_failure:
+		container.register(
+			ServiceRegistration.create_instance_registration(
+				DerivedService.new(),
+				DerivedService,
+			).as_type(BaseService).with_key(&"after_failure")
+		)

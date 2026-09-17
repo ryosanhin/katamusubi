@@ -10,18 +10,31 @@ var _parent_container: InjectionContainer
 ## 公開型ごとのこのコンテナ内での登録コレクション
 var _entry_maps_by_service_type: Dictionary[Script, ResolveEntryMap] = {}
 
+var _has_registration_errors := false
+
+## このコンテナで登録エラーが一度でも発生したか
+var has_registration_errors: bool:
+	get:
+		return _has_registration_errors
+
 ## 任意の親コンテナを指定してスコープを生成
 func _init(init_parent_container: InjectionContainer) -> void:
 	_parent_container = init_parent_container
 
 
-## 登録情報をローカルスコープへ追加
-func register(registration: ServiceRegistration) -> void:
+## 登録情報をローカルスコープへ追加し、登録できたかを返します。
+func register(registration: ServiceRegistration) -> bool:
+	if registration == null:
+		_has_registration_errors = true
+		push_error("登録情報が不正です:\nServiceRegistration に null は指定できません。")
+		return false
+
 	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
 		var error_message := "\n".join(validation_errors)
+		_has_registration_errors = true
 		push_error("登録情報が不正です:\n%s" % error_message)
-		return
+		return false
 
 	if not _entry_maps_by_service_type.has(registration.service_type):
 		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
@@ -29,15 +42,17 @@ func register(registration: ServiceRegistration) -> void:
 	var entry_map: ResolveEntryMap = _entry_maps_by_service_type[registration.service_type]
 
 	if entry_map.has(registration.key):
+		_has_registration_errors = true
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
 				registration.service_name,
 				_display_id(registration.key),
 			]
 		)
-		return
+		return false
 
 	entry_map.register(registration.key, ResolveEntry.new(registration))
+	return true
 
 
 func resolve(
