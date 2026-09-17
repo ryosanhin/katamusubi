@@ -5,7 +5,6 @@ const BaseService := preload("../services/base_service.gd")
 const DerivedService := preload("../services/derived_service.gd")
 
 @export var registration_key: StringName = &""
-@export var registration_label := ""
 
 var registration_count := 0
 var registered_service: ContainerScopeTestDerivedService
@@ -34,7 +33,6 @@ func parent_container_for_test() -> InjectionContainer:
 func _register_instance(container: InjectionContainer) -> void:
 	registration_count += 1
 	registered_service = DerivedService.new()
-	registered_service.set_meta(&"scope_label", registration_label)
 	container.register(
 		ServiceRegistration.create_instance_registration(
 			registered_service,

@@ -9,10 +9,8 @@ script = ExtResource("1_scope")
 scope_id = &"child"
 parent_scope_id = &"parent"
 registration_key = &"shared"
-registration_label = "child"
 
 [node name="Parent" type="Node" parent="." groups=["test_group"]]
 script = ExtResource("1_scope")
 scope_id = &"parent"
 registration_key = &"shared"
-registration_label = "parent"
