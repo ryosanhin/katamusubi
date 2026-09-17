@@ -14,6 +14,7 @@ func _init() -> void:
 	_test_singleton()
 	_test_transient()
 	_test_instance_registration()
+	_test_invalid_instance_registrations()
 	_test_key_precedence_and_default_fallback()
 	_test_parent_lookup_order()
 	_test_duplicate_registrations()
@@ -66,6 +67,33 @@ func _test_instance_registration() -> void:
 
 	_runner.assert_same(container.resolve(TrackedService, &""), provided, "提供された参照を返す")
 	_runner.assert_same(container.resolve(TrackedService, &""), provided, "再解決でも提供された参照を返す")
+
+
+func _test_invalid_instance_registrations() -> void:
+	_runner.change_test_name("invalid_instance_registrations")
+	var container := InjectionContainer.new(null)
+	var derived := DerivedService.new()
+	container.register(ServiceRegistration.create_instance_registration(derived, BaseService))
+	_runner.assert_same(container.resolve(BaseService, &""), derived, "指定実装型の派生インスタンスを登録できる")
+
+	var capture := ErrorCapture.new()
+	capture.start()
+	container.register(ServiceRegistration.create_instance_registration(null, DerivedService))
+	container.register(ServiceRegistration.create_instance_registration(
+		UnrelatedService.new(),
+		DerivedService,
+	))
+	container.register(ServiceRegistration.create_instance_registration(
+		DerivedService.new(),
+		DerivedService,
+	).as_type(UnrelatedService))
+	capture.stop()
+
+	_runner.assert_equal(capture.errors.size(), 3, "null・無関係な実体・公開型不整合をすべて拒否する")
+	_runner.assert_true(capture.contains("外部インスタンスに null は指定できません"), "null拒否理由を報告する")
+	_runner.assert_true(capture.contains("実際の型="), "型不一致で実際の型を報告する")
+	_runner.assert_true(capture.contains("指定された実装型="), "型不一致で指定実装型を報告する")
+	_runner.assert_true(capture.contains("公開型="), "型不一致で公開型を報告する")
 
 
 func _test_key_precedence_and_default_fallback() -> void:

@@ -13,6 +13,7 @@ func _init() -> void:
 	# 公開APIの生成・更新、継承判定、検証、Lifecycleの全ケースを順番に確認します。
 	_test_create_class_registration()
 	_test_create_instance_registration()
+	_test_instance_validation()
 	_test_fluent_updates()
 	_test_missing_types_and_invalid_lifecycle()
 	_test_unnamed_type()
@@ -49,6 +50,33 @@ func _test_create_instance_registration() -> void:
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
 	_expect(registration.lifecycle == Lifecycle.Type.SINGLETON, "インスタンスをSingleton登録する")
+
+
+func _test_instance_validation() -> void:
+	_runner.change_test_name("instance_validation")
+	# 実インスタンス自身の継承関係を、指定された実装型と公開型の両方に対して検証します。
+	var derived_as_base := ServiceRegistration.create_instance_registration(
+		DerivedService.new(),
+		BaseService,
+	)
+	_expect(derived_as_base.validate().is_empty(), "指定実装型の派生インスタンスを許可する")
+
+	var unrelated := ServiceRegistration.create_instance_registration(
+		UnrelatedService.new(),
+		DerivedService,
+	).as_type(BaseService)
+	_expect_validation_error(unrelated, "実際の型=ServiceRegistrationTestUnrelatedService")
+	_expect_validation_error(unrelated, "指定された実装型=ServiceRegistrationTestDerivedService")
+	_expect_validation_error(unrelated, "公開型=ServiceRegistrationTestBaseService")
+
+	var null_instance := ServiceRegistration.create_instance_registration(null, DerivedService)
+	_expect_validation_error(null_instance, "外部インスタンスに null は指定できません")
+
+	var incompatible_service := ServiceRegistration.create_instance_registration(
+		DerivedService.new(),
+		DerivedService,
+	).as_type(UnrelatedService)
+	_expect_validation_error(incompatible_service, "公開型=ServiceRegistrationTestUnrelatedService")
 
 
 func _test_fluent_updates() -> void:
