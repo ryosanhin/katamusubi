@@ -66,7 +66,7 @@ func _test_same_scene_duplicate_remains_build_visible() -> void:
 func _test_rollback_restores_copies() -> void:
 	_runner.change_test_name("rollback_restores_copies")
 	var index := ScopeIndex.new()
-	var original := _snapshot(&"scene_a", &"original", &"parent")
+	var original := _snapshot(&"scene_a", &"original", &"parent", true)
 	index.scope_snapshots = [original]
 	var replacements: Array[ScopeSnapshot] = [_snapshot(&"scene_a", &"new")]
 	var action := index.replace_scene_snapshots(&"scene_a", replacements)
@@ -77,15 +77,19 @@ func _test_rollback_restores_copies() -> void:
 	var restored := index.get_scope_snapshot(&"original")
 	_expect(restored != null, "ロールバックで置換前の定義を復元する")
 	_runner.assert_not_equal(restored, original, "ロールバックでは定義の複製を復元する")
-	_runner.assert_equal(restored.parent_scope_id, &"parent", "複製した全フィールドを復元する")
+	_runner.assert_equal(restored.parent_scope_id, &"parent", "複製した親IDを復元する")
+	_runner.assert_true(restored.selectable_as_parent, "複製した公開フラグを復元する")
 
 
 func _snapshot(
 	scene_uid: StringName,
 	scope_id: StringName,
 	parent_scope_id: StringName = &"",
+	selectable_as_parent := false,
 ) -> ScopeSnapshot:
-	return ScopeSnapshot.new(scene_uid, scope_id, scope_id, parent_scope_id)
+	return ScopeSnapshot.new(
+			scene_uid, scope_id, scope_id, parent_scope_id, selectable_as_parent
+	)
 
 
 func _expect(condition: bool, message: String) -> void:

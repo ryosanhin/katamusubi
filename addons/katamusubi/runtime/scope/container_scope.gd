@@ -30,6 +30,9 @@ var scope_name: StringName:
 ## 親スコープID
 @export_storage var parent_scope_id: StringName
 
+## エディターの親スコープ候補として公開するか
+@export var selectable_as_parent := false
+
 ## 注入対象
 @export var _inject_target: Array[Node] = []
 

@@ -9,6 +9,7 @@ const SceneSnapshot := preload("scene_snapshot.gd")
 static func scan(scene_uid: StringName) -> SceneSnapshot:
 	const SCOPE_ID_STRING_NAME := &"scope_id"
 	const PARENT_SCOPE_ID_STRING_NAME := &"parent_scope_id"
+	const SELECTABLE_AS_PARENT_STRING_NAME := &"selectable_as_parent"
 	const SCRIPT_STRING_NAME := &"script"
 
 	var entries: Array[ScopeSnapshot] = []
@@ -25,6 +26,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 
 		var scope_id := &""
 		var parent_scope_id := &""
+		var selectable_as_parent := false
 		var script: Script = null
 
 		for prop_index in scene_state.get_node_property_count(node_index):
@@ -43,6 +45,11 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 							node_index,
 							prop_index,
 					) as StringName
+				SELECTABLE_AS_PARENT_STRING_NAME:
+					selectable_as_parent = scene_state.get_node_property_value(
+							node_index,
+							prop_index,
+					) as bool
 				SCRIPT_STRING_NAME:
 					script = scene_state.get_node_property_value(
 							node_index,
@@ -57,6 +64,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 			scene_state.get_node_name(node_index),
 			scope_id,
 			parent_scope_id,
+			selectable_as_parent,
 			scene_state.get_node_path(node_index),
 			script != null,
 			_inherits_container_scope(script),

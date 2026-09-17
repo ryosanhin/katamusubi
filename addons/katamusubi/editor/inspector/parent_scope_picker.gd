@@ -18,6 +18,7 @@ func _init(
 func create(
 	candidates: Array[ScopeSnapshot],
 	scene_root: Node,
+	current_parent_exists := false,
 ) -> OptionButton:
 	var option_button := OptionButton.new()
 
@@ -49,6 +50,7 @@ func create(
 	_select_parent_scope_id(
 			option_button,
 			_selected_parent_scope_id,
+			current_parent_exists,
 	)
 
 	return option_button
@@ -57,6 +59,7 @@ func create(
 func _select_parent_scope_id(
 	option_button: OptionButton,
 	parent_scope_id: StringName,
+	current_parent_exists: bool,
 ) -> void:
 	for item_index in option_button.item_count:
 		if option_button.get_item_metadata(item_index) == parent_scope_id:
@@ -66,7 +69,12 @@ func _select_parent_scope_id(
 	# 親スコープが選択されているのにここまで来た = 無効な親スコープの選択がある
 	if not parent_scope_id.is_empty():
 		# 無効な選択であることを示すアイテムを追加
-		option_button.add_item("Missing parent scope: %s" % parent_scope_id)
+		var label := (
+				"Current parent (not selectable): %s" % parent_scope_id
+				if current_parent_exists
+				else "Missing parent scope: %s" % parent_scope_id
+		)
+		option_button.add_item(label)
 		option_button.set_item_metadata(option_button.item_count - 1, parent_scope_id)
 
 		# ユーザーは自らこの追加項目を選択することはできない = 無効な選択でイベントが再点火されない
