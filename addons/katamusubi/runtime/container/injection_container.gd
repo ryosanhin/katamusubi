@@ -10,12 +10,12 @@ var _parent_container: InjectionContainer
 ## 公開型ごとのこのコンテナ内での登録コレクション
 var _entry_maps_by_service_type: Dictionary[Script, ResolveEntryMap] = {}
 
+var _has_registration_errors := false
+
 ## このコンテナで登録エラーが一度でも発生したか
 var has_registration_errors: bool:
 	get:
 		return _has_registration_errors
-
-var _has_registration_errors := false
 
 ## 任意の親コンテナを指定してスコープを生成
 func _init(init_parent_container: InjectionContainer) -> void:

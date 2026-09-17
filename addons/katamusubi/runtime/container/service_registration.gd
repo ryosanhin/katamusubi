@@ -50,6 +50,7 @@ static func create_class_registration(
 	registration.lifecycle = lifecycle_type
 	return registration
 
+
 ## インスタンスのクラスを別の抽象型・基底型として公開
 func as_type(new_service_type: Script) -> ServiceRegistration:
 	service_type = new_service_type
@@ -92,9 +93,9 @@ func validate() -> PackedStringArray:
 				or not _check_inheritance(actual_type, service_type):
 			errors.append(
 				"外部インスタンスの型が登録型と互換性がありません: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
-					_display_script_name(actual_type),
-					_display_script_name(implementation_type),
-					_display_script_name(service_type),
+					_get_displayable_name(actual_type),
+					_get_displayable_name(implementation_type),
+					_get_displayable_name(service_type),
 				]
 			)
 
@@ -113,7 +114,7 @@ func validate() -> PackedStringArray:
 
 
 ## 診断に利用できるスクリプト名を返す
-func _display_script_name(type: Script) -> String:
+func _get_displayable_name(type: Script) -> String:
 	var global_name := type.get_global_name()
 	return global_name if not global_name.is_empty() else type.resource_path
 
