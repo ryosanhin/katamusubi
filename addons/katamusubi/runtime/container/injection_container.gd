@@ -15,13 +15,17 @@ func _init(init_parent_container: InjectionContainer) -> void:
 	_parent_container = init_parent_container
 
 
-## 登録情報をローカルスコープへ追加
-func register(registration: ServiceRegistration) -> void:
+## 登録情報をローカルスコープへ追加し、登録できたかを返します。
+func register(registration: ServiceRegistration) -> bool:
+	if registration == null:
+		push_error("登録情報が不正です:\nServiceRegistration に null は指定できません。")
+		return false
+
 	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
 		var error_message := "\n".join(validation_errors)
 		push_error("登録情報が不正です:\n%s" % error_message)
-		return
+		return false
 
 	if not _entry_maps_by_service_type.has(registration.service_type):
 		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
@@ -35,9 +39,10 @@ func register(registration: ServiceRegistration) -> void:
 				_display_id(registration.key),
 			]
 		)
-		return
+		return false
 
 	entry_map.register(registration.key, ResolveEntry.new(registration))
+	return true
 
 
 func resolve(

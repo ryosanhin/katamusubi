@@ -20,6 +20,7 @@ func _init() -> void:
 	_test_duplicate_registrations()
 	_test_key_scopes()
 	_test_invalid_registration()
+	_test_null_registration()
 	_test_unregistered_service()
 	_test_clear()
 	_test_empty_and_nonempty_keys_do_not_collide()
@@ -30,9 +31,10 @@ func _init() -> void:
 func _test_default_resolution() -> void:
 	_runner.change_test_name("default_resolution")
 	var container := InjectionContainer.new(null)
-	container.register(_class_registration(TrackedService, Lifecycle.Type.TRANSIENT))
+	var succeeded := container.register(_class_registration(TrackedService, Lifecycle.Type.TRANSIENT))
 
 	var resolved = container.resolve(TrackedService, &"")
+	_runner.assert_true(succeeded, "正常な登録は成功を返す")
 	_runner.assert_true(resolved is InjectionContainerTestTrackedService, "Scriptからデフォルト登録を解決する")
 
 
@@ -133,8 +135,9 @@ func _test_duplicate_registrations() -> void:
 
 	var capture := ErrorCapture.new()
 	capture.start()
-	container.register(_instance_as(rejected, DerivedService, BaseService, &"same"))
+	var succeeded := container.register(_instance_as(rejected, DerivedService, BaseService, &"same"))
 	capture.stop()
+	_runner.assert_false(succeeded, "重複登録は失敗を返す")
 	_runner.assert_true(capture.contains("登録が重複しています"), "重複登録がpush_errorを発生させる")
 	_runner.assert_same(container.resolve(BaseService, &"same"), first, "先に登録したサービスを維持する")
 
@@ -160,13 +163,26 @@ func _test_invalid_registration() -> void:
 	var invalid := ServiceRegistration.new()
 	var capture := ErrorCapture.new()
 	capture.start()
-	container.register(invalid)
+	var succeeded := container.register(invalid)
 	var result = container.resolve(BaseService, &"")
 	capture.stop()
 
 	_runner.assert_true(capture.contains("登録情報が不正です"), "不正登録がpush_errorを発生させる")
+	_runner.assert_false(succeeded, "不正登録は失敗を返す")
 	_runner.assert_true(capture.contains("登録が見つかりません"), "不正登録のエントリが追加されていない")
 	_runner.assert_null(result, "不正登録を解決できない")
+
+
+func _test_null_registration() -> void:
+	_runner.change_test_name("null_registration")
+	var container := InjectionContainer.new(null)
+	var capture := ErrorCapture.new()
+	capture.start()
+	var succeeded := container.register(null)
+	capture.stop()
+
+	_runner.assert_false(succeeded, "nullの登録は失敗を返す")
+	_runner.assert_true(capture.contains("ServiceRegistration に null は指定できません"), "nullの拒否理由を報告する")
 
 
 func _test_unregistered_service() -> void:

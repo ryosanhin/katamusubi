@@ -31,6 +31,9 @@ func _init() -> void:
 	await _test_duplicate_parent_fails_async()
 	await _test_circular_parent_relationship_async()
 	await _test_parent_failure_propagates_to_child_async()
+	await _test_invalid_registration_fails_with_no_targets_async()
+	await _test_duplicate_registration_fails_async()
+	await _test_registration_failure_discards_all_entries_async()
 	await _test_injection_failure_clears_container_async()
 	await _test_exit_tree_resets_scope_async()
 	await _test_targets_are_injected_in_array_order_async()
@@ -186,6 +189,51 @@ func _test_injection_failure_clears_container_async() -> void:
 	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "注入対象の失敗でFAILEDになる")
 	_runner.assert_false(scope.has_container(), "注入失敗時にコンテナをクリアする")
 	await _free_node(holder)
+
+
+func _test_invalid_registration_fails_with_no_targets_async() -> void:
+	_runner.change_test_name("invalid_registration_fails_with_no_targets")
+	var scope := _get_new_container_scope(&"scope")
+	scope.add_invalid_registration = true
+	var capture := ErrorCapture.new()
+	capture.start()
+	root.add_child(scope)
+	capture.stop()
+
+	_runner.assert_true(capture.contains("登録情報が不正です"), "不正登録のエラーを報告する")
+	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "注入対象が空でも登録失敗を隠さない")
+	_runner.assert_false(scope.has_container(), "登録失敗時にコンテナを破棄する")
+	await _free_node(scope)
+
+
+func _test_duplicate_registration_fails_async() -> void:
+	_runner.change_test_name("duplicate_registration_fails")
+	var scope := _get_new_container_scope(&"scope", &"", &"duplicate")
+	scope.add_duplicate_registration = true
+	var capture := ErrorCapture.new()
+	capture.start()
+	root.add_child(scope)
+	capture.stop()
+
+	_runner.assert_true(capture.contains("登録が重複しています"), "重複登録のエラーを報告する")
+	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "重複登録でFAILEDになる")
+	_runner.assert_false(scope.has_container(), "重複登録時にコンテナを破棄する")
+	await _free_node(scope)
+
+
+func _test_registration_failure_discards_all_entries_async() -> void:
+	_runner.change_test_name("registration_failure_discards_all_entries")
+	var scope := _get_new_container_scope(&"scope")
+	scope.add_invalid_registration = true
+	scope.add_valid_registration_after_failure = true
+	var capture := ErrorCapture.new()
+	capture.start()
+	root.add_child(scope)
+	capture.stop()
+
+	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "複数登録の途中の失敗でFAILEDになる")
+	_runner.assert_false(scope.has_container(), "失敗前後に追加された全エントリをコンテナごと破棄する")
+	await _free_node(scope)
 
 
 func _test_exit_tree_resets_scope_async() -> void:

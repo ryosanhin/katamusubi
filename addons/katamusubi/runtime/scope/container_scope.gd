@@ -118,7 +118,11 @@ func _initialize_scope() -> bool:
 
 	_container = InjectionContainer.new(parent_container)
 	
-	_register_instance(_container)
+	if not _register_instance(_container):
+		_container.clear()
+		_container = null
+		state = State.FAILED
+		return false
 
 	# 登録完了後、指定されたすべてのノードへ依存を注入
 	if not _inject_dependencies():
@@ -140,6 +144,6 @@ func _inject_dependencies() -> bool:
 	return true
 
 
-## 具体コンテナが登録内容を定義
+## 具体コンテナが登録内容を定義し、すべて登録できたかを返します。
 @abstract
-func _register_instance(container: InjectionContainer) -> void
+func _register_instance(container: InjectionContainer) -> bool
