@@ -29,6 +29,7 @@ func _init() -> void:
 	await _runner.finish(self, "InjectionContainer")
 
 
+## キーを指定しないサービス登録を既定のキーで解決できることを確認します。
 func _test_default_resolution() -> void:
 	_runner.change_test_name("default_resolution")
 	var container := InjectionContainer.new(null)
@@ -39,6 +40,7 @@ func _test_default_resolution() -> void:
 	_runner.assert_true(resolved is InjectionContainerTestTrackedService, "Scriptからデフォルト登録を解決する")
 
 
+## 登録エラーの発生後も既存サービスを解決でき、clear後に登録可能な状態へ戻ることを確認します。
 func _test_registration_error_state_transitions() -> void:
 	_runner.change_test_name("registration_error_state_transitions")
 	var container := InjectionContainer.new(null)
@@ -63,6 +65,7 @@ func _test_registration_error_state_transitions() -> void:
 	_runner.assert_true(container.has_registration_errors, "後続の正常登録は累積エラー状態を解除しない")
 
 
+## Singleton登録を複数回解決したとき、同じインスタンスが返されることを確認します。
 func _test_singleton() -> void:
 	_runner.change_test_name("singleton")
 	TrackedService.reset_generation_count()
@@ -75,6 +78,7 @@ func _test_singleton() -> void:
 	_runner.assert_equal(TrackedService.generation_count, 1, "Singletonを一度だけ生成する")
 
 
+## Transient登録を複数回解決したとき、毎回異なるインスタンスが返されることを確認します。
 func _test_transient() -> void:
 	_runner.change_test_name("transient")
 	var container := InjectionContainer.new(null)
@@ -86,6 +90,7 @@ func _test_transient() -> void:
 	_runner.assert_not_equal(second.instance_id, first.instance_id, "Transientごとに異なるIDを付ける")
 
 
+## 外部から渡したインスタンスが、その参照を保ったまま解決されることを確認します。
 func _test_instance_registration() -> void:
 	_runner.change_test_name("instance_registration")
 	var container := InjectionContainer.new(null)
@@ -96,6 +101,7 @@ func _test_instance_registration() -> void:
 	_runner.assert_same(container.resolve(TrackedService, &""), provided, "再解決でも提供された参照を返す")
 
 
+## null、非Object、Scriptなしなどの不正な外部インスタンス登録を拒否することを確認します。
 func _test_invalid_instance_registrations() -> void:
 	_runner.change_test_name("invalid_instance_registrations")
 	var container := InjectionContainer.new(null)
@@ -123,6 +129,7 @@ func _test_invalid_instance_registrations() -> void:
 	_runner.assert_true(capture.contains("公開型="), "型不一致で公開型を報告する")
 
 
+## 指定キーの登録を優先し、見つからない場合は既定キーの登録へフォールバックすることを確認します。
 func _test_key_precedence_and_default_fallback() -> void:
 	_runner.change_test_name("key_precedence_and_default_fallback")
 	var container := InjectionContainer.new(null)
@@ -135,6 +142,7 @@ func _test_key_precedence_and_default_fallback() -> void:
 	_runner.assert_same(container.resolve(BaseService, &"missing"), default_service, "不明なキーはローカルのデフォルトへフォールバックする")
 
 
+## 現在のコンテナで見つからないサービスを親コンテナから解決できることを確認します。
 func _test_parent_lookup_order() -> void:
 	_runner.change_test_name("parent_lookup_order")
 	var parent := InjectionContainer.new(null)
@@ -151,6 +159,7 @@ func _test_parent_lookup_order() -> void:
 	_runner.assert_same(child.resolve(BaseService, &"primary"), parent_keyed, "親のキー付き登録を子のデフォルトより優先する")
 
 
+## 同じ型とキーの重複登録を拒否し、先に登録したサービスを維持することを確認します。
 func _test_duplicate_registrations() -> void:
 	_runner.change_test_name("duplicate_registrations")
 	var container := InjectionContainer.new(null)
@@ -168,6 +177,7 @@ func _test_duplicate_registrations() -> void:
 	_runner.assert_same(container.resolve(BaseService, &"same"), first, "先に登録したサービスを維持する")
 
 
+## 同じサービス型でもキーごとに独立した登録として解決できることを確認します。
 func _test_key_scopes() -> void:
 	_runner.change_test_name("key_scopes")
 	var container := InjectionContainer.new(null)
@@ -183,6 +193,7 @@ func _test_key_scopes() -> void:
 	_runner.assert_same(container.resolve(UnrelatedService, &"first"), unrelated, "異なる契約型で同じキーを使用する")
 
 
+## 検証に失敗するサービス登録を拒否し、解決対象へ追加しないことを確認します。
 func _test_invalid_registration() -> void:
 	_runner.change_test_name("invalid_registration")
 	var container := InjectionContainer.new(null)
@@ -200,6 +211,7 @@ func _test_invalid_registration() -> void:
 	_runner.assert_null(result, "不正登録を解決できない")
 
 
+## nullのサービス登録を安全に拒否し、コンテナを利用可能な状態に保つことを確認します。
 func _test_null_registration() -> void:
 	_runner.change_test_name("null_registration")
 	var container := InjectionContainer.new(null)
@@ -213,6 +225,7 @@ func _test_null_registration() -> void:
 	_runner.assert_true(capture.contains("ServiceRegistration に null は指定できません"), "nullの拒否理由を報告する")
 
 
+## 未登録のサービスを解決したとき、nullを返してエラーを報告することを確認します。
 func _test_unregistered_service() -> void:
 	_runner.change_test_name("unregistered_service")
 	var container := InjectionContainer.new(null)
@@ -225,6 +238,7 @@ func _test_unregistered_service() -> void:
 	_runner.assert_null(result, "未登録サービスはnullになる")
 
 
+## clearで生成済みインスタンスと登録を破棄し、その後の解決や再登録が正しく動作することを確認します。
 func _test_clear() -> void:
 	_runner.change_test_name("clear")
 	var parent := InjectionContainer.new(null)
@@ -248,6 +262,7 @@ func _test_clear() -> void:
 	_runner.assert_null(singleton_weak.get_ref(), "生成済みSingletonへの参照を保持しない")
 
 
+## 空キーと文字列キーの登録が衝突せず、それぞれ対応するサービスを解決することを確認します。
 func _test_empty_and_nonempty_keys_do_not_collide() -> void:
 	_runner.change_test_name("empty_and_nonempty_keys_do_not_collide")
 	var container := InjectionContainer.new(null)

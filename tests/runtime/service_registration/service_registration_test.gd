@@ -24,6 +24,7 @@ func _init() -> void:
 	await _runner.finish(self, "ServiceRegistration")
 
 
+## クラス登録の生成時に実装型と公開型を設定し、指定したライフサイクルを保持することを確認します。
 func _test_create_class_registration() -> void:
 	_runner.change_test_name("create_class_registration")
 	# クラス登録の生成時に実装型と公開型が一致し、指定した生成規則が保存されます。
@@ -37,6 +38,7 @@ func _test_create_class_registration() -> void:
 	_expect(registration.lifecycle == Lifecycle.Type.TRANSIENT, "指定したライフサイクルを設定する")
 
 
+## 外部生成したインスタンスを同じ参照のままSingletonとして登録することを確認します。
 func _test_create_instance_registration() -> void:
 	_runner.change_test_name("create_instance_registration")
 	# 外部生成した同じインスタンスを保持し、指定にかかわらずSingletonとして登録します。
@@ -52,6 +54,7 @@ func _test_create_instance_registration() -> void:
 	_expect(registration.lifecycle == Lifecycle.Type.SINGLETON, "インスタンスをSingleton登録する")
 
 
+## 外部インスタンスと実装型・公開型の継承関係を検証し、不正な値を報告することを確認します。
 func _test_instance_validation() -> void:
 	_runner.change_test_name("instance_validation")
 	# 実インスタンス自身の継承関係を、指定された実装型と公開型の両方に対して検証します。
@@ -86,6 +89,7 @@ func _test_instance_validation() -> void:
 	_expect_validation_error(incompatible_service, "公開型=ServiceRegistrationTestUnrelatedService")
 
 
+## fluent APIが新しい登録を生成せず、同じ登録の公開型とキーを更新することを確認します。
 func _test_fluent_updates() -> void:
 	_runner.change_test_name("fluent_updates")
 	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
@@ -102,6 +106,7 @@ func _test_fluent_updates() -> void:
 	_expect(registration.key == &"primary", "with_keyは登録キーを更新する")
 
 
+## 必須型の欠落と未知のライフサイクルが検証エラーとして報告されることを確認します。
 func _test_missing_types_and_invalid_lifecycle() -> void:
 	_runner.change_test_name("missing_types_and_invalid_lifecycle")
 	# 必須型の欠落と未知のライフサイクルを検証エラーとして報告します。
@@ -119,6 +124,7 @@ func _test_missing_types_and_invalid_lifecycle() -> void:
 	_expect_validation_error(invalid_lifecycle, "ライフサイクルが不正です: UNKNOWN(999)")
 
 
+## グローバルクラス名を持たないScriptも正常なサービス型として登録できることを確認します。
 func _test_unnamed_type() -> void:
 	_runner.change_test_name("unnamed_type")
 	# Scriptそのものを解決キーに使うため、グローバルクラス名がない型も登録できます。
@@ -132,6 +138,7 @@ func _test_unnamed_type() -> void:
 	_expect(registration.service_name.is_empty(), "class_nameのない公開型のサービス名は空になる")
 
 
+## 公開型を継承していない実装型の組み合わせが検証エラーになることを確認します。
 func _test_unrelated_registration() -> void:
 	_runner.change_test_name("unrelated_registration")
 	# 実装型が公開型を継承していない組み合わせを検証エラーとして報告します。
@@ -143,6 +150,7 @@ func _test_unrelated_registration() -> void:
 	_expect_validation_error(registration, "継承していません")
 
 
+## 型、継承関係、ライフサイクルが正しいサービス登録では検証エラーがないことを確認します。
 func _test_valid_registration() -> void:
 	_runner.change_test_name("valid_registration")
 	# class_name、継承関係、ライフサイクルが正しい登録には検証エラーがありません。
@@ -152,6 +160,7 @@ func _test_valid_registration() -> void:
 	_expect(errors.is_empty(), "正常な登録のエラー配列が空になる")
 
 
+## ライフサイクルの全列挙値を検証・表示でき、未知の値をUNKNOWNとして扱うことを確認します。
 func _test_lifecycle_helpers() -> void:
 	_runner.change_test_name("lifecycle_helpers")
 	# 全列挙値を有効と判定して名前へ変換し、列挙外の値はUNKNOWNとして扱います。

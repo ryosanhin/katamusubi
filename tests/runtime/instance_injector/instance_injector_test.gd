@@ -40,6 +40,7 @@ func _init() -> void:
 	await _runner.finish(self, "InstanceInjector")
 
 
+## 引数のない注入メソッドを呼び出し、成功状態と副作用を正しく反映することを確認します。
 func _test_no_arguments_async() -> void:
 	_runner.change_test_name("no_arguments")
 	_setup_target(NoArgumentsNode.new())
@@ -52,6 +53,7 @@ func _test_no_arguments_async() -> void:
 	await _cleanup_async()
 
 
+## 型上書きを指定した引数と通常の引数を、それぞれ適切なサービス型で解決することを確認します。
 func _test_type_overrides_and_normal_resolution_async() -> void:
 	_runner.change_test_name("type_overrides_and_normal_resolution")
 	_setup_target(TypeOverridesNode.new())
@@ -72,6 +74,7 @@ func _test_type_overrides_and_normal_resolution_async() -> void:
 	await _cleanup_async()
 
 
+## 型上書きされた引数でも引数名のキーを優先してサービスを解決することを確認します。
 func _test_overridden_type_prefers_argument_key_async() -> void:
 	_runner.change_test_name("overridden_type_prefers_argument_key")
 	_setup_target(KeyedTypeOverrideNode.new())
@@ -89,6 +92,7 @@ func _test_overridden_type_prefers_argument_key_async() -> void:
 	await _cleanup_async()
 
 
+## 型上書きの設定が不足している場合、依存注入を拒否してエラーを報告することを確認します。
 func _test_missing_type_override_async() -> void:
 	_runner.change_test_name("missing_type_override")
 	_setup_target(UntypedNode.new())
@@ -103,6 +107,7 @@ func _test_missing_type_override_async() -> void:
 	await _cleanup_async()
 
 
+## 上書き先の型を解決できない場合、注入メソッドを呼ばず対象の状態を変更しないことを確認します。
 func _test_missing_overridden_type_is_atomic_async() -> void:
 	_runner.change_test_name("missing_overridden_type_is_atomic")
 	_setup_target(TypeOverridesNode.new())
@@ -119,6 +124,7 @@ func _test_missing_overridden_type_is_atomic_async() -> void:
 	await _cleanup_async()
 
 
+## 複数引数を宣言順に解決し、引数名キーの優先と既定キーへのフォールバックを確認します。
 func _test_argument_order_key_precedence_and_fallback_async() -> void:
 	_runner.change_test_name("argument_order_key_precedence_and_fallback")
 	_setup_target(ServicesNode.new())
@@ -141,6 +147,7 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 	await _cleanup_async()
 
 
+## 一部の引数を解決した後に失敗しても、注入メソッドを呼ばず変更を残さないことを確認します。
 func _test_resolution_failure_is_atomic_async() -> void:
 	_runner.change_test_name("resolution_failure_is_atomic")
 	_setup_target(FailedResolutionNode.new())
@@ -156,6 +163,7 @@ func _test_resolution_failure_is_atomic_async() -> void:
 	await _cleanup_async()
 
 
+## 注入メソッドを持たないNodeへの注入が失敗し、無関係なメソッドを呼ばないことを確認します。
 func _test_missing_method_async() -> void:
 	_runner.change_test_name("missing_method")
 	_setup_target(NoMethodNode.new())
@@ -170,6 +178,7 @@ func _test_missing_method_async() -> void:
 	await _cleanup_async()
 
 
+## null、解放済み、ツリー外、ScriptなしのNodeを注入対象として拒否することを確認します。
 func _test_invalid_targets_async() -> void:
 	_runner.change_test_name("invalid_targets")
 	_container = InjectionContainer.new(null)
@@ -196,6 +205,7 @@ func _test_invalid_targets_async() -> void:
 	await process_frame
 
 
+## 解決したサービスと同じ参照を対象へ渡し、注入成功時の状態変更を確認します。
 func _test_resolved_reference_and_success_state_async() -> void:
 	_runner.change_test_name("resolved_reference_and_success_state")
 	_setup_target(SingleServiceNode.new())

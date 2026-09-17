@@ -42,6 +42,7 @@ func _init() -> void:
 	await _runner.finish(self, "ContainerScope")
 
 
+## 親を持たないスコープを明示初期化と_readyのどちらでも初期化できることを確認します。
 func _test_root_scope_initialization_async() -> void:
 	_runner.change_test_name("root_scope_initialization")
 	var manual: ContainerScopeTestContainerScope = ContainerScopeTestContainerScope.new()
@@ -55,6 +56,7 @@ func _test_root_scope_initialization_async() -> void:
 	await _free_node(scene_scope)
 
 
+## 1回のスコープ初期化につきサービス登録が一度だけ実行されることを確認します。
 func _test_registration_once_per_initialization_async() -> void:
 	_runner.change_test_name("registration_once_per_initialization")
 	var scope: ContainerScopeTestContainerScope = BasicScopeScene.instantiate()
@@ -63,6 +65,7 @@ func _test_registration_once_per_initialization_async() -> void:
 	await _free_node(scope)
 
 
+## 初期化済みスコープを再初期化しても、サービス登録と依存注入が繰り返されないことを確認します。
 func _test_reinitialization_is_idempotent_async() -> void:
 	_runner.change_test_name("reinitialization_is_idempotent")
 	var target = NoArgumentsTarget.new()
@@ -76,6 +79,7 @@ func _test_reinitialization_is_idempotent_async() -> void:
 	await _free_node(holder)
 
 
+## 子が先に_readyを迎えても親を先に初期化し、子が親コンテナを保持することを確認します。
 func _test_parent_initializes_before_child_async() -> void:
 	_runner.change_test_name("parent_initializes_before_child")
 	var pair = ParentChildScene.instantiate()
@@ -88,6 +92,7 @@ func _test_parent_initializes_before_child_async() -> void:
 	await _free_node(pair)
 
 
+## 子スコープから親スコープだけに登録されたサービスを解決できることを確認します。
 func _test_parent_service_resolution_async() -> void:
 	_runner.change_test_name("parent_service_resolution")
 	var parent := _get_new_container_scope(&"parent", &"", &"parent_only")
@@ -98,6 +103,7 @@ func _test_parent_service_resolution_async() -> void:
 	await _free_node(holder)
 
 
+## 親子に同じ型とキーのサービスがある場合、子スコープの登録を優先することを確認します。
 func _test_child_registration_precedence_async() -> void:
 	_runner.change_test_name("child_registration_precedence")
 	var parent := _get_new_container_scope(&"parent", &"", &"shared")
@@ -108,6 +114,7 @@ func _test_child_registration_precedence_async() -> void:
 	await _free_node(holder)
 
 
+## 親IDが空のスコープは親候補を検索せず、独立して初期化されることを確認します。
 func _test_empty_parent_id_skips_lookup_async() -> void:
 	_runner.change_test_name("empty_parent_id_skips_lookup")
 	var unrelated_a := _get_new_container_scope(&"candidate")
@@ -120,6 +127,7 @@ func _test_empty_parent_id_skips_lookup_async() -> void:
 	await _free_node(holder)
 
 
+## 指定した親スコープが存在しない場合、初期化に失敗してコンテナを保持しないことを確認します。
 func _test_missing_parent_fails_async() -> void:
 	_runner.change_test_name("missing_parent_fails")
 	var scope := _get_new_container_scope(&"child", &"missing")
@@ -133,6 +141,7 @@ func _test_missing_parent_fails_async() -> void:
 	await _free_node(scope)
 
 
+## 指定した親スコープが複数存在する場合、初期化が失敗してエラーを報告することを確認します。
 func _test_duplicate_parent_fails_async() -> void:
 	_runner.change_test_name("duplicate_parent_fails")
 	var child := _get_new_container_scope(&"child", &"duplicate")
@@ -146,6 +155,7 @@ func _test_duplicate_parent_fails_async() -> void:
 	await _free_node(holder)
 
 
+## 親子関係が循環している場合、関係するスコープを循環または失敗状態にすることを確認します。
 func _test_circular_parent_relationship_async() -> void:
 	_runner.change_test_name("circular_parent_relationship")
 	var scope_a := _get_new_container_scope(&"a", &"b")
@@ -161,6 +171,7 @@ func _test_circular_parent_relationship_async() -> void:
 	await _free_node(holder)
 
 
+## 親スコープの初期化失敗が子スコープへ伝播し、子も初期化に失敗することを確認します。
 func _test_parent_failure_propagates_to_child_async() -> void:
 	_runner.change_test_name("parent_failure_propagates_to_child")
 	var parent := _get_new_container_scope(&"parent", &"missing")
@@ -176,6 +187,7 @@ func _test_parent_failure_propagates_to_child_async() -> void:
 	await _free_node(holder)
 
 
+## 依存注入に失敗した場合、スコープを失敗状態にして構築途中のコンテナを破棄することを確認します。
 func _test_injection_failure_clears_container_async() -> void:
 	_runner.change_test_name("injection_failure_clears_container")
 	var failed_target = MissingMethodTarget.new()
@@ -191,6 +203,7 @@ func _test_injection_failure_clears_container_async() -> void:
 	await _free_node(holder)
 
 
+## 注入対象がなくても不正なサービス登録を検出し、スコープの初期化が失敗することを確認します。
 func _test_invalid_registration_fails_with_no_targets_async() -> void:
 	_runner.change_test_name("invalid_registration_fails_with_no_targets")
 	var scope := _get_new_container_scope(&"scope")
@@ -206,6 +219,7 @@ func _test_invalid_registration_fails_with_no_targets_async() -> void:
 	await _free_node(scope)
 
 
+## 同じ型とキーのサービスを重複登録した場合、スコープの初期化が失敗することを確認します。
 func _test_duplicate_registration_fails_async() -> void:
 	_runner.change_test_name("duplicate_registration_fails")
 	var target = NoArgumentsTarget.new()
@@ -225,6 +239,7 @@ func _test_duplicate_registration_fails_async() -> void:
 	await _free_node(holder)
 
 
+## サービス登録の途中で失敗した場合、それまでに追加した登録も含めてコンテナを破棄することを確認します。
 func _test_registration_failure_discards_all_entries_async() -> void:
 	_runner.change_test_name("registration_failure_discards_all_entries")
 	var target = NoArgumentsTarget.new()
@@ -244,6 +259,7 @@ func _test_registration_failure_discards_all_entries_async() -> void:
 	await _free_node(holder)
 
 
+## スコープがツリーから退出したとき、状態とコンテナが初期状態へ戻ることを確認します。
 func _test_exit_tree_resets_scope_async() -> void:
 	_runner.change_test_name("exit_tree_resets_scope")
 	var scope: ContainerScopeTestContainerScope = BasicScopeScene.instantiate()
@@ -254,6 +270,7 @@ func _test_exit_tree_resets_scope_async() -> void:
 	await _free_node(scope)
 
 
+## 複数の注入対象が配列に指定された順序で処理されることを確認します。
 func _test_targets_are_injected_in_array_order_async() -> void:
 	_runner.change_test_name("targets_are_injected_in_array_order")
 	var order: Array[StringName] = []
@@ -268,6 +285,7 @@ func _test_targets_are_injected_in_array_order_async() -> void:
 	await _free_node(holder)
 
 
+## 依存注入が失敗した時点で処理を中断し、後続の対象へ注入しないことを確認します。
 func _test_injection_stops_at_first_failure_async() -> void:
 	_runner.change_test_name("injection_stops_at_first_failure")
 	var order: Array[StringName] = []
