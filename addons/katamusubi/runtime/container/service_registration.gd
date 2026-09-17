@@ -80,24 +80,12 @@ func validate() -> PackedStringArray:
 			return errors
 
 		if not (instance is Object) or not is_instance_valid(instance):
-			errors.append(
-				"外部インスタンスはスクリプトを持つ Object である必要があります: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
-					type_string(typeof(instance)),
-					_display_script_name(implementation_type),
-					_display_script_name(service_type),
-				]
-			)
+			errors.append("外部インスタンスが有効な Object ではありません。")
 			return errors
 
 		var actual_type: Script = instance.get_script()
 		if actual_type == null:
-			errors.append(
-				"外部インスタンスはスクリプトを持つ Object である必要があります: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
-					instance.get_class(),
-					_display_script_name(implementation_type),
-					_display_script_name(service_type),
-				]
-			)
+			errors.append("外部インスタンスにスクリプトがアタッチされていません。")
 			return errors
 
 		if not _check_inheritance(actual_type, implementation_type) \

@@ -71,6 +71,13 @@ func _test_instance_validation() -> void:
 
 	var null_instance := ServiceRegistration.create_instance_registration(null, DerivedService)
 	_expect_validation_error(null_instance, "外部インスタンスに null は指定できません")
+	var non_object := ServiceRegistration.create_instance_registration(42, DerivedService)
+	_expect_validation_error(non_object, "外部インスタンスが有効な Object ではありません")
+	var object_without_script := ServiceRegistration.create_instance_registration(
+		RefCounted.new(),
+		DerivedService,
+	)
+	_expect_validation_error(object_without_script, "外部インスタンスにスクリプトがアタッチされていません")
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
 		DerivedService.new(),
