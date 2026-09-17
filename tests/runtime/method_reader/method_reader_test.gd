@@ -26,7 +26,7 @@ func _init() -> void:
 	await _runner.finish(self, "MethodReader")
 
 
-## inject_dependency を持たないスクリプト
+## inject_dependencyメソッドを持たないスクリプトから空の引数一覧を取得することを確認します。
 func _test_missing_method() -> void:
 	_runner.change_test_name("missing_method")
 	var arguments := _read(NoInjectionMethod)
@@ -34,7 +34,7 @@ func _test_missing_method() -> void:
 	_runner.assert_true(arguments.is_empty(), "inject_dependencyがなければ空配列を返す")
 
 
-## inject_dependency はあるけど引数が無いスクリプト
+## 引数のないinject_dependencyメソッドから空の引数一覧を取得することを確認します。
 func _test_no_arguments() -> void:
 	_runner.change_test_name("no_arguments")
 	var arguments := _read(NoArgumentMethod)
@@ -42,7 +42,7 @@ func _test_no_arguments() -> void:
 	_runner.assert_true(arguments.is_empty(), "引数なしのinject_dependencyなら空配列を返す")
 
 
-## デフォルト引数があってもちゃんと認識できているか確認
+## デフォルト値を含むクラス型引数を宣言順に読み取り、型情報を保持することを確認します。
 func _test_class_arguments_and_defaults() -> void:
 	_runner.change_test_name("class_arguments_and_defaults")
 	var arguments := _read(ClassArgumentsMethod)
@@ -59,7 +59,7 @@ func _test_class_arguments_and_defaults() -> void:
 	_runner.assert_equal(arguments[1].arg_type, TYPE_OBJECT, "第2引数の型を保持する")
 
 
-## 全ての引数が取得できるか確認
+## 組み込み型の全引数を宣言順に読み取り、それぞれの型情報を保持することを確認します。
 func _test_builtin_arguments() -> void:
 	_runner.change_test_name("builtin_arguments")
 	var arguments := _read(BuiltinArgumentsMethod)
@@ -78,6 +78,7 @@ func _test_builtin_arguments() -> void:
 	_runner.assert_equal(arguments[2].arg_type, TYPE_VECTOR2, "第3引数の型を保持する")
 
 
+## 引数データの文字列表現に、引数名、クラス名、型番号、型名が含まれることを確認します。
 func _test_argument_data_string() -> void:
 	_runner.change_test_name("argument_data_string")
 	var argument := ArgumentData.new(&"service", BaseService, TYPE_OBJECT)

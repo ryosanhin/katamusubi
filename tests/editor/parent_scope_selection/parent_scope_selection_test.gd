@@ -23,6 +23,7 @@ func _init() -> void:
 	await _runner.finish(self, "ParentScopeSelection")
 
 
+## TSCNのselectable_as_parentプロパティをスコープスナップショットへ読み込めることを確認します。
 func _test_scanner_reads_selectable_as_parent() -> void:
 	_runner.change_test_name("scanner_reads_selectable_as_parent")
 	var scene := TscnScanner.scan(
@@ -33,6 +34,7 @@ func _test_scanner_reads_selectable_as_parent() -> void:
 	_runner.assert_true(snapshot.selectable_as_parent, "公開フラグを読み取る")
 
 
+## selectable_as_parentプロパティがない既存シーンを非公開スコープとして読み込むことを確認します。
 func _test_scanner_defaults_missing_property_to_false() -> void:
 	_runner.change_test_name("scanner_defaults_missing_property_to_false")
 	var scene := TscnScanner.scan(&"res://tests/editor/parent_scope_selection/fixtures/scopes/basic_scope.tscn")
@@ -44,6 +46,8 @@ func _test_scanner_defaults_missing_property_to_false() -> void:
 	)
 
 
+## 保存用スナップショットに公開フラグだけが引き継がれ、一時フィールドが除外されることを確認します。[br]
+## あわせて、文字列表現に公開フラグが含まれることも確認します。
 func _test_saved_snapshot_keeps_selectability() -> void:
 	_runner.change_test_name("saved_snapshot_keeps_selectability")
 	var scene_uid := &"uid://cydi7jyr1tte6"
@@ -66,6 +70,7 @@ func _test_saved_snapshot_keeps_selectability() -> void:
 	_runner.assert_true("selectable_as_parent: true" in str(scanned), "文字列表現に公開フラグを含む")
 
 
+## 親スコープ候補には、索引と編集中シーンにある公開スコープだけが含まれることを確認します。
 func _test_candidates_only_include_selectable_scopes() -> void:
 	_runner.change_test_name("candidates_only_include_selectable_scopes")
 	var index := ScopeIndex.new()
@@ -102,6 +107,7 @@ func _test_candidates_only_include_selectable_scopes() -> void:
 	scene_root.free()
 
 
+## 現在の親が非公開または欠落していても、そのIDと状態を選択欄に保持して表示することを確認します。
 func _test_current_unselectable_parent_is_preserved() -> void:
 	_runner.change_test_name("current_unselectable_parent_is_preserved")
 	var picker := ParentScopePicker.new(&"child", &"private_parent")

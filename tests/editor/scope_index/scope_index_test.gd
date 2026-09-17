@@ -14,6 +14,7 @@ func _init() -> void:
 	await _runner.finish(self, "ScopeIndex")
 
 
+## 指定シーンのスナップショットだけを置換し、他シーンの定義を維持できることを確認します。
 func _test_replace_scene_snapshots() -> void:
 	_runner.change_test_name("replace_scene_snapshots")
 	var index := ScopeIndex.new()
@@ -31,6 +32,7 @@ func _test_replace_scene_snapshots() -> void:
 	_expect(index.get_scope_snapshot(&"other") != null, "他シーンの定義が維持される")
 
 
+## 他シーンとスコープIDが重複した場合、置換を中断して元の索引を維持することを確認します。
 func _test_duplicate_is_atomic() -> void:
 	_runner.change_test_name("duplicate_is_atomic")
 	var index := ScopeIndex.new()
@@ -48,6 +50,7 @@ func _test_duplicate_is_atomic() -> void:
 	_runner.assert_same(index.scope_snapshots[0], original, "重複時に元の定義を維持する")
 
 
+## 同一シーン内でIDが重複しても代表スナップショットを残し、ビルド時の再スキャン対象を維持することを確認します。
 func _test_same_scene_duplicate_remains_build_visible() -> void:
 	_runner.change_test_name("same_scene_duplicate_remains_build_visible")
 	var index := ScopeIndex.new()
@@ -63,6 +66,7 @@ func _test_same_scene_duplicate_remains_build_visible() -> void:
 	_expect(index.scope_snapshots[0].scene_uid == &"scene_a", "ビルド時の再スキャン対象を維持する")
 
 
+## 置換操作のロールバックで、後から変更された元オブジェクトではなく保存済みの複製を復元することを確認します。
 func _test_rollback_restores_copies() -> void:
 	_runner.change_test_name("rollback_restores_copies")
 	var index := ScopeIndex.new()
