@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource path="res://tests/fixtures/scopes/test_container_scope.gd" type="Script" id="1_scope"]
-
-[node name="BasicScope" type="Node" groups=["test_group"]]
-script = ExtResource("1_scope")
-scope_id = &"basic"
-registration_label = "basic"

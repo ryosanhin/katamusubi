@@ -1,0 +1,3 @@
+extends MethodReaderTestBaseService
+## MethodReaderTestBaseServiceを実装する、テスト用の派生サービスです。
+class_name MethodReaderTestDerivedService
