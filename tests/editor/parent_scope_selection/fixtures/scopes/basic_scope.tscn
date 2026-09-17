@@ -5,4 +5,3 @@
 [node name="BasicScope" type="Node" groups=["test_group"]]
 script = ExtResource("1_scope")
 scope_id = &"basic"
-registration_label = "basic"

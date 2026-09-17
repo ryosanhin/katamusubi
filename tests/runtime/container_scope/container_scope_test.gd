@@ -235,7 +235,6 @@ func _get_new_container_scope(id: StringName, parent_id: StringName = &"", key: 
 	scope.scope_id = id
 	scope.parent_scope_id = parent_id
 	scope.registration_key = key
-	scope.registration_label = String(id)
 	scope.add_to_group(Const.GROUP_NAME)
 	return scope
 
