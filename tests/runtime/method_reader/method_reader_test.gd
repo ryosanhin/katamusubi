@@ -4,21 +4,14 @@ extends SceneTree
 const MethodReader := preload("res://addons/katamusubi/runtime/injection/method_reader.gd")
 const ArgumentData := preload("res://addons/katamusubi/runtime/injection/argument_data.gd")
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
-const BaseService := preload("res://tests/runtime/method_reader/fixtures/services/base_service.gd")
-const DerivedService := preload("res://tests/runtime/method_reader/fixtures/services/derived_service.gd")
 
-const NoInjectionMethod := preload(
-	"res://tests/runtime/method_reader/fixtures/injection_targets/no_injection_method.gd"
-)
-const NoArgumentMethod := preload(
-	"res://tests/runtime/method_reader/fixtures/injection_targets/no_argument_method.gd"
-)
-const ClassArgumentsMethod := preload(
-	"res://tests/runtime/method_reader/fixtures/injection_targets/class_arguments_method.gd"
-)
-const BuiltinArgumentsMethod := preload(
-	"res://tests/runtime/method_reader/fixtures/injection_targets/builtin_arguments_method.gd"
-)
+const BaseService := preload("fixtures/services/base_service.gd")
+const DerivedService := preload("fixtures/services/derived_service.gd")
+
+const NoInjectionMethod := preload("fixtures/injection_targets/no_injection_method.gd")
+const NoArgumentMethod := preload("fixtures/injection_targets/no_argument_method.gd")
+const ClassArgumentsMethod := preload("fixtures/injection_targets/class_arguments_method.gd")
+const BuiltinArgumentsMethod := preload("fixtures/injection_targets/builtin_arguments_method.gd")
 
 var _runner := TestRunner.new(true)
 

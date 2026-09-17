@@ -8,7 +8,7 @@ const ParentScopeCandidates := preload(
 const ParentScopePicker := preload(
 		"res://addons/katamusubi/editor/inspector/parent_scope_picker.gd"
 )
-const ParentScopeSelectionTestContainerScope := preload("res://tests/editor/parent_scope_selection/fixtures/scopes/test_container_scope.gd")
+const ParentScopeSelectionTestContainerScope := preload("fixtures/scopes/test_container_scope.gd")
 
 var _runner := TestRunner.new(true)
 

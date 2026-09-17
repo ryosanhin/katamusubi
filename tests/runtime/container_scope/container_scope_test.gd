@@ -4,21 +4,16 @@ const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const ContainerScopeScript := preload(
 	"res://addons/katamusubi/runtime/scope/container_scope.gd"
 )
-const ContainerScopeTestContainerScope := preload("res://tests/runtime/container_scope/fixtures/scopes/test_container_scope.gd")
-const BasicScopeScene := preload("res://tests/runtime/container_scope/fixtures/scopes/basic_scope.tscn")
-const ParentChildScene := preload(
-	"res://tests/runtime/container_scope/fixtures/scopes/parent_child_scopes.tscn"
-)
-const BaseService := preload("res://tests/runtime/container_scope/fixtures/services/base_service.gd")
-const NoArgumentsTarget := preload(
-	"res://tests/runtime/container_scope/fixtures/injection_targets/no_argument_method.gd"
-)
-const MissingMethodTarget := preload(
-	"res://tests/runtime/container_scope/fixtures/injection_targets/no_injection_method.gd"
-)
-const OrderedInjectionTarget := preload(
-	"res://tests/runtime/container_scope/fixtures/scopes/ordered_injection_target.gd"
-)
+const ContainerScopeTestContainerScope := preload("fixtures/scopes/test_container_scope.gd")
+
+const BasicScopeScene := preload("fixtures/scopes/basic_scope.tscn")
+const ParentChildScene := preload("fixtures/scopes/parent_child_scopes.tscn")
+
+const BaseService := preload("fixtures/services/base_service.gd")
+
+const NoArgumentsTarget := preload("fixtures/injection_targets/no_argument_method.gd")
+const MissingMethodTarget := preload("fixtures/injection_targets/no_injection_method.gd")
+const OrderedInjectionTarget := preload("fixtures/scopes/ordered_injection_target.gd")
 
 var _runner := TestRunner.new(true)
 

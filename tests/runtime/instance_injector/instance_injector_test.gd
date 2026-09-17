@@ -4,34 +4,19 @@ extends SceneTree
 const InstanceInjector := preload(
 	"res://addons/katamusubi/runtime/injection/instance_injector.gd"
 )
-const BaseService := preload("res://tests/runtime/instance_injector/fixtures/services/base_service.gd")
-const DerivedService := preload("res://tests/runtime/instance_injector/fixtures/services/derived_service.gd")
-const TrackedService := preload("res://tests/runtime/instance_injector/fixtures/services/tracked_service.gd")
-const NoArgumentsNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/no_argument_method.gd"
-)
-const ServicesNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_services_node.gd"
-)
-const SingleServiceNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_single_service_node.gd"
-)
-const FailedResolutionNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_failed_resolution_node.gd"
-)
-const NoMethodNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/no_injection_method.gd"
-)
-const TypeOverridesNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_type_overrides_node.gd"
-)
-const KeyedTypeOverrideNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_keyed_type_override_node.gd"
-)
-const UntypedNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_untyped_node.gd"
-)
-const UnnamedService := preload("res://tests/runtime/instance_injector/fixtures/services/unnamed_service.gd")
+const BaseService := preload("fixtures/services/base_service.gd")
+const DerivedService := preload("fixtures/services/derived_service.gd")
+const TrackedService := preload("fixtures/services/tracked_service.gd")
+const UnnamedService := preload("fixtures/services/unnamed_service.gd")
+
+const NoArgumentsNode := preload("fixtures/injection_targets/no_argument_method.gd")
+const ServicesNode := preload("fixtures/injection_targets/recording_services_node.gd")
+const SingleServiceNode := preload("fixtures/injection_targets/recording_single_service_node.gd")
+const FailedResolutionNode := preload("fixtures/injection_targets/recording_failed_resolution_node.gd")
+const NoMethodNode := preload("fixtures/injection_targets/no_injection_method.gd")
+const TypeOverridesNode := preload("fixtures/injection_targets/recording_type_overrides_node.gd")
+const KeyedTypeOverrideNode := preload("fixtures/injection_targets/recording_keyed_type_override_node.gd")
+const UntypedNode := preload("fixtures/injection_targets/recording_untyped_node.gd")
 
 var _runner := TestRunner.new(true)
 var _container: InjectionContainer
