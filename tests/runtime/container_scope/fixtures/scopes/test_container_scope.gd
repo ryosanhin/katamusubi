@@ -33,29 +33,28 @@ func parent_container_for_test() -> InjectionContainer:
 	return _container._parent_container
 
 
-func _register_instance(container: InjectionContainer) -> bool:
+func _register_instance(container: InjectionContainer) -> void:
 	registration_count += 1
 	registered_service = DerivedService.new()
-	var succeeded := container.register(
+	container.register(
 		ServiceRegistration.create_instance_registration(
 			registered_service,
 			DerivedService,
 		).as_type(BaseService).with_key(registration_key)
 	)
 	if add_invalid_registration:
-		succeeded = container.register(ServiceRegistration.new()) and succeeded
+		container.register(ServiceRegistration.new())
 	if add_duplicate_registration:
-		succeeded = container.register(
+		container.register(
 			ServiceRegistration.create_instance_registration(
 				DerivedService.new(),
 				DerivedService,
 			).as_type(BaseService).with_key(registration_key)
-		) and succeeded
+		)
 	if add_valid_registration_after_failure:
-		succeeded = container.register(
+		container.register(
 			ServiceRegistration.create_instance_registration(
 				DerivedService.new(),
 				DerivedService,
 			).as_type(BaseService).with_key(&"after_failure")
-		) and succeeded
-	return succeeded
+		)
