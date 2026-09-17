@@ -17,6 +17,8 @@ const NoMethodNode := preload("fixtures/injection_targets/no_injection_method.gd
 const TypeOverridesNode := preload("fixtures/injection_targets/recording_type_overrides_node.gd")
 const KeyedTypeOverrideNode := preload("fixtures/injection_targets/recording_keyed_type_override_node.gd")
 const UntypedNode := preload("fixtures/injection_targets/recording_untyped_node.gd")
+const InvalidTypeOverrideNode := preload("fixtures/injection_targets/recording_invalid_type_override_node.gd")
+const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
 
 var _runner := TestRunner.new(true)
 var _container: InjectionContainer
@@ -31,6 +33,7 @@ func _init() -> void:
 	await _test_type_overrides_and_normal_resolution_async()
 	await _test_overridden_type_prefers_argument_key_async()
 	await _test_missing_type_override_async()
+	await _test_invalid_type_overrides_async()
 	await _test_missing_overridden_type_is_atomic_async()
 	await _test_resolution_failure_is_atomic_async()
 	await _test_missing_method_async()
@@ -69,9 +72,37 @@ func _test_type_overrides_and_normal_resolution_async() -> void:
 	_runner.assert_equal(_target.injection_count, 1, "一部をオーバーライドして注入メソッドを一度だけ呼ぶ")
 	_runner.assert_same(_target.received_local_service, local_service, "非グローバルクラスをScript指定で解決する")
 	_runner.assert_same(_target.received_derived_service, derived_service, "宣言型の派生型で解決する")
-	_runner.assert_same(_target.received_base_service, base_service, "無関係な型を採用せず宣言型で解決する")
+	_runner.assert_same(_target.received_base_service, base_service, "宣言型自身の指定で解決する")
 	_runner.assert_same(_target.received_normal_service, base_service, "辞書にない引数は通常の宣言型で解決する")
 	await _cleanup_async()
+
+
+## 型上書き設定の形式、引数名、値、型互換性を検証し、不正時は注入しないことを確認します。
+func _test_invalid_type_overrides_async() -> void:
+	var invalid_cases := [
+		["non_dictionary", 42, &"<判定不能>", "42", "戻り値がDictionaryではありません"],
+		["unknown_argument", {&"unknown": BaseService}, &"unknown", str(BaseService), "存在しない引数名です"],
+		["null_value", {&"service": null}, &"service", "<null>", "有効なScriptではありません"],
+		["non_script_value", {&"service": 42}, &"service", "42", "有効なScriptではありません"],
+		["incompatible_type", {&"service": UnrelatedService}, &"service", str(UnrelatedService), "派生型ではありません"],
+	]
+
+	for invalid_case in invalid_cases:
+		_runner.change_test_name("invalid_type_override_%s" % invalid_case[0])
+		_setup_target(InvalidTypeOverrideNode.new())
+		_target.override_value = invalid_case[1]
+		var capture := ErrorCapture.new()
+		capture.start()
+		var result = _injector().try_inject_arguments(_target)
+		capture.stop()
+
+		_runner.assert_false(result, "不正な型上書き設定ではfalseを返す")
+		_runner.assert_true(capture.contains(str(_target.get_path())), "エラーに対象ノードを含める")
+		_runner.assert_true(capture.contains(str(invalid_case[2])), "エラーに引数名を含める")
+		_runner.assert_true(capture.contains(invalid_case[3]), "エラーに指定値を含める")
+		_runner.assert_true(capture.contains(invalid_case[4]), "エラーに不正理由を含める")
+		_runner.assert_equal(_target.injection_count, 0, "設定が不正な場合は注入メソッドを呼ばない")
+		await _cleanup_async()
 
 
 ## 型上書きされた引数でも引数名のキーを優先してサービスを解決することを確認します。
