@@ -25,29 +25,36 @@ func _init(init_parent_container: InjectionContainer) -> void:
 
 ## 登録情報をローカルスコープへ追加し、登録できたかを返します。
 func register(registration: ServiceRegistration) -> bool:
+	if not _validate_registration(registration):
+		_has_registration_errors = true
+		return false
+
+	if not _entry_maps_by_service_type.has(registration.service_type):
+		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
+
+	var entry_map := _entry_maps_by_service_type[registration.service_type]
+
+	entry_map.register(registration.key, ResolveEntry.new(registration))
+	return true
+
+
+## 登録情報の検証
+func _validate_registration(registration: ServiceRegistration) -> bool:
 	# nullチェック
 	if registration == null:
-		_has_registration_errors = true
-		push_error(
-			"登録情報が不正です:\nServiceRegistration に null は指定できません。"
-		)
+		push_error("登録情報が不正です:\nServiceRegistration に null は指定できません。")
 		return false
 	
 	# 登録情報の検証
 	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
 		var error_message := "\n".join(validation_errors)
-		_has_registration_errors = true
 		push_error("登録情報が不正です:\n%s" % error_message)
 		return false
 
-	if not _entry_maps_by_service_type.has(registration.service_type):
-		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
-
-	var entry_map: ResolveEntryMap = _entry_maps_by_service_type[registration.service_type]
-
-	if entry_map.has(registration.key):
-		_has_registration_errors = true
+	# 重複確認。nullの時は一つも登録されていない状態なのでtrueを返してよい。
+	var entry_map := _entry_maps_by_service_type[registration.service_type]
+	if entry_map != null and entry_map.has(registration.key):
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
 				registration.service_name,
@@ -55,8 +62,7 @@ func register(registration: ServiceRegistration) -> bool:
 			]
 		)
 		return false
-
-	entry_map.register(registration.key, ResolveEntry.new(registration))
+	
 	return true
 
 
