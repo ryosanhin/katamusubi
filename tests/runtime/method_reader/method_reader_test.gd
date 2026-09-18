@@ -4,7 +4,9 @@ extends SceneTree
 const MethodReader := preload("res://addons/katamusubi/runtime/injection/method_reader.gd")
 const ArgumentData := preload("res://addons/katamusubi/runtime/injection/argument_data.gd")
 
-const INJECTION_METHOD_NAME := &"inject_dependency"
+const InstanceInjector := preload(
+		"res://addons/katamusubi/runtime/injection/instance_injector.gd"
+)
 
 const BaseService := preload("fixtures/services/base_service.gd")
 const DerivedService := preload("fixtures/services/derived_service.gd")
@@ -93,4 +95,4 @@ func _test_argument_data_string() -> void:
 
 ## MethodReaderを使って引数を取得
 func _read(script: Script) -> Array[ArgumentData]:
-	return MethodReader.new(INJECTION_METHOD_NAME).get_injection_arguments(script)
+	return MethodReader.new(InstanceInjector.INJECTION_METHOD_NAME).get_injection_arguments(script)
