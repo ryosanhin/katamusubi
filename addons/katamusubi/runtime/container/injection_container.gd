@@ -29,9 +29,6 @@ func register(registration: ServiceRegistration) -> bool:
 		_has_registration_errors = true
 		return false
 
-	if not _entry_maps_by_service_type.has(registration.service_type):
-		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
-
 	var entry_map := _entry_maps_by_service_type[registration.service_type]
 
 	entry_map.register(registration.key, ResolveEntry.new(registration))
@@ -52,9 +49,15 @@ func _validate_registration(registration: ServiceRegistration) -> bool:
 		push_error("登録情報が不正です:\n%s" % error_message)
 		return false
 
-	# 重複確認。nullの時は一つも登録されていない状態なのでtrueを返してよい。
+	# キーの存在確認
+	# キーが存在しないときは重複確認の必要は無いので入れ物だけ作ってtrueで早期リターン
+	if not _entry_maps_by_service_type.has(registration.service_type):
+		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
+		return true
+
+	# 重複確認
 	var entry_map := _entry_maps_by_service_type[registration.service_type]
-	if entry_map != null and entry_map.has(registration.key):
+	if entry_map.has(registration.key):
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
 				registration.service_name,
