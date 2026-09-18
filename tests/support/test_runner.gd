@@ -140,7 +140,7 @@ func finish(tree: SceneTree, suite_name: String) -> void:
 	# 非同期処理が予約した最終フレームまで完了してから結果を集計します。
 	await tree.process_frame
 	if failures.is_empty():
-		print("%s tests passed" % suite_name)
+		print("\n**%s tests passed**\n" % suite_name)
 		tree.quit()
 		return
 
