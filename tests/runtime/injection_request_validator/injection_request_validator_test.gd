@@ -7,20 +7,12 @@ const MethodReader := preload(
 	"res://addons/katamusubi/runtime/injection/method_reader.gd"
 )
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
-const BaseService := preload(
-	"res://tests/runtime/instance_injector/fixtures/services/base_service.gd"
-)
-const DerivedService := preload(
-	"res://tests/runtime/instance_injector/fixtures/services/derived_service.gd"
-)
-const UnrelatedService := preload(
-	"res://tests/runtime/instance_injector/fixtures/services/unrelated_service.gd"
-)
-const NoArgumentsNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/no_argument_method.gd"
-)
+const BaseService := preload("fixtures/services/base_service.gd")
+const DerivedService := preload("fixtures/services/derived_service.gd")
+const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
+const NoArgumentsNode := preload("fixtures/injection_targets/no_argument_method.gd")
 const InvalidTypeOverrideNode := preload(
-	"res://tests/runtime/instance_injector/fixtures/injection_targets/recording_invalid_type_override_node.gd"
+	"fixtures/injection_targets/recording_invalid_type_override_node.gd"
 )
 
 var _runner := TestRunner.new(true)
