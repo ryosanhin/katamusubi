@@ -1,6 +1,10 @@
 extends RefCounted
 class_name ServiceRegistration
 
+const ScriptTypeCompatibility := preload(
+	"res://addons/katamusubi/runtime/utility/script_type_compatibility.gd"
+)
+
 ## 実際に生成するインスタンスのクラスのスクリプト
 var implementation_type: Script
 
@@ -89,8 +93,8 @@ func validate() -> PackedStringArray:
 			errors.append("外部インスタンスにスクリプトがアタッチされていません。")
 			return errors
 
-		if not _check_inheritance(actual_type, implementation_type) \
-				or not _check_inheritance(actual_type, service_type):
+		if not ScriptTypeCompatibility.is_same_or_derived_from(actual_type, implementation_type) \
+				or not ScriptTypeCompatibility.is_same_or_derived_from(actual_type, service_type):
 			errors.append(
 				"外部インスタンスの型が登録型と互換性がありません: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
 					_get_displayable_name(actual_type),
@@ -102,7 +106,7 @@ func validate() -> PackedStringArray:
 	if not Lifecycle.is_valid(lifecycle):
 		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(lifecycle))
 
-	if not _check_inheritance(implementation_type, service_type):
+	if not ScriptTypeCompatibility.is_same_or_derived_from(implementation_type, service_type):
 		errors.append(
 			"生成するクラス %s は公開するクラス %s を継承していません。" % [
 				implementation_type.get_global_name(),
@@ -117,17 +121,3 @@ func validate() -> PackedStringArray:
 func _get_displayable_name(type: Script) -> String:
 	var global_name := type.get_global_name()
 	return global_name if not global_name.is_empty() else type.resource_path
-
-
-## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
-## [param inherits]: サブクラス[br]
-## [param inherited]: スーパークラス
-func _check_inheritance(inherits: Script, inherited: Script) -> bool:
-	var current: Script = inherits
-
-	while current != null:
-		if current == inherited:
-			return true
-		current = current.get_base_script()
-
-	return false

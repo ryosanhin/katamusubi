@@ -3,6 +3,9 @@ extends RefCounted
 
 const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const MethodReader := preload("method_reader.gd")
+const ScriptTypeCompatibility := preload(
+	"res://addons/katamusubi/runtime/utility/script_type_compatibility.gd"
+)
 
 var _scope_name: StringName
 var _container: InjectionContainer
@@ -120,7 +123,10 @@ func _validate_type_overrides(
 			return false
 
 		var declared_type: Script = argument_types[argument_name]
-		if declared_type != null and not _check_inheritance(specified_type, declared_type):
+		if declared_type != null and not ScriptTypeCompatibility.is_same_or_derived_from(
+			specified_type,
+			declared_type,
+		):
 			_push_invalid_override_error(target, argument_name, specified_type, "指定型が宣言型自身または派生型ではありません")
 			return false
 
@@ -157,17 +163,3 @@ func _is_injectable(target: Node) -> bool:
 		return false
 
 	return true
-
-
-## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
-## [param inherits]: サブクラス[br]
-## [param inherited]: スーパークラス
-func _check_inheritance(inherits: Script, inherited: Script) -> bool:
-	var current: Script = inherits
-
-	while current != null:
-		if current == inherited:
-			return true
-		current = current.get_base_script()
-
-	return false
