@@ -11,9 +11,7 @@ const BaseService := preload("fixtures/services/base_service.gd")
 const DerivedService := preload("fixtures/services/derived_service.gd")
 const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
 const NoArgumentsNode := preload("fixtures/injection_targets/no_argument_method.gd")
-const InvalidTypeOverrideNode := preload(
-	"fixtures/injection_targets/recording_invalid_type_override_node.gd"
-)
+const InvalidTypeOverrideNode := preload("fixtures/injection_targets/recording_invalid_type_override_node.gd")
 
 var _runner := TestRunner.new(true)
 
