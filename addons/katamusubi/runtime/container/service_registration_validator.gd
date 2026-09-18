@@ -1,5 +1,6 @@
 extends RefCounted
 
+const ScriptTypeCompatibility := preload("../utility/script_type_compatibility.gd")
 
 ## 登録情報に不備がないか検証し、問題一覧を返す
 static func validate(registration: ServiceRegistration) -> PackedStringArray:
@@ -31,8 +32,16 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 			errors.append("外部インスタンスにスクリプトがアタッチされていません。")
 			return errors
 
-		if not _check_inheritance(actual_type, registration.implementation_type) \
-				or not _check_inheritance(actual_type, registration.service_type):
+		if (
+				not ScriptTypeCompatibility.is_same_or_derived_from(
+						actual_type,
+						registration.implementation_type,
+				)
+				or not ScriptTypeCompatibility.is_same_or_derived_from(
+						actual_type,
+						registration.service_type,
+				)
+		):
 			errors.append(
 				"外部インスタンスの型が登録型と互換性がありません: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
 					_get_displayable_name(actual_type),
@@ -44,7 +53,10 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 	if not Lifecycle.is_valid(registration.lifecycle):
 		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(registration.lifecycle))
 
-	if not _check_inheritance(registration.implementation_type, registration.service_type):
+	if not ScriptTypeCompatibility.is_same_or_derived_from(
+			registration.implementation_type,
+			registration.service_type,
+	):
 		errors.append(
 			"生成するクラス %s は公開するクラス %s を継承していません。" % [
 				registration.implementation_type.get_global_name(),
@@ -59,17 +71,3 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 static func _get_displayable_name(type: Script) -> String:
 	var global_name := type.get_global_name()
 	return global_name if not global_name.is_empty() else type.resource_path
-
-
-## 生成するクラスが公開するクラス自身か派生型であるか調べる[br]
-## [param inherits]: サブクラス[br]
-## [param inherited]: スーパークラス
-static func _check_inheritance(inherits: Script, inherited: Script) -> bool:
-	var current: Script = inherits
-
-	while current != null:
-		if current == inherited:
-			return true
-		current = current.get_base_script()
-
-	return false

@@ -25,7 +25,15 @@ func _init(init_parent_container: InjectionContainer) -> void:
 
 ## 登録情報をローカルスコープへ追加し、登録できたかを返します。
 func register(registration: ServiceRegistration) -> bool:
-	# TODO: nullチェックをどこかで組み込む
+	# nullチェック
+	if registration == null:
+		_has_registration_errors = true
+		push_error(
+			"登録情報が不正です:\nServiceRegistration に null は指定できません。"
+		)
+		return false
+	
+	# 登録情報の検証
 	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
 		var error_message := "\n".join(validation_errors)
