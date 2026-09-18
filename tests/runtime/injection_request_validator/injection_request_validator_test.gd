@@ -6,7 +6,7 @@ const InjectionRequestValidator := preload(
 const MethodReader := preload(
 	"res://addons/katamusubi/runtime/injection/method_reader.gd"
 )
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
+const INJECTION_METHOD_NAME := &"inject_dependency"
 const BaseService := preload("fixtures/services/base_service.gd")
 const DerivedService := preload("fixtures/services/derived_service.gd")
 const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
@@ -60,7 +60,7 @@ func _test_type_override_results_async() -> void:
 	_runner.change_test_name("type_override_result")
 	var target := InvalidTypeOverrideNode.new()
 	root.add_child(target)
-	var arguments := MethodReader.new(Const.INJECTION_METHOD_NAME).get_injection_arguments(
+	var arguments := MethodReader.new(INJECTION_METHOD_NAME).get_injection_arguments(
 		target.get_script()
 	)
 	var result := InjectionRequestValidator.validate_type_overrides(
@@ -92,7 +92,7 @@ func _test_invalid_type_overrides_async() -> void:
 		_runner.change_test_name("invalid_type_override_%s" % invalid_case[0])
 		var target := InvalidTypeOverrideNode.new()
 		root.add_child(target)
-		var arguments := MethodReader.new(Const.INJECTION_METHOD_NAME).get_injection_arguments(
+		var arguments := MethodReader.new(INJECTION_METHOD_NAME).get_injection_arguments(
 			target.get_script()
 		)
 		var result := InjectionRequestValidator.validate_type_overrides(

@@ -1,7 +1,6 @@
 @tool
 extends RefCounted
 
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const ScopeIndex := preload("scope_index.gd")
 const TscnScanner := preload("scanning/tscn_scanner.gd")
 const IdGenerator := preload("utility/scope_id_generator.gd")
@@ -91,10 +90,10 @@ func _on_script_changed(node: Node) -> void:
 func _assign_scope_id(scope: ContainerScope) -> void:
 	var is_modified := false
 
-	var is_in_group := scope.is_in_group(Const.GROUP_NAME)
+	var is_in_group := scope.is_in_group(ContainerScope.GROUP_NAME)
 
 	if not is_in_group:
-		scope.add_to_group(Const.GROUP_NAME, true)
+		scope.add_to_group(ContainerScope.GROUP_NAME, true)
 		is_modified = true
 	
 	if scope.scope_id.is_empty():

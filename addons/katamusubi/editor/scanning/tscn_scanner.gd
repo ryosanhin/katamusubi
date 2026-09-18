@@ -1,7 +1,6 @@
 @tool
 extends RefCounted
 
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const SceneSnapshot := preload("scene_snapshot.gd")
 
 ## シーンファイルを走査し、ファイルから読み取れるスコープの情報を返す。
@@ -21,7 +20,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 
 	var scene_state := packed_scene.get_state()
 	for node_index in scene_state.get_node_count():
-		if not Const.GROUP_NAME in scene_state.get_node_groups(node_index):
+		if not ContainerScope.GROUP_NAME in scene_state.get_node_groups(node_index):
 			continue
 
 		var scope_id := &""

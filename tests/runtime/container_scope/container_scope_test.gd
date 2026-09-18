@@ -1,6 +1,5 @@
 extends SceneTree
 
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const ContainerScopeScript := preload(
 	"res://addons/katamusubi/runtime/scope/container_scope.gd"
 )
@@ -309,7 +308,7 @@ func _get_new_container_scope(id: StringName, parent_id: StringName = &"", key: 
 	scope.scope_id = id
 	scope.parent_scope_id = parent_id
 	scope.registration_key = key
-	scope.add_to_group(Const.GROUP_NAME)
+	scope.add_to_group(ContainerScope.GROUP_NAME)
 	return scope
 
 
