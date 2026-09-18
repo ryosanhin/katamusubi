@@ -1,8 +1,8 @@
 extends Node
 
 const LocalService := preload("../services/unnamed_service.gd")
+const BaseService := preload("../services/base_service.gd")
 const DerivedService := preload("../services/derived_service.gd")
-const UnrelatedService := preload("../services/unrelated_service.gd")
 
 var injection_count := 0
 var received_local_service: LocalService
@@ -15,7 +15,7 @@ func get_inject_type_overrides() -> Dictionary[StringName, Script]:
 	return {
 		&"local_service": LocalService,
 		&"derived_service": DerivedService,
-		&"base_service": UnrelatedService,
+		&"base_service": BaseService,
 	}
 
 
