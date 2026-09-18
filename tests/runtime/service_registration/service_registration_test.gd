@@ -6,7 +6,7 @@ const DerivedService := preload("fixtures/services/derived_service.gd")
 const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("fixtures/services/unnamed_service.gd")
 const RegistrationValidator := preload(
-	"../../../addons/katamusubi/runtime/container/service_registration_validator.gd"
+	"res://addons/katamusubi/runtime/container/service_registration_validator.gd"
 )
 
 var _runner := TestRunner.new(true)

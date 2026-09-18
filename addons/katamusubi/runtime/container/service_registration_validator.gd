@@ -1,5 +1,4 @@
 extends RefCounted
-class_name ServiceRegistrationValidator
 
 
 ## 登録情報に不備がないか検証し、問題一覧を返す

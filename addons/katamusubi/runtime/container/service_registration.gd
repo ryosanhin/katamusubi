@@ -1,6 +1,8 @@
 extends RefCounted
 class_name ServiceRegistration
 
+const ServiceRegistrationValidator := preload("service_registration_validator.gd")
+
 ## 実際に生成するインスタンスのクラスのスクリプト
 var implementation_type: Script
 
