@@ -1,9 +1,8 @@
 extends RefCounted
 ## 注入対象と型オーバーライドを検証し、注入処理で利用できる形へ正規化する
 
-const ScriptTypeCompatibility := preload(
-	"res://addons/katamusubi/runtime/utility/script_type_compatibility.gd"
-)
+const ArgumentData := preload("argument_data.gd")
+const ScriptTypeCompatibility := preload("../utility/script_type_compatibility.gd")
 
 
 ## 型オーバーライドの検証結果
@@ -46,7 +45,7 @@ static func validate_target(target: Variant, scope_name: StringName) -> PackedSt
 ## 型オーバーライドを検証し、キーと値を厳密に型付けした辞書を返す
 static func validate_type_overrides(
 	target: Node,
-	arguments: Array,
+	arguments: Array[ArgumentData],
 	override_value: Variant,
 ) -> TypeOverrideValidationResult:
 	var result := TypeOverrideValidationResult.new()
@@ -66,6 +65,8 @@ static func validate_type_overrides(
 		argument_types[argument.arg_name] = argument.service_type
 
 	for override_key: Variant in override_value:
+		# まず文字列系か確認
+		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		if not (override_key is String or override_key is StringName):
 			result.overrides.clear()
 			result.diagnostics.append(
@@ -78,6 +79,8 @@ static func validate_type_overrides(
 			)
 			return result
 
+		# 指定された引数名が存在するか確認
+		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var argument_name := StringName(override_key)
 		if not argument_types.has(argument_name):
 			result.overrides.clear()
@@ -91,6 +94,8 @@ static func validate_type_overrides(
 			)
 			return result
 
+		# 引数名に示されたスクリプトが存在するか確認
+		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var specified_type: Variant = override_value[override_key]
 		if specified_type == null or not specified_type is Script:
 			result.overrides.clear()
@@ -104,6 +109,8 @@ static func validate_type_overrides(
 			)
 			return result
 
+		# もともと引数の型として定義されていたスクリプトと同一、または派生か確認
+		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var declared_type: Script = argument_types[argument_name]
 		if declared_type != null and not ScriptTypeCompatibility.is_same_or_derived_from(
 			specified_type,
@@ -120,6 +127,7 @@ static func validate_type_overrides(
 			)
 			return result
 
+		# 最後まで残った場合、引数名をキー、オーバーライド型を値として登録
 		result.overrides[argument_name] = specified_type
 
 	return result
