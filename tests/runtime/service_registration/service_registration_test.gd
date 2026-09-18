@@ -5,6 +5,9 @@ const BaseService := preload("fixtures/services/base_service.gd")
 const DerivedService := preload("fixtures/services/derived_service.gd")
 const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("fixtures/services/unnamed_service.gd")
+const RegistrationValidator := preload(
+	"res://addons/katamusubi/runtime/container/service_registration_validator.gd"
+)
 
 var _runner := TestRunner.new(true)
 
@@ -13,6 +16,7 @@ func _init() -> void:
 	# 公開APIの生成・更新、継承判定、検証、Lifecycleの全ケースを順番に確認します。
 	_test_create_class_registration()
 	_test_create_instance_registration()
+	_test_dedicated_validator()
 	_test_instance_validation()
 	_test_fluent_updates()
 	_test_missing_types_and_invalid_lifecycle()
@@ -52,6 +56,29 @@ func _test_create_instance_registration() -> void:
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
 	_expect(registration.lifecycle == Lifecycle.Type.SINGLETON, "インスタンスをSingleton登録する")
+
+
+## 専用バリデーターが登録を検証し、従来APIも同じ結果へ委譲することを確認します。
+func _test_dedicated_validator() -> void:
+	_runner.change_test_name("dedicated_validator")
+	var registration := ServiceRegistration.new()
+	var validator_errors: PackedStringArray = RegistrationValidator.validate(registration)
+
+	_runner.assert_expected_error(
+		validator_errors,
+		"生成するクラスが指定されていません",
+		"専用バリデーターが不正な登録を検出する",
+	)
+	_runner.assert_equal(
+		registration.validate(),
+		validator_errors,
+		"ServiceRegistration.validateは専用バリデーターへ委譲する",
+	)
+	_runner.assert_expected_error(
+		RegistrationValidator.validate(null),
+		"ServiceRegistration に null は指定できません",
+		"専用バリデーターがnull登録を安全に拒否する",
+	)
 
 
 ## 外部インスタンスと実装型・公開型の継承関係を検証し、不正な値を報告することを確認します。

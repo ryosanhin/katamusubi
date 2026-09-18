@@ -3,6 +3,7 @@ class_name InjectionContainer
 
 const ResolveEntry := preload("resolve_entry.gd")
 const ResolveEntryMap := preload("resolve_entry_map.gd")
+const RegistrationValidator := preload("service_registration_validator.gd")
 
 ## 親スコープのコンテナです。このコンテナ内で見つからない依存を親へ問い合わせ
 var _parent_container: InjectionContainer
@@ -24,11 +25,15 @@ func _init(init_parent_container: InjectionContainer) -> void:
 
 ## 登録情報をローカルスコープへ追加し、登録できたかを返します。
 func register(registration: ServiceRegistration) -> bool:
+	# nullチェック
 	if registration == null:
 		_has_registration_errors = true
-		push_error("登録情報が不正です:\nServiceRegistration に null は指定できません。")
+		push_error(
+			"登録情報が不正です:\nServiceRegistration に null は指定できません。"
+		)
 		return false
-
+	
+	# 登録情報の検証
 	var validation_errors := registration.validate()
 	if not validation_errors.is_empty():
 		var error_message := "\n".join(validation_errors)
