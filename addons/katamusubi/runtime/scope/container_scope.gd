@@ -2,8 +2,10 @@
 extends Node
 class_name ContainerScope
 
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const InstanceInjector := preload("../injection/instance_injector.gd")
+
+## スコープのスクリプトがアタッチされているノードのグループ名
+const GROUP_NAME := &"test_group"
 
 ## コンテナ初期化の内部状態
 enum State {
@@ -56,7 +58,7 @@ func _find_parent_scope() -> ContainerScope:
 
 	var matched: Array[ContainerScope] = []
 
-	for node in get_tree().get_nodes_in_group(Const.GROUP_NAME):
+	for node in get_tree().get_nodes_in_group(GROUP_NAME):
 		var scope := node as ContainerScope
 		
 		if (

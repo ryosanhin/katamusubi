@@ -1,9 +1,14 @@
 extends RefCounted
 ## インスタンス注入だけを担当
 
-const Const := preload("res://addons/katamusubi/katamusubi_global.gd")
 const MethodReader := preload("method_reader.gd")
 const InjectionRequestValidator := preload("injection_request_validator.gd")
+
+## 注入対象として固定利用するメソッド名
+const INJECTION_METHOD_NAME := &"inject_dependency"
+
+## 注入する依存クラスの型をオーバーライドするメソッド名
+const OVERRIDE_METHOD_NAME := &"get_inject_type_overrides"
 
 var _scope_name: StringName
 var _container: InjectionContainer
@@ -24,14 +29,14 @@ func try_inject_arguments(target: Variant) -> bool:
 		return false
 	
 	var script := target.get_script() as Script
-	var method_reader := MethodReader.new(Const.INJECTION_METHOD_NAME)
+	var method_reader := MethodReader.new(INJECTION_METHOD_NAME)
 	var arguments := method_reader.get_injection_arguments(script)
 	var resolved_arguments: Array = []
 
 	# ここで引数の型のオーバーライドの辞書を取得
 	var override_value: Variant = {}
-	if target.has_method(Const.OVERRIDE_METHOD_NAME):
-		var callable := Callable(target, Const.OVERRIDE_METHOD_NAME)
+	if target.has_method(OVERRIDE_METHOD_NAME):
+		var callable := Callable(target, OVERRIDE_METHOD_NAME)
 		override_value = callable.call()
 	var override_result := InjectionRequestValidator.validate_type_overrides(
 		target,
@@ -85,7 +90,7 @@ func try_inject_arguments(target: Variant) -> bool:
 			return false
 		resolved_arguments.append(resolved_service)
 
-	var injection_method := Callable(target, Const.INJECTION_METHOD_NAME)
+	var injection_method := Callable(target, INJECTION_METHOD_NAME)
 	if not injection_method.is_valid():
 		push_error(
 				"依存注入メソッドを呼び出せません: 対象=%s, スコープ名=%s"
