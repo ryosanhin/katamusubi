@@ -9,7 +9,7 @@ This project is heavily inspired by [VContainer](https://github.com/hadashiA/VCo
 Suggestions and corrections are welcome!
 
 ## Environment
-The project is developed using Godot 4.7.x
+The project is developed using Godot 4.7.x.
 
 The implementation uses `@abstract`.
 
@@ -84,145 +84,48 @@ func inject_dependency(example_manager: ExampleManager) -> void:
 	_example_manager = example_manager
 ```
 
-Select `ExampleContainerScope` in the Inspector and add `ExampleUser` to its **Inject Targets** array.
+Select `ExampleContainerScope` and add `ExampleUser` to its **Inject Targets** array　in the Inspector.
 
-During scope initialization, katamusubi resolves the arguments and calls `inject_dependency()` on each node in **Inject Targets**.
-
-Nodes are not automatically discovered or injected. You must add each target node to the Inject Targets array.
-
-For this example, annotate each parameter with a service type declared using `class_name`. Scripts without `class_name` require explicit type overrides through `get_inject_type_overrides()`.
-
-## Injection timing
-
-A scope normally initializes in its `_ready()` method.
-
-Parent scopes are initialized first, followed by service registration and dependency injection in the current scope.
-
-A parent scope can also be initialized by a child scope before the parent's own `_ready()` method runs.
-
-Injection is not guaranteed to occur before or after the target node's `_ready()` method.
-
-Do not assume that injected dependencies are available in `_ready()`, or that service and target nodes have completed their own `_ready()` methods when injection occurs.
-
-Use `inject_dependency()` to receive and store references. Any initialization that also depends on node readiness should explicitly coordinate both conditions.
-
-If a script extending `ContainerScope` overrides `_ready()`, call `super._ready()` to preserve scope initialization.
+During scope initialization, katamusubi calls `inject_dependency()` on each node in the **Inject Targets** array.
 
 ## Register a service under a base type
 
-Use `as_type()` to register a service under a base type.
-
-`as_type()` replaces the registration's exposed type. It does not cast or convert the actual instance.
-
-For this example, first define `AbstractExampleManager`:
-
-```gdscript
-# abstract_example_manager.gd
-@abstract
-extends Node
-class_name AbstractExampleManager
-
-
-@abstract
-func use_service() -> void
-```
-
-Then change `ExampleManager` to extend it:
-
-```gdscript
-# example_manager.gd
-extends AbstractExampleManager
-class_name ExampleManager
-
-
-func use_service() -> void:
-	print("Service used.")
-```
-
-Replace the registration in `_register_instance()` with:
-
 ```gdscript
 container.register(
-		ServiceRegistration.create_instance_registration(
-				_example_service,
-				ExampleManager,
-		).as_type(AbstractExampleManager)
+        ServiceRegistration.create_instance_registration(
+                _example_service,
+                ExampleManager,
+        ).as_type(AbstractExampleManager)
 )
 ```
 
-Update the receiving script to request `AbstractExampleManager`:
+`as_type()` changes the exposed type without converting the instance.
 
-```gdscript
-extends Node
+The implementation type must be the same as, or derive from, the specified base type.
 
-var _example_manager: AbstractExampleManager
-
-
-func inject_dependency(example_manager: AbstractExampleManager) -> void:
-	_example_manager = example_manager
-```
-
-The implementation type must be the same as, or derive from, the type passed to `as_type()`.
-
-**This registration alone does not make the service resolvable as both `ExampleManager` and `AbstractExampleManager`.**
-
-Register the service under both types if you want to resolve it using either type.
+To resolve the service using both types, register it under each type separately.
 
 ## Register with a key
 
 Use `with_key()` to distinguish multiple registrations of the same service type.
 
-To request a keyed registration, **use its key as the parameter name in `inject_dependency()`**.
+```gdscript
+container.register(
+        ServiceRegistration.create_instance_registration(
+                _specific_example_service,
+                ExampleManager,
+        ).with_key(&"specific")
+)
+```
+
+To request a keyed registration, use its key as the parameter name in `inject_dependency()`.
+
+```gdscript
+func inject_dependency(specific: ExampleManager) -> void:
+    _example_manager = specific
+```
 
 If no matching keyed registration exists, katamusubi falls back to an unkeyed registration of the same type.
-
-The following scope registers a default service and a service with the key `specific`:
-
-```gdscript
-extends ContainerScope
-
-@export var _example_service: ExampleManager
-@export var _specific_example_service: ExampleManager
-
-
-func _register_instance(container: InjectionContainer) -> void:
-	container.register(
-			ServiceRegistration.create_instance_registration(
-					_example_service,
-					ExampleManager,
-			)
-	)
-
-	container.register(
-			ServiceRegistration.create_instance_registration(
-					_specific_example_service,
-					ExampleManager,
-			).with_key(&"specific")
-	)
-```
-
-The receiving script can request both registrations:
-
-```gdscript
-extends Node
-
-var _default_service: ExampleManager
-var _specific_service: ExampleManager
-
-
-func inject_dependency(
-	example_manager: ExampleManager,
-	specific: ExampleManager,
-) -> void:
-	_default_service = example_manager
-	_specific_service = specific
-```
-
-In this example, `example_manager` receives the unkeyed service because there is no registration with that key.
-
-`specific` receives the service registered with `&"specific"`.
-
-Registrations must have unique combinations of service type and key within a scope. Registering the same combination twice is an error.
 
 ### Resolution order
 
@@ -293,3 +196,13 @@ Initialization fails if a required parent is missing. A failed scope does not au
 When instantiating a child scene at runtime, ensure that all required parent scopes are already present in the SceneTree.
 
 Do not instantiate multiple parent scopes with the same scope ID at the same time. A child scope requires exactly one matching parent scope.
+
+## Injection timing
+
+Scopes normally initialize in `_ready()`. Parent scopes are initialized first, followed by service registration and dependency injection in the current scope.
+
+A child scope may initialize its parent before the parent's own `_ready()` method runs.
+
+Injection is not guaranteed to occur before or after the service or target node's `_ready()`. Do not assume that injected dependencies are available in `_ready()`.
+
+If you override `ContainerScope._ready()`, call `super._ready()` to preserve scope initialization.
