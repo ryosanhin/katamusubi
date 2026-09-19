@@ -9,9 +9,9 @@ This project is heavily inspired by [VContainer](https://github.com/hadashiA/VCo
 Suggestions and corrections are welcome!
 
 ## Environment
-The project is developed in Godot 4.7.x
+The project is developed using Godot 4.7.x
 
-The implementation uses `@abstract`, which requires Godot 4.5+
+The implementation uses `@abstract`.
 
 ## Installation
 
@@ -21,7 +21,7 @@ The implementation uses `@abstract`, which requires Godot 4.5+
 
 ## Basic Usage
 
-This example explaind how to register an existing service node and inject it into another node.
+This example demonstrates how to register an existing service node and inject it into another node.
 
 Create a scene with the following nodes:
 
@@ -47,7 +47,7 @@ func use_service() -> void:
 
 ### 2. Register the service
 
-Create `example_container_scope.gd`, extend `ContainerScope`, and register the service by overriding `_register_instance()`:
+Create `example_container_scope.gd` with the following code to extend `ContainerScope` and register the service by overriding `_register_instance()`
 
 ```gdscript
 extends ContainerScope
@@ -94,7 +94,7 @@ For this example, annotate each parameter with a service type declared using `cl
 
 ## Injection timing
 
-Scope initialization begins when `_ready()` is called on a scope.
+A scope normally initializes in its `_ready()` method.
 
 Parent scopes are initialized first, followed by service registration and dependency injection in the current scope.
 
@@ -113,8 +113,6 @@ If a script extending `ContainerScope` overrides `_ready()`, call `super._ready(
 Use `as_type()` to register a service under a base type.
 
 `as_type()` replaces the registration's exposed type. It does not cast or convert the actual instance.
-
-Register the service under both types if you want to resolve it using either type.
 
 For this example, first define `AbstractExampleManager`:
 
@@ -167,6 +165,8 @@ func inject_dependency(example_manager: AbstractExampleManager) -> void:
 The implementation type must be the same as, or derive from, the type passed to `as_type()`.
 
 **This registration alone does not make the service resolvable as both `ExampleManager` and `AbstractExampleManager`.**
+
+Register the service under both types if you want to resolve it using either type.
 
 ## Register with a key
 
@@ -234,9 +234,9 @@ For a child scope with one parent, the order is:
 
 | Priority | Registration |
 | --- | --- |
-| 1 | Matching type and key in the own scope |
+| 1 | Matching type and key in the current scope |
 | 2 | Matching type and key in the parent scope |
-| 3 | Matching type without a key in the own scope |
+| 3 | Matching type without a key in the current scope |
 | 4 | Matching type without a key in the parent scope |
 
 A keyed registration in a parent scope takes precedence over an unkeyed registration in the current scope.
@@ -273,7 +273,7 @@ func _register_instance(_container: InjectionContainer) -> void:
 ```
 
 4. In the child scope's Inspector, select `ParentContainerScope` from **Current parent scope**.
-5. Add `ExampleUser` to the child scope's **Inject Target** array. Use the receiving script from the basic example, which requests `ExampleManager`.
+5. Add `ExampleUser` to the child scope's **Inject Targets** array. Use the receiving script from the basic example, which requests `ExampleManager`.
 6. Save the child scene and run `RootScene` with both scenes present.
 
 `_register_instance()` must be implemented even when the child has no services to register.
@@ -290,6 +290,6 @@ When a child scope initializes:
 
 Initialization fails if a required parent is missing. A failed scope does not automatically retry even if a parent is added later.
 
-When instantiating a child scene at runtime, ensure that all required parent scopes are already added in the SceneTree.
+When instantiating a child scene at runtime, ensure that all required parent scopes are already present in the SceneTree.
 
 Do not instantiate multiple parent scopes with the same scope ID at the same time. A child scope requires exactly one matching parent scope.
