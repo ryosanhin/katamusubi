@@ -36,7 +36,7 @@ var scope_name: StringName:
 @export var selectable_as_parent := false
 
 ## 注入対象
-@export var _inject_target: Array[Node] = []
+@export var _inject_targets: Array[Node] = []
 
 
 func _enter_tree() -> void:
@@ -145,7 +145,7 @@ func _initialize_scope() -> bool:
 func _inject_dependencies() -> bool:
 	var injector := InstanceInjector.new(_container, scope_name)
 
-	for target in _inject_target:
+	for target in _inject_targets:
 		if not injector.try_inject_arguments(target):
 			return false
 	
