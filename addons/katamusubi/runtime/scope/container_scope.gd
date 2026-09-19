@@ -5,7 +5,7 @@ class_name ContainerScope
 const InstanceInjector := preload("../injection/instance_injector.gd")
 
 ## スコープのスクリプトがアタッチされているノードのグループ名
-const GROUP_NAME := &"test_group"
+const GROUP_NAME := &"katamusubi_scope"
 
 ## コンテナ初期化の内部状態
 enum State {
@@ -37,6 +37,11 @@ var scope_name: StringName:
 
 ## 注入対象
 @export var _inject_targets: Array[Node] = []
+
+
+func _enter_tree() -> void:
+	if not is_in_group(GROUP_NAME):
+		add_to_group(GROUP_NAME, true)
 
 
 func _ready() -> void:

@@ -4,13 +4,13 @@
 
 [node name="ScopePair" type="Node"]
 
-[node name="Child" type="Node" parent="." groups=["test_group"]]
+[node name="Child" type="Node" parent="." groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
 scope_id = &"child"
 parent_scope_id = &"parent"
 registration_key = &"shared"
 
-[node name="Parent" type="Node" parent="." groups=["test_group"]]
+[node name="Parent" type="Node" parent="." groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
 scope_id = &"parent"
 registration_key = &"shared"
