@@ -1,10 +1,14 @@
 @tool
 extends EditorProperty
 
+const ScopeIndex := preload("../scope_index.gd")
+
 var _line_edit: LineEdit
 
+var _index: ScopeIndex
 
-func _init() -> void:
+
+func _init(init_index: ScopeIndex) -> void:
 	_line_edit = LineEdit.new()
 	_line_edit.placeholder_text = "empty = private scope"
 	_line_edit.text_submitted.connect(_on_text_submitted)

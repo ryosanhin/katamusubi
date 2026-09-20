@@ -3,15 +3,17 @@ extends EditorProperty
 
 const ScopeIndex := preload("../scope_index.gd")
 
-var _candidates: PackedStringArray = []
+var _candidates: Dictionary[String, StringName] = {}
 
 var _line_edit: LineEdit
 var _item_list: ItemList
 
 var _index: ScopeIndex
 
+
 func _init(init_index: ScopeIndex) -> void:
 	_index = init_index
+	_candidates = _get_candidate_preview()
 
 	var container := VBoxContainer.new()
 
@@ -46,7 +48,6 @@ func _on_text_changed(value: String) -> void:
 		return
 
 	# 部分一致する候補を抽出
-	_candidates = _get_candidate_preview()
 	for candidate in _candidates:
 		if value.to_lower() in candidate.to_lower():
 			_item_list.add_item(candidate)
@@ -65,9 +66,9 @@ func _on_focus_exited() -> void:
 
 
 func _on_item_selected(index: int) -> void:
-	var value := _item_list.get_item_text(index)
+	var key := _item_list.get_item_text(index)
 
-	emit_changed(get_edited_property(), value)
+	emit_changed(get_edited_property(), _candidates[key])
 
 	_remove_item_list()
 
@@ -83,8 +84,10 @@ func _commit(value: StringName) -> void:
 	emit_changed(get_edited_property(), value)
 
 
-func _get_candidate_preview() -> PackedStringArray:
-	var candidates: PackedStringArray = []
+func _get_candidate_preview() -> Dictionary[String, StringName]:
+	var candidates: Dictionary[String, StringName] = {}
 	for scope_spanshot in _index.scope_snapshots:
-		candidates.append(scope_spanshot.scope_id)
+		var scene_name := ResourceUID.uid_to_path(scope_spanshot.scene_uid)
+		var key := "%s (%s)" % [scope_spanshot.scope_id, scene_name]
+		candidates[key] = scope_spanshot.scope_id
 	return candidates

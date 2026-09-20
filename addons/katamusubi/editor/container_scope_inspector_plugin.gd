@@ -24,7 +24,7 @@ func _parse_property(
 		"scope_id":
 			add_property_editor(
 					name,
-					ScopeIdEditorProperty.new()
+					ScopeIdEditorProperty.new(SCOPE_INDEX)
 			)
 			return true
 		"parent_scope_id":
