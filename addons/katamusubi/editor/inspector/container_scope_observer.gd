@@ -26,7 +26,7 @@ func synchronize_index_with_filesystem() -> void:
 		rebuild_all_index()
 		return
 
-	if _remove_deleted_scenes():
+	if _remove_index_in_deleted_scenes():
 		_save_index()
 
 
@@ -51,7 +51,7 @@ func rebuild_all_index() -> void:
 		if scene_uid == path or not _update_index(scene_uid):
 			failed.append(path)
 	
-	_remove_deleted_scenes()
+	_remove_index_in_deleted_scenes()
 	
 	_save_index()
 
@@ -82,7 +82,7 @@ func _save_index() -> void:
 
 ## 削除されていたシーンUIDに紐づいたインデックスを削除する。[br]
 ## returns: 削除したか。
-func _remove_deleted_scenes() -> bool:
+func _remove_index_in_deleted_scenes() -> bool:
 	var removed_scene_uid_set: Dictionary[StringName, bool] = {}
 	for candidate in _scope_index.scope_snapshots:
 		var path := ResourceUID.ensure_path(candidate.scene_uid)
