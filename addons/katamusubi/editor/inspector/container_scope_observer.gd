@@ -17,7 +17,7 @@ func on_scene_saved(path: String) -> void:
 	if scene_uid == path:
 		push_warning("Could not obtain scene UID: %s" % path)
 		return
-	_update_scene(scene_uid)
+	_update_index(scene_uid)
 	_save_index()
 
 
@@ -34,9 +34,11 @@ func on_filesystem_changed() -> void:
 		_save_index()
 
 
-## Rebuilds the cache from every saved scene, including scenes absent from the cache.
+## プロジェクト内全シーンについて走査しインデックスを再構築する。
 func rebuild_all_index() -> void:
 	var filesystem := EditorInterface.get_resource_filesystem()
+	# ファイルシステムがスキャン中には邪魔しない。
+	# どうせファイルシステム完了後に構築を割り込ませるタイミングがあるので。
 	if filesystem.is_scanning():
 		_is_rebuild_pending = true
 		return
@@ -44,11 +46,11 @@ func rebuild_all_index() -> void:
 	var root := filesystem.get_filesystem()
 	if root == null:
 		return
-	var scene_paths := _collect_scene_paths(root)
+	var scene_paths := _get_scene_paths(root)
 	var failed: PackedStringArray = []
 	for path in scene_paths:
 		var scene_uid := ResourceUID.path_to_uid(path)
-		if scene_uid == path or not _update_scene(scene_uid):
+		if scene_uid == path or not _update_index(scene_uid):
 			failed.append(path)
 	_remove_deleted_scenes()
 	_save_index()
@@ -56,15 +58,19 @@ func rebuild_all_index() -> void:
 		push_warning("Some scenes could not be scanned; their previous candidates were preserved:\n%s" % "\n".join(failed))
 
 
-func _update_scene(scene_uid: StringName) -> bool:
-	var result := TscnScanner.scan(scene_uid)
-	if not result.succeeded:
-		push_warning(result.error_message)
+## あるシーンに存在するスコープを更新する。[br]
+## [param scene_uid]: 走査対象のシーンUID[br]
+## returns: 成功したか
+func _update_index(scene_uid: StringName) -> bool:
+	var scene_snapshot := TscnScanner.scan(scene_uid)
+	if not scene_snapshot.succeeded:
+		push_warning(scene_snapshot.error_message)
 		return false
-	_scope_index.replace_scene_snapshots(scene_uid, result.entries)
+	_scope_index.replace_scene_snapshots(scene_uid, scene_snapshot.entries)
 	return true
 
 
+## インデックスを保存する。
 func _save_index() -> void:
 	var error := _scope_index.save()
 	if error != OK:
@@ -73,6 +79,8 @@ func _save_index() -> void:
 	EditorInterface.get_resource_filesystem().scan()
 
 
+## 削除されていたシーンUIDに紐づいたインデックスを削除する。[br]
+## returns: 削除したか。
 func _remove_deleted_scenes() -> bool:
 	var removed_scene_uid_set: Dictionary[StringName, bool] = {}
 	for candidate in _scope_index.scope_snapshots:
@@ -86,7 +94,8 @@ func _remove_deleted_scenes() -> bool:
 	return not removed_scene_uid_set.is_empty()
 
 
-func _collect_scene_paths(directory: EditorFileSystemDirectory) -> PackedStringArray:
+## あるディレクトリを起点にそれ以下の全てのtscnファイルのパスを収集する。
+func _get_scene_paths(directory: EditorFileSystemDirectory) -> PackedStringArray:
 	var paths: PackedStringArray = []
 	var dirs: Array[EditorFileSystemDirectory] = []
 	dirs.append(directory)
