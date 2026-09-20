@@ -1,5 +1,6 @@
 @tool
 extends EditorProperty
+## 親スコープ選択フィールドを作成する。
 
 const ScopeIndex := preload("../scope_index.gd")
 

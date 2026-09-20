@@ -1,8 +1,6 @@
 @tool
 extends Resource
 
-## Rebuildable cache of public scope names. Scene files remain the source of truth.
-@export_file var save_path: String
 @export var scope_snapshots: Array[ScopeSnapshot] = []
 
 
@@ -32,5 +30,7 @@ func find_by_id(scope_id: StringName) -> Array[ScopeSnapshot]:
 
 
 func save() -> Error:
-	var path := ResourceUID.ensure_path(save_path)
-	return FAILED if path.is_empty() else ResourceSaver.save(self, path)
+	if resource_path.is_empty():
+		return ERR_FILE_BAD_PATH
+	
+	return ResourceSaver.save(self, resource_path)
