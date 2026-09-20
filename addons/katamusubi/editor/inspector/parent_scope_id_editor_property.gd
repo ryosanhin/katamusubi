@@ -49,9 +49,10 @@ func _on_text_changed(value: String) -> void:
 		return
 
 	# 部分一致する候補を抽出
-	for candidate in _candidates:
-		if value.to_lower() in candidate.to_lower():
-			_item_list.add_item(candidate)
+	for key in _candidates:
+		var scope_id := _candidates[key]
+		if value.to_lower() in scope_id.to_lower():
+			_item_list.add_item(key)
 	
 	_item_list.visible = _item_list.item_count > 0
 
@@ -87,10 +88,11 @@ func _commit(value: StringName) -> void:
 	emit_changed(get_edited_property(), value)
 
 
+## このタイミングでのインデックスから候補を作成する。
 func _get_candidate_preview() -> Dictionary[String, StringName]:
 	var candidates: Dictionary[String, StringName] = {}
 	for scope_spanshot in _index.scope_snapshots:
 		var scene_name := ResourceUID.uid_to_path(scope_spanshot.scene_uid)
-		var key := "%s (%s)" % [scope_spanshot.scope_id, scene_name]
+		var key := "%s::%s" % [scope_spanshot.scope_id, scene_name]
 		candidates[key] = scope_spanshot.scope_id
 	return candidates
