@@ -12,7 +12,7 @@ func _init(init_scope_index: ScopeIndex) -> void:
 	_scope_index = init_scope_index
 
 
-func on_scene_saved(path: String) -> void:
+func update_scene_index(path: String) -> void:
 	var scene_uid := ResourceUID.path_to_uid(path)
 	if scene_uid == path:
 		push_warning("Could not obtain scene UID: %s" % path)
@@ -21,7 +21,7 @@ func on_scene_saved(path: String) -> void:
 	_save_index()
 
 
-func on_filesystem_changed() -> void:
+func synchronize_index_with_filesystem() -> void:
 	var filesystem := EditorInterface.get_resource_filesystem()
 	if _is_rebuild_pending:
 		if filesystem.is_scanning():

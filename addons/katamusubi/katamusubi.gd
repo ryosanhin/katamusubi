@@ -12,10 +12,10 @@ func _enter_tree() -> void:
 	add_inspector_plugin(_inspector)
 
 	_observer = ContainerScopeObserver.new(SCOPE_INDEX)
-	scene_saved.connect(_observer.on_scene_saved)
+	scene_saved.connect(_observer.update_scene_index)
 
 	var filesystem := EditorInterface.get_resource_filesystem()
-	filesystem.filesystem_changed.connect(_observer.on_filesystem_changed)
+	filesystem.filesystem_changed.connect(_observer.synchronize_index_with_filesystem)
 
 	add_tool_menu_item("Katamusubi: 公開スコープ索引を再構築", _observer.rebuild_all_index)
 
@@ -26,11 +26,11 @@ func _exit_tree() -> void:
 		remove_inspector_plugin(_inspector)
 	
 	if _observer != null:
-		if scene_saved.is_connected(_observer.on_scene_saved):
-			scene_saved.disconnect(_observer.on_scene_saved)
+		if scene_saved.is_connected(_observer.update_scene_index):
+			scene_saved.disconnect(_observer.update_scene_index)
 		var filesystem := EditorInterface.get_resource_filesystem()
-		if filesystem.filesystem_changed.is_connected(_observer.on_filesystem_changed):
-			filesystem.filesystem_changed.disconnect(_observer.on_filesystem_changed)
+		if filesystem.filesystem_changed.is_connected(_observer.synchronize_index_with_filesystem):
+			filesystem.filesystem_changed.disconnect(_observer.synchronize_index_with_filesystem)
 	
 	_inspector = null
 	_observer = null
