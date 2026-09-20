@@ -4,7 +4,6 @@ extends RefCounted
 const SceneSnapshot := preload("scene_snapshot.gd")
 
 
-## Inspects PackedScene state without instantiating user scripts.
 static func scan(scene_uid: StringName) -> SceneSnapshot:
 	var packed_scene := load(scene_uid) as PackedScene
 	if packed_scene == null:
@@ -14,14 +13,18 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 	for node_index in state.get_node_count():
 		var script: Script
 		var scope_id := &""
+
 		for property_index in state.get_node_property_count(node_index):
 			var property_name := state.get_node_property_name(node_index, property_index)
-			if property_name == &"script":
-				script = state.get_node_property_value(node_index, property_index) as Script
-			elif property_name == &"scope_id":
-				scope_id = state.get_node_property_value(node_index, property_index) as StringName
+			match property_name:
+				&"script":
+					script = state.get_node_property_value(node_index, property_index) as Script
+				&"scope_id":
+					scope_id = state.get_node_property_value(node_index, property_index) as StringName
+
 		if not scope_id.is_empty() and _inherits_container_scope(script):
-			entries.append(ScopeSnapshot.new(scene_uid, state.get_node_path(node_index), scope_id))
+			entries.append(ScopeSnapshot.new(scene_uid, scope_id))
+
 	return SceneSnapshot.new(true, scene_uid, entries)
 
 

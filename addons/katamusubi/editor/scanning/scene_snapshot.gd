@@ -8,7 +8,12 @@ var entries: Array[ScopeSnapshot] = []
 var error_message: String
 
 
-func _init(init_succeeded: bool, init_scene_uid: StringName, init_entries: Array[ScopeSnapshot] = [], init_error := "") -> void:
+func _init(
+		init_succeeded: bool,
+		init_scene_uid: StringName,
+		init_entries: Array[ScopeSnapshot],
+		init_error := ""
+) -> void:
 	succeeded = init_succeeded
 	scene_uid = init_scene_uid
 	entries.assign(init_entries)

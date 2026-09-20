@@ -12,23 +12,26 @@ func _init(init_scope_index: ScopeIndex) -> void:
 
 
 func on_scene_saved(path: String) -> void:
-	var uid := ResourceUID.path_to_uid(path)
-	if uid == path:
+	var scene_uid := ResourceUID.path_to_uid(path)
+	if scene_uid == path:
 		push_warning("Could not obtain scene UID: %s" % path)
 		return
-	_update_scene(uid)
+	_update_scene(scene_uid)
+	_save_index()
 
 
 func on_filesystem_changed() -> void:
-	var removed: Dictionary[StringName, bool] = {}
+	var removed_scene_uid_set: Dictionary[StringName, bool] = {}
 	for candidate in _scope_index.scope_snapshots:
 		var path := ResourceUID.ensure_path(candidate.scene_uid)
 		if path.is_empty() or not FileAccess.file_exists(path):
-			removed[candidate.scene_uid] = true
-	for uid in removed:
+			removed_scene_uid_set[candidate.scene_uid] = true
+	
+	for removed_scene_uid in removed_scene_uid_set:
 		var empty: Array[ScopeSnapshot] = []
-		_scope_index.replace_scene_snapshots(uid, empty)
-	if not removed.is_empty():
+		_scope_index.replace_scene_snapshots(removed_scene_uid, empty)
+	
+	if not removed_scene_uid_set.is_empty():
 		_save_index()
 
 
@@ -38,22 +41,20 @@ func rescan_all_scenes() -> void:
 	_collect_scene_paths("res://", scene_paths)
 	var failed: PackedStringArray = []
 	for path in scene_paths:
-		var uid := ResourceUID.path_to_uid(path)
-		if uid == path or not _update_scene(uid, false):
+		var scene_uid := ResourceUID.path_to_uid(path)
+		if scene_uid == path or not _update_scene(scene_uid):
 			failed.append(path)
 	_save_index()
 	if not failed.is_empty():
 		push_warning("Some scenes could not be scanned; their previous candidates were preserved:\n%s" % "\n".join(failed))
 
 
-func _update_scene(uid: StringName, save_after := true) -> bool:
-	var result := TscnScanner.scan(uid)
+func _update_scene(scene_uid: StringName) -> bool:
+	var result := TscnScanner.scan(scene_uid)
 	if not result.succeeded:
 		push_warning(result.error_message)
 		return false
-	_scope_index.replace_scene_snapshots(uid, result.entries)
-	if save_after:
-		_save_index()
+	_scope_index.replace_scene_snapshots(scene_uid, result.entries)
 	return true
 
 
