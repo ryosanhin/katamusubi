@@ -27,13 +27,10 @@ var scope_name: StringName:
 		return name
 
 ## 自身のスコープID
-@export_storage var scope_id: StringName
+@export var scope_id: StringName
 
 ## 親スコープID
-@export_storage var parent_scope_id: StringName
-
-## エディターの親スコープ候補として公開するか
-@export var selectable_as_parent := false
+@export var parent_scope_id: StringName
 
 ## 注入対象
 @export var _inject_targets: Array[Node] = []

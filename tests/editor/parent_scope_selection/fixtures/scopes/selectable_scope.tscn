@@ -5,4 +5,3 @@
 [node name="SelectableScope" type="Node" groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
 scope_id = &"selectable"
-selectable_as_parent = true

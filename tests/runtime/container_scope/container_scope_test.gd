@@ -95,10 +95,12 @@ func _test_parent_initializes_before_child_async() -> void:
 func _test_parent_service_resolution_async() -> void:
 	_runner.change_test_name("parent_service_resolution")
 	var parent := _get_new_container_scope(&"parent", &"", &"parent_only")
-	var child := _get_new_container_scope(&"child", &"parent", &"child_only")
+	# A private (empty-ID) scope may still consume a public parent.
+	var child := _get_new_container_scope(&"", &"parent", &"child_only")
 	var holder := _holder_with([child, parent])
 	root.add_child(holder)
 	_runner.assert_same(child.resolve_for_test(BaseService, &"parent_only"), parent.registered_service, "子から親だけの登録を解決する")
+	_runner.assert_true(child.scope_id.is_empty(), "空IDの非公開スコープでも親を利用できる")
 	await _free_node(holder)
 
 

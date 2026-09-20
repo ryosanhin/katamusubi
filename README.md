@@ -163,7 +163,7 @@ For example, a persistent scene can provide services to a replaceable scene:
 To configure this example:
 
 1. Use `example_container_scope.gd` from [Basic Usage](#basic-usage) as `parent_container_scope.gd`. Attach it to `ParentContainerScope` and assign the `ExampleManager` node to `_example_service`.
-2. Enable **Selectable As Parent** on `ParentContainerScope`.
+2. Set **Public Scope Name** on `ParentContainerScope` to a stable name such as `application`. A blank name means that the scope is private and is not offered as a parent candidate.
 3. Open `ExampleScene` for editing. Attach the following script to `ChildContainerScope`:
 
 ```gdscript
@@ -175,7 +175,7 @@ func _register_instance(_container: InjectionContainer) -> void:
 	pass
 ```
 
-4. In the child scope's Inspector, select `ParentContainerScope` from **Current parent scope**.
+4. In the child scope's Inspector, enter `application` in **Parent Scope Name**. The field searches public names and shows each candidate's scene and `NodePath`, but also accepts names that are not currently in the index.
 5. Add `ExampleUser` to the child scope's **Inject Targets** array. Use the receiving script from the basic example, which requests `ExampleManager`.
 6. Save the child scene and run `RootScene` with both scenes present.
 
@@ -196,6 +196,40 @@ Initialization fails if a required parent is missing. A failed scope does not au
 When instantiating a child scene at runtime, ensure that all required parent scopes are already present in the SceneTree.
 
 Do not instantiate multiple parent scopes with the same scope ID at the same time. A child scope requires exactly one matching parent scope.
+
+The public name and parent name are independent: a scope with a blank public name can
+still use a parent, and an intermediate scope can have both values. Suggestions are
+editor assistance only. Runtime lookup always uses an exact name match and requires
+exactly one live matching scope. Duplicate suggestions are therefore shown as
+ambiguous rather than being collapsed to one node.
+
+### Candidate index and diagnostics
+
+Saved scenes are the source of truth. Katamusubi caches only non-empty public names,
+their scene locations, and their `NodePath`s. Saving a scene replaces that scene's
+cache entries. **Katamusubi: 公開スコープ索引を再構築** in the editor's Tools menu
+discovers all saved `.tscn` scenes again; deleted scenes are also removed from the
+cache. Unsaved edits are overlaid only while that scene is open and are never written
+to the persistent index. Consequently Undo/Redo and closing without saving restore
+candidate suggestions naturally.
+
+Missing, duplicate, and self-referential parent names produce editor diagnostics but
+the typed value is retained. A cache read/write failure neither rolls back scene
+properties nor prevents the game from running. The runtime remains authoritative for
+exactly-one-parent, missing-parent, cycle, registration, and injection validation.
+
+### Migration from the selectable-parent setting
+
+Older releases automatically generated an ID for every scope and used **Selectable
+As Parent** to control whether it appeared in the picker. The toggle and automatic ID
+generation have been removed. Every existing non-empty ID now acts as a public name,
+including IDs that previously belonged to scopes with the toggle disabled. Clear any
+unnecessary public names manually after upgrading. Katamusubi deliberately does not
+bulk-clear them because doing so could break existing parent references.
+
+Renaming or clearing a public name does not rewrite parent names in other scenes.
+Update those references explicitly; until then the editor reports them as missing and
+runtime initialization fails when no exactly matching live parent exists.
 
 ## Injection timing
 

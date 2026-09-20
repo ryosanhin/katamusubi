@@ -1,100 +1,35 @@
 extends SceneTree
 
 const ScopeIndex := preload("res://addons/katamusubi/editor/scope_index.gd")
-
 var _runner := TestRunner.new(true)
 
 
 func _init() -> void:
-	_test_replace_scene_snapshots()
-	_test_duplicate_is_atomic()
-	_test_same_scene_duplicate_remains_build_visible()
-	_test_rollback_restores_copies()
-
+	_test_scene_replacement_and_duplicates()
+	_test_zero_candidates()
 	await _runner.finish(self, "ScopeIndex")
 
 
-## 指定シーンのスナップショットだけを置換し、他シーンの定義を維持できることを確認します。
-func _test_replace_scene_snapshots() -> void:
-	_runner.change_test_name("replace_scene_snapshots")
+func _test_scene_replacement_and_duplicates() -> void:
+	_runner.change_test_name("scene replacement keeps duplicates")
 	var index := ScopeIndex.new()
-	index.scope_snapshots = [
-		_snapshot(&"scene_a", &"old"),
-		_snapshot(&"scene_b", &"other"),
-	]
-	var replacements: Array[ScopeSnapshot] = [_snapshot(&"scene_a", &"new")]
-
-	var action := index.replace_scene_snapshots(&"scene_a", replacements)
-
-	_runner.assert_true(action.operation_succeeded, "シーン単位の置換が成功する")
-	_runner.assert_null(index.get_scope_snapshot(&"old"), "置換前の定義が除去される")
-	_expect(index.get_scope_snapshot(&"new") != null, "置換後の定義が追加される")
-	_expect(index.get_scope_snapshot(&"other") != null, "他シーンの定義が維持される")
-
-
-## 他シーンとスコープIDが重複した場合、置換を中断して元の索引を維持することを確認します。
-func _test_duplicate_is_atomic() -> void:
-	_runner.change_test_name("duplicate_is_atomic")
-	var index := ScopeIndex.new()
-	var original := _snapshot(&"scene_a", &"original")
-	index.scope_snapshots = [original, _snapshot(&"scene_b", &"duplicate")]
-	var replacements: Array[ScopeSnapshot] = [_snapshot(&"scene_a", &"duplicate")]
-
-	var capture := ErrorCapture.new()
-	capture.start()
-	var action := index.replace_scene_snapshots(&"scene_a", replacements)
-	capture.stop()
-	_runner.assert_true(capture.contains("既にスコープIDが登録されています"), "他シーンとのID重複を拒否する")
-
-	_runner.assert_equal(index.scope_snapshots.size(), 2, "重複時に一覧を変更しない")
-	_runner.assert_same(index.scope_snapshots[0], original, "重複時に元の定義を維持する")
-
-
-## 同一シーン内でIDが重複しても代表スナップショットを残し、ビルド時の再スキャン対象を維持することを確認します。
-func _test_same_scene_duplicate_remains_build_visible() -> void:
-	_runner.change_test_name("same_scene_duplicate_remains_build_visible")
-	var index := ScopeIndex.new()
+	index.scope_snapshots = [_candidate(&"a", "Old", &"old"), _candidate(&"b", "One", &"same")]
 	var replacements: Array[ScopeSnapshot] = [
-		_snapshot(&"scene_a", &"duplicate"),
-		_snapshot(&"scene_a", &"duplicate"),
-	]
-
-	var action := index.replace_scene_snapshots(&"scene_a", replacements)
-
-	_expect(action.operation_succeeded, "同一シーン内の重複はシーンの登録を維持する")
-	_expect(index.scope_snapshots.size() == 1, "重複IDの代表スナップショットを1件登録する")
-	_expect(index.scope_snapshots[0].scene_uid == &"scene_a", "ビルド時の再スキャン対象を維持する")
+		_candidate(&"a", "One", &"same"), _candidate(&"a", "Two", &"same")]
+	_runner.assert_true(index.replace_scene_snapshots(&"a", replacements), "シーン単位で置換できる")
+	_runner.assert_equal(index.find_by_id(&"same").size(), 3, "同名候補をシーン横断で全件保持する")
+	_runner.assert_equal(index.find_by_id(&"old").size(), 0, "古い候補を除去する")
+	_runner.assert_equal(index.find_by_id(&"same")[1].node_path, NodePath("One"), "NodePathを保持する")
 
 
-## 置換操作のロールバックで、後から変更された元オブジェクトではなく保存済みの複製を復元することを確認します。
-func _test_rollback_restores_copies() -> void:
-	_runner.change_test_name("rollback_restores_copies")
+func _test_zero_candidates() -> void:
+	_runner.change_test_name("successful empty replacement")
 	var index := ScopeIndex.new()
-	var original := _snapshot(&"scene_a", &"original", &"parent", true)
-	index.scope_snapshots = [original]
-	var replacements: Array[ScopeSnapshot] = [_snapshot(&"scene_a", &"new")]
-	var action := index.replace_scene_snapshots(&"scene_a", replacements)
-	original.parent_scope_id = &"mutated_after_replace"
-
-	action.rollback()
-
-	var restored := index.get_scope_snapshot(&"original")
-	_expect(restored != null, "ロールバックで置換前の定義を復元する")
-	_runner.assert_not_equal(restored, original, "ロールバックでは定義の複製を復元する")
-	_runner.assert_equal(restored.parent_scope_id, &"parent", "複製した親IDを復元する")
-	_runner.assert_true(restored.selectable_as_parent, "複製した公開フラグを復元する")
+	index.scope_snapshots = [_candidate(&"a", "Old", &"old")]
+	var empty: Array[ScopeSnapshot] = []
+	_runner.assert_true(index.replace_scene_snapshots(&"a", empty), "候補ゼロを成功として扱う")
+	_runner.assert_equal(index.scope_snapshots.size(), 0, "候補ゼロで対象シーンを空にする")
 
 
-func _snapshot(
-	scene_uid: StringName,
-	scope_id: StringName,
-	parent_scope_id: StringName = &"",
-	selectable_as_parent := false,
-) -> ScopeSnapshot:
-	return ScopeSnapshot.new(
-			scene_uid, scope_id, scope_id, parent_scope_id, selectable_as_parent
-	)
-
-
-func _expect(condition: bool, message: String) -> void:
-	_runner.assert_true(condition, message)
+func _candidate(scene: StringName, path: NodePath, id: StringName) -> ScopeSnapshot:
+	return ScopeSnapshot.new(scene, path, id)

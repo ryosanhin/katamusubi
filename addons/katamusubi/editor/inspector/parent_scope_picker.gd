@@ -1,93 +1,56 @@
 @tool
-extends RefCounted
+extends VBoxContainer
 
-## 親スコープ候補を表示する OptionButton の生成を担う。
+## Searchable suggestions around a free-form parent name input.
+signal value_committed(value: StringName)
 
-var _current_scope_id: StringName
-var _selected_parent_scope_id: StringName
-
-
-func _init(
-	init_current_scope_id: StringName,
-	init_selected_parent_scope_id: StringName,
-) -> void:
-	_current_scope_id = init_current_scope_id
-	_selected_parent_scope_id = init_selected_parent_scope_id
+var _candidates: Array[ScopeSnapshot]
+var _scene_root: Node
+var _line_edit := LineEdit.new()
+var _suggestions := ItemList.new()
 
 
-func create(
-	candidates: Array[ScopeSnapshot],
-	scene_root: Node,
-	current_parent_exists := false,
-) -> OptionButton:
-	var option_button := OptionButton.new()
+func _init(value: StringName = &"", candidates: Array[ScopeSnapshot] = [], scene_root: Node = null) -> void:
+	_candidates = candidates
+	_scene_root = scene_root
+	_line_edit.text = value
+	_line_edit.placeholder_text = "空欄＝親なし（任意の公開名を入力できます）"
+	_line_edit.text_changed.connect(_filter)
+	_line_edit.text_submitted.connect(func(text: String) -> void: value_committed.emit(StringName(text)))
+	_line_edit.focus_exited.connect(func() -> void: value_committed.emit(StringName(_line_edit.text)))
+	add_child(_line_edit)
+	_suggestions.custom_minimum_size.y = 90
+	_suggestions.item_selected.connect(_select_suggestion)
+	add_child(_suggestions)
+	_filter(value)
 
-	# 初期表示を追加
-	option_button.add_item("None")
-	option_button.set_item_metadata(0, &"")
 
-	for candidate in candidates:
-		if candidate.scope_id == _current_scope_id:
+func get_line_edit() -> LineEdit:
+	return _line_edit
+
+
+func _filter(query: String) -> void:
+	_suggestions.clear()
+	var counts: Dictionary[StringName, int] = {}
+	for candidate in _candidates:
+		if query.is_empty() or query.to_lower() in String(candidate.scope_id).to_lower():
+			counts[candidate.scope_id] = counts.get(candidate.scope_id, 0) + 1
+	for candidate in _candidates:
+		if not query.is_empty() and not query.to_lower() in String(candidate.scope_id).to_lower():
 			continue
-
-		var scene_path := _get_scene_path(candidate.scene_uid, scene_root)
-
-		# 表示を追加
-		option_button.add_item(
-				"%s::%s"
-				% [
-						scene_path.get_file(),
-						candidate.scope_name,
-				]
-		)
-		# 表示に対応する値を追加
-		# option_button.item_count - 1 は末尾 = 直前に追加した値に対応
-		option_button.set_item_metadata(
-				option_button.item_count - 1,
-				candidate.scope_id,
-		)
-
-	_select_parent_scope_id(
-			option_button,
-			_selected_parent_scope_id,
-			current_parent_exists,
-	)
-
-	return option_button
+		var scene := _scene_label(candidate.scene_uid)
+		var duplicate := " [曖昧: 同名%d件]" % counts[candidate.scope_id] if counts[candidate.scope_id] > 1 else ""
+		_suggestions.add_item("%s — %s :: %s%s" % [candidate.scope_id, scene, candidate.node_path, duplicate])
+		_suggestions.set_item_metadata(_suggestions.item_count - 1, candidate.scope_id)
 
 
-func _select_parent_scope_id(
-	option_button: OptionButton,
-	parent_scope_id: StringName,
-	current_parent_exists: bool,
-) -> void:
-	for item_index in option_button.item_count:
-		if option_button.get_item_metadata(item_index) == parent_scope_id:
-			option_button.select(item_index)
-			return
-
-	# 親スコープが選択されているのにここまで来た = 無効な親スコープの選択がある
-	if not parent_scope_id.is_empty():
-		# 無効な選択であることを示すアイテムを追加
-		var label := (
-				"Current parent (not selectable): %s" % parent_scope_id
-				if current_parent_exists
-				else "Missing parent scope: %s" % parent_scope_id
-		)
-		option_button.add_item(label)
-		option_button.set_item_metadata(option_button.item_count - 1, parent_scope_id)
-
-		# ユーザーは自らこの追加項目を選択することはできない = 無効な選択でイベントが再点火されない
-		option_button.set_item_disabled(option_button.item_count - 1, true)
-		option_button.select(option_button.item_count - 1)
-		return
-
-	option_button.select(0)
+func _select_suggestion(index: int) -> void:
+	_line_edit.text = String(_suggestions.get_item_metadata(index))
+	value_committed.emit(StringName(_line_edit.text))
 
 
-func _get_scene_path(scene_uid: StringName, scene_root: Node) -> String:
-	if scene_uid.is_empty():
-		if scene_root != null and not scene_root.scene_file_path.is_empty():
-			return scene_root.scene_file_path
-		return "unsaved"
-	return ResourceUID.uid_to_path(scene_uid)
+func _scene_label(uid: StringName) -> String:
+	if uid.is_empty():
+		return "未保存シーン"
+	var path := ResourceUID.uid_to_path(uid)
+	return path if not path.is_empty() else String(uid)
