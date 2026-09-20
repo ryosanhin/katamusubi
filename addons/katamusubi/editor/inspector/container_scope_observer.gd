@@ -22,11 +22,7 @@ func update_scene_index(path: String) -> void:
 
 
 func synchronize_index_with_filesystem() -> void:
-	var filesystem := EditorInterface.get_resource_filesystem()
 	if _is_rebuild_pending:
-		if filesystem.is_scanning():
-			return
-		_is_rebuild_pending = false
 		rebuild_all_index()
 		return
 
@@ -42,6 +38,8 @@ func rebuild_all_index() -> void:
 	if filesystem.is_scanning():
 		_is_rebuild_pending = true
 		return
+	
+	_is_rebuild_pending = false
 
 	var root := filesystem.get_filesystem()
 	if root == null:
@@ -52,8 +50,11 @@ func rebuild_all_index() -> void:
 		var scene_uid := ResourceUID.path_to_uid(path)
 		if scene_uid == path or not _update_index(scene_uid):
 			failed.append(path)
+	
 	_remove_deleted_scenes()
+	
 	_save_index()
+
 	if not failed.is_empty():
 		push_warning("Some scenes could not be scanned; their previous candidates were preserved:\n%s" % "\n".join(failed))
 
