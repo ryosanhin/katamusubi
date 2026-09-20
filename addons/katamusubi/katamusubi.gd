@@ -2,100 +2,29 @@
 extends EditorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
-
-const SceneSnapshotAnalyzer := preload("editor/scanning/scene_snapshot_analyzer.gd")
-
-var _container_scope_inspector_plugin: EditorInspectorPlugin
-
 const ScopeContainerObserver := preload("editor/scope_container_observer.gd")
-## スコープの変更等を監視するスクリプト
-var _scope_container_observer: ScopeContainerObserver
-
-const TscnScanner := preload("editor/scanning/tscn_scanner.gd")
-
-func _build() -> bool:
-	var errors: PackedStringArray = []
-	# シーンUIDごとに所属スコープ定義をまとめる
-	# Array は Array[ScopeSnapshot]
-	var snapshots_by_scene: Dictionary[StringName, Array] = {}
-	for snapshot in SCOPE_INDEX.scope_snapshots:
-		if not snapshots_by_scene.has(snapshot.scene_uid):
-			snapshots_by_scene[snapshot.scene_uid] = []
-		snapshots_by_scene[snapshot.scene_uid].append(snapshot)
-
-	for scene_uid in snapshots_by_scene:
-		var scope_snapshots: Array[ScopeSnapshot] = []
-		scope_snapshots.assign(snapshots_by_scene[scene_uid])
-		var scene_snapshot := TscnScanner.scan(scene_uid)
-		if scene_snapshot == null:
-			errors.append("シーン %s を走査できませんでした。" % scene_uid)
-			continue
-		var analyzer := SceneSnapshotAnalyzer.new(scene_snapshot, scope_snapshots)
-		errors.append_array(analyzer.validate())
-
-	print("エラー %d 件：\n%s" % [errors.size(), "\n".join(errors)])
-		
-	if errors.size() == 0:
-		return true
-
-	return false
+var _inspector: EditorInspectorPlugin
+var _observer: ScopeContainerObserver
 
 
 func _enter_tree() -> void:
-	_container_scope_inspector_plugin = preload(
-			"res://addons/katamusubi/editor/container_scope_inspector_plugin.gd"
-	).new()
-	add_inspector_plugin(_container_scope_inspector_plugin)
-
-	_scope_container_observer = ScopeContainerObserver.new(SCOPE_INDEX)
-
-	# 編集中のシーン切り替え時のシグナル接続
-	scene_changed.connect(_scope_container_observer.on_scene_changed)
-
-	var scene_tree := get_tree()
-	
-	# node追加時のシグナルを接続
-	get_tree().node_added.connect(
-			_scope_container_observer.on_node_added,
-			CONNECT_DEFERRED,
-	)
-
-	#シーン保存時のシグナルを接続
-	scene_saved.connect(_scope_container_observer.on_scene_saved)
-
-	# ファイルシステム変更時のシグナルを接続
-	var fs := EditorInterface.get_resource_filesystem()
-	fs.filesystem_changed.connect(_scope_container_observer.on_filesystem_changed)
-
-	# ここまで今後追加で開くシーンへの接続の設定はしたけど
-	# 現在開いているシーンにはシグナルが来ないので手動で呼び出し
-	var current_root_node := EditorInterface.get_edited_scene_root()
-	if is_instance_valid(current_root_node):
-		_scope_container_observer.on_scene_changed(current_root_node)
+	_inspector = preload("res://addons/katamusubi/editor/container_scope_inspector_plugin.gd").new()
+	add_inspector_plugin(_inspector)
+	_observer = ScopeContainerObserver.new(SCOPE_INDEX)
+	scene_saved.connect(_observer.on_scene_saved)
+	EditorInterface.get_resource_filesystem().filesystem_changed.connect(_observer.on_filesystem_changed)
+	add_tool_menu_item("Katamusubi: 公開スコープ索引を再構築", _observer.rescan_all_scenes)
 
 
 func _exit_tree() -> void:
-	if _container_scope_inspector_plugin != null:
-		remove_inspector_plugin(_container_scope_inspector_plugin)
-		_container_scope_inspector_plugin = null
-	
-	
-	if _scope_container_observer != null:
-		# 編集中のシーン切り替え時のシグナルを切断
-		if scene_changed.is_connected(_scope_container_observer.on_scene_changed):
-			scene_changed.disconnect(_scope_container_observer.on_scene_changed)
-			
-		# node追加時のシグナルを切断
-		if get_tree().node_added.is_connected(_scope_container_observer.on_node_added):
-			get_tree().node_added.disconnect(_scope_container_observer.on_node_added)
-		
-		#シーン保存時のシグナルを切断
-		if scene_saved.is_connected(_scope_container_observer.on_scene_saved):
-			scene_saved.disconnect(_scope_container_observer.on_scene_saved)
-		
-		# ファイルシステム変更時のシグナルを切断
-		var fs := EditorInterface.get_resource_filesystem()
-		if fs.filesystem_changed.is_connected(_scope_container_observer.on_filesystem_changed):
-			fs.filesystem_changed.disconnect(_scope_container_observer.on_filesystem_changed)
-
-		_scope_container_observer = null
+	remove_tool_menu_item("Katamusubi: 公開スコープ索引を再構築")
+	if _inspector != null:
+		remove_inspector_plugin(_inspector)
+	if _observer != null:
+		if scene_saved.is_connected(_observer.on_scene_saved):
+			scene_saved.disconnect(_observer.on_scene_saved)
+		var filesystem := EditorInterface.get_resource_filesystem()
+		if filesystem.filesystem_changed.is_connected(_observer.on_filesystem_changed):
+			filesystem.filesystem_changed.disconnect(_observer.on_filesystem_changed)
+	_inspector = null
+	_observer = null

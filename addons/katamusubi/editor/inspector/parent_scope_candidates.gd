@@ -1,10 +1,7 @@
 @tool
 extends RefCounted
 
-## 保存済みシーンと現在編集中のシーンから、親スコープ候補を都度合成する。
-
 const ScopeIndex := preload("res://addons/katamusubi/editor/scope_index.gd")
-
 var _scope_index: ScopeIndex
 
 
@@ -12,101 +9,55 @@ func _init(init_scope_index: ScopeIndex) -> void:
 	_scope_index = init_scope_index
 
 
-func get_candidates(
-	target: ContainerScope,
-	scene_root: Node,
-) -> Array[ScopeSnapshot]:
+## Overlays the live edited scene over (and instead of) its saved cache entries.
+func get_candidates(target: ContainerScope, scene_root: Node, query := "") -> Array[ScopeSnapshot]:
 	var candidates: Array[ScopeSnapshot] = []
-	if not _is_target_in_edited_scene(target, scene_root):
+	if not _is_target_in_scene(target, scene_root):
 		return candidates
-
-	var edited_scene_uid := _get_edited_scene_uid(scene_root)
-	for snapshot in _scope_index.scope_snapshots:
-		if snapshot.scope_id.is_empty() or not snapshot.selectable_as_parent:
+	var edited_uid := _edited_scene_uid(scene_root)
+	for candidate in _scope_index.scope_snapshots:
+		if not edited_uid.is_empty() and candidate.scene_uid == edited_uid:
 			continue
-		if not edited_scene_uid.is_empty() and snapshot.scene_uid == edited_scene_uid:
+		if _matches(candidate.scope_id, query):
+			candidates.append(candidate)
+	for scope in _edited_scopes(scene_root):
+		if scope.scope_id.is_empty() or not _matches(scope.scope_id, query):
 			continue
-		candidates.append(snapshot)
-
-	for scope in _get_edited_scene_scopes(scene_root):
-		if scope.scope_id.is_empty() or not scope.selectable_as_parent:
-			continue
-		candidates.append(ScopeSnapshot.new(
-			edited_scene_uid,
-			scope.name,
-			scope.scope_id,
-			scope.parent_scope_id,
-			scope.selectable_as_parent,
-		))
-
+		candidates.append(ScopeSnapshot.new(edited_uid, scene_root.get_path_to(scope), scope.scope_id))
 	return candidates
 
 
-func get_candidate(
-	scope_id: StringName,
-	target: ContainerScope,
-	scene_root: Node,
-) -> ScopeSnapshot:
+func get_candidates_by_id(scope_id: StringName, target: ContainerScope, scene_root: Node) -> Array[ScopeSnapshot]:
+	var matches: Array[ScopeSnapshot] = []
 	for candidate in get_candidates(target, scene_root):
 		if candidate.scope_id == scope_id:
-			return candidate
-	return null
+			matches.append(candidate)
+	return matches
 
 
-## 選択可否にかかわらず、指定IDのスコープが実在するかを検索する。
-func get_existing_scope(
-	scope_id: StringName,
-	target: ContainerScope,
-	scene_root: Node,
-) -> ScopeSnapshot:
-	if not _is_target_in_edited_scene(target, scene_root):
-		return null
-
-	var edited_scene_uid := _get_edited_scene_uid(scene_root)
-	for snapshot in _scope_index.scope_snapshots:
-		if snapshot.scope_id == scope_id:
-			if edited_scene_uid.is_empty() or snapshot.scene_uid != edited_scene_uid:
-				return snapshot
-
-	for scope in _get_edited_scene_scopes(scene_root):
-		if scope.scope_id == scope_id:
-			return ScopeSnapshot.new(
-				edited_scene_uid,
-				scope.name,
-				scope.scope_id,
-				scope.parent_scope_id,
-				scope.selectable_as_parent,
-			)
-	return null
+func _matches(scope_id: StringName, query: String) -> bool:
+	return query.is_empty() or query.to_lower() in String(scope_id).to_lower()
 
 
-func _get_edited_scene_scopes(scene_root: Node) -> Array[ContainerScope]:
+func _edited_scopes(root: Node) -> Array[ContainerScope]:
 	var scopes: Array[ContainerScope] = []
-	var stack: Array[Node] = [scene_root]
+	var stack: Array[Node] = [root]
 	while not stack.is_empty():
 		var node := stack.pop_back()
-		if node == scene_root or node.owner == scene_root:
-			var scope := node as ContainerScope
-			if scope != null:
-				scopes.append(scope)
-		for index in range(node.get_child_count() - 1, -1, -1):
-			stack.append(node.get_child(index))
+		if node == root or node.owner == root:
+			if node is ContainerScope:
+				scopes.append(node)
+			for child in node.get_children():
+				stack.append(child)
 	return scopes
 
 
-func _get_edited_scene_uid(scene_root: Node) -> StringName:
-	if scene_root.scene_file_path.is_empty():
+func _edited_scene_uid(root: Node) -> StringName:
+	if root.scene_file_path.is_empty():
 		return &""
-	var scene_uid := ResourceUID.path_to_uid(scene_root.scene_file_path)
-	return &"" if scene_uid == scene_root.scene_file_path else scene_uid
+	var uid := ResourceUID.path_to_uid(root.scene_file_path)
+	return &"" if uid == root.scene_file_path else uid
 
 
-func _is_target_in_edited_scene(target: ContainerScope, scene_root: Node) -> bool:
-	if scene_root == null:
-		push_error("編集中のシーンがありません。")
-		return false
-	if target != scene_root and target.owner != scene_root:
-		push_error("コンテナスコープは編集中のシーンに属していません。")
-		return false
-
-	return true
+func _is_target_in_scene(target: ContainerScope, root: Node) -> bool:
+	return root != null and (target == root or target.owner == root)

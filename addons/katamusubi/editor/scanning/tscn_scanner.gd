@@ -3,73 +3,26 @@ extends RefCounted
 
 const SceneSnapshot := preload("scene_snapshot.gd")
 
-## シーンファイルを走査し、ファイルから読み取れるスコープの情報を返す。
-## シーンUIDが無効なときは[code]null[/code]を返す。
+
+## Inspects PackedScene state without instantiating user scripts.
 static func scan(scene_uid: StringName) -> SceneSnapshot:
-	const SCOPE_ID_STRING_NAME := &"scope_id"
-	const PARENT_SCOPE_ID_STRING_NAME := &"parent_scope_id"
-	const SELECTABLE_AS_PARENT_STRING_NAME := &"selectable_as_parent"
-	const SCRIPT_STRING_NAME := &"script"
-
-	var entries: Array[ScopeSnapshot] = []
 	var packed_scene := load(scene_uid) as PackedScene
-
 	if packed_scene == null:
-		push_error("シーン %s が存在しません。" % scene_uid)
-		return null
-
-	var scene_state := packed_scene.get_state()
-	for node_index in scene_state.get_node_count():
-		if not ContainerScope.GROUP_NAME in scene_state.get_node_groups(node_index):
-			continue
-
+		return SceneSnapshot.new(false, scene_uid, [], "Scene could not be loaded: %s" % scene_uid)
+	var entries: Array[ScopeSnapshot] = []
+	var state := packed_scene.get_state()
+	for node_index in state.get_node_count():
+		var script: Script
 		var scope_id := &""
-		var parent_scope_id := &""
-		var selectable_as_parent := false
-		var script: Script = null
-
-		for prop_index in scene_state.get_node_property_count(node_index):
-			var property_name := scene_state.get_node_property_name(
-					node_index,
-					prop_index,
-			)
-			match property_name:
-				SCOPE_ID_STRING_NAME:
-					scope_id = scene_state.get_node_property_value(
-							node_index,
-							prop_index,
-					) as StringName
-				PARENT_SCOPE_ID_STRING_NAME:
-					parent_scope_id = scene_state.get_node_property_value(
-							node_index,
-							prop_index,
-					) as StringName
-				SELECTABLE_AS_PARENT_STRING_NAME:
-					selectable_as_parent = scene_state.get_node_property_value(
-							node_index,
-							prop_index,
-					) as bool
-				SCRIPT_STRING_NAME:
-					script = scene_state.get_node_property_value(
-							node_index,
-							prop_index,
-					) as Script
-
-		if scope_id.is_empty():
-			continue
-
-		entries.append(ScopeSnapshot.new(
-			scene_uid,
-			scene_state.get_node_name(node_index),
-			scope_id,
-			parent_scope_id,
-			selectable_as_parent,
-			scene_state.get_node_path(node_index),
-			script != null,
-			_inherits_container_scope(script),
-		))
-
-	return SceneSnapshot.new(scene_uid, entries)
+		for property_index in state.get_node_property_count(node_index):
+			var property_name := state.get_node_property_name(node_index, property_index)
+			if property_name == &"script":
+				script = state.get_node_property_value(node_index, property_index) as Script
+			elif property_name == &"scope_id":
+				scope_id = state.get_node_property_value(node_index, property_index) as StringName
+		if not scope_id.is_empty() and _inherits_container_scope(script):
+			entries.append(ScopeSnapshot.new(scene_uid, state.get_node_path(node_index), scope_id))
+	return SceneSnapshot.new(true, scene_uid, entries)
 
 
 static func _inherits_container_scope(script: Script) -> bool:
