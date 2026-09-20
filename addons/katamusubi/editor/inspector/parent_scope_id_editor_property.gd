@@ -1,5 +1,6 @@
 @tool
 extends EditorProperty
+## 親スコープ選択フィールドを作成する。
 
 const ScopeIndex := preload("../scope_index.gd")
 
@@ -57,12 +58,12 @@ func _on_text_changed(value: String) -> void:
 
 func _on_text_submitted(text: String) -> void:
 	_commit(StringName(text))
-	_remove_item_list()
+	_delete_item_list_menu()
 
 
 func _on_focus_exited() -> void:
 	_commit(StringName(_line_edit.text))
-	_remove_item_list()
+	_delete_item_list_menu()
 
 
 func _on_item_selected(index: int) -> void:
@@ -70,13 +71,15 @@ func _on_item_selected(index: int) -> void:
 
 	emit_changed(get_edited_property(), _candidates[key])
 
-	_remove_item_list()
+	_delete_item_list_menu()
 
 
-func _remove_item_list() -> void:
+## 候補リストの表示を削除
+func _delete_item_list_menu() -> void:
 	_item_list.visible = false
 
 
+## 変更を確定する。
 func _commit(value: StringName) -> void:
 	if get_edited_object().get(get_edited_property()) == value:
 		return

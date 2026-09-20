@@ -1,5 +1,6 @@
 @tool
 extends EditorInspectorPlugin
+## [ContainerScope] のインスペクター表示を拡張する。
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
 
