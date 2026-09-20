@@ -205,13 +205,21 @@ ambiguous rather than being collapsed to one node.
 
 ### Candidate index and diagnostics
 
-Saved scenes are the source of truth. Katamusubi caches only non-empty public names,
-their scene locations, and their `NodePath`s. Saving a scene replaces that scene's
-cache entries. **Katamusubi: 公開スコープ索引を再構築** in the editor's Tools menu
-discovers all saved `.tscn` scenes again; deleted scenes are also removed from the
-cache. Unsaved edits are overlaid only while that scene is open and are never written
-to the persistent index. Consequently Undo/Redo and closing without saving restore
-candidate suggestions naturally.
+**Saved scenes are the source of truth for the candidate index.** Katamusubi builds
+the index only from saved `.tscn` files. It caches only non-empty public names, their
+scene locations, and their `NodePath`s. Saving a scene replaces that scene's cache
+entries. **Katamusubi: 公開スコープ索引を再構築** in the editor's Tools menu finds all
+saved `.tscn` scenes again; deleted scenes are also removed from the cache.
+
+This means that a new scene's `scope_id` does not appear in the candidates until the
+scene is saved for the first time. Additions, changes, and deletions in an already
+saved scene also do not affect the candidates until the scene is saved again.
+
+`parent_scope_id` is a free-form field. You can enter an unsaved ID even if it is not
+in the candidates. The candidate list is only input help based on saved scenes. It
+does not guarantee that a value is valid or that the parent scope will exist at
+runtime. Runtime parent resolution does not use the candidate index; it uses the
+actual SceneTree.
 
 Missing, duplicate, and self-referential parent names produce editor diagnostics but
 the typed value is retained. A cache read/write failure neither rolls back scene
