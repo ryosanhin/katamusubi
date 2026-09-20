@@ -2,15 +2,15 @@
 extends EditorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
-const ScopeContainerObserver := preload("editor/scope_container_observer.gd")
+const ContainerScopeObserver := preload("editor/container_scope_observer.gd")
 var _inspector: EditorInspectorPlugin
-var _observer: ScopeContainerObserver
+var _observer: ContainerScopeObserver
 
 
 func _enter_tree() -> void:
 	_inspector = preload("res://addons/katamusubi/editor/container_scope_inspector_plugin.gd").new()
 	add_inspector_plugin(_inspector)
-	_observer = ScopeContainerObserver.new(SCOPE_INDEX)
+	_observer = ContainerScopeObserver.new(SCOPE_INDEX)
 	scene_saved.connect(_observer.on_scene_saved)
 	EditorInterface.get_resource_filesystem().filesystem_changed.connect(_observer.on_filesystem_changed)
 	add_tool_menu_item("Katamusubi: 公開スコープ索引を再構築", _observer.rescan_all_scenes)
