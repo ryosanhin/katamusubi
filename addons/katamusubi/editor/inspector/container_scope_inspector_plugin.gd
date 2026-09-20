@@ -3,7 +3,7 @@ extends EditorInspectorPlugin
 
 const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
 
-const ParentScopeIdEditorProperty := preload("inspector/parent_scope_id_editor_property.gd")
+const ParentScopeIdEditorProperty := preload("parent_scope_id_editor_property.gd")
 
 
 func _can_handle(object: Object) -> bool:

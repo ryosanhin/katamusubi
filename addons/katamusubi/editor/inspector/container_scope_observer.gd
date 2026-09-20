@@ -1,8 +1,8 @@
 @tool
 extends RefCounted
 
-const ScopeIndex := preload("scope_index.gd")
-const TscnScanner := preload("scanning/tscn_scanner.gd")
+const ScopeIndex := preload("../scope_index.gd")
+const TscnScanner := preload("../scanning/tscn_scanner.gd")
 
 var _scope_index: ScopeIndex
 
