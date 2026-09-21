@@ -46,13 +46,23 @@ func _on_focus_exited() -> void:
 func _switch_caution_display(text: String) -> void:
 	var edited_node := get_edited_object() as Node
 	var scene_root := EditorInterface.get_edited_scene_root()
-	if edited_node == null or scene_root == null or scene_root.scene_file_path.is_empty():
+	if (
+			edited_node == null
+			or scene_root == null
+			or scene_root.scene_file_path.is_empty()
+	):
 		_erorr_label.visible = not _index.find_by_id(text).is_empty()
 		return
 
 	var scene_uid := ResourceUID.path_to_uid(scene_root.scene_file_path)
-	var is_node_in_edited_scene := scene_root == edited_node or scene_root.is_ancestor_of(edited_node)
-	if scene_uid == scene_root.scene_file_path or not is_node_in_edited_scene:
+	var is_node_in_edited_scene := (
+			scene_root == edited_node
+			or scene_root.is_ancestor_of(edited_node)
+	)
+	if (
+			scene_uid == scene_root.scene_file_path
+			or not is_node_in_edited_scene
+	):
 		_erorr_label.visible = not _index.find_by_id(text).is_empty()
 		return
 
