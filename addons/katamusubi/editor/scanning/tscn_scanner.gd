@@ -11,6 +11,9 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 	var entries: Array[ScopeSnapshot] = []
 	var state := packed_scene.get_state()
 	for node_index in state.get_node_count():
+		if state.get_node_instance(node_index) != null:
+			continue
+		
 		var script: Script
 		var scope_id := &""
 
