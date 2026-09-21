@@ -123,7 +123,7 @@ func _commit_pending_edit(value: StringName) -> void:
 	if current_value == value:
 		return
 
-	emit_changed(get_edited_object(), value)
+	emit_changed(get_edited_property(), value)
 
 
 ## このタイミングでのインデックスから候補を作成する。
