@@ -42,7 +42,7 @@ func _init(init_index: ScopeIndex) -> void:
 
 
 func _update_property() -> void:
-	var value　:= get_edited_object().get(get_edited_property()) as StringName
+	var value := get_edited_object().get(get_edited_property()) as StringName
 	_line_edit.text = value
 	_has_pending_edit = false
 	_delete_item_list_menu()
@@ -123,7 +123,7 @@ func _commit_pending_edit(value: StringName) -> void:
 	if current_value == value:
 		return
 
-	emit_changed(property, value)
+	emit_changed(get_edited_object(), value)
 
 
 ## このタイミングでのインデックスから候補を作成する。
