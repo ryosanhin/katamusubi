@@ -40,8 +40,8 @@ func _test_candidate_preview_and_search() -> void:
 	var first_scene_uid := ResourceUID.id_to_text(first_id)
 	var second_scene_uid := ResourceUID.id_to_text(second_id)
 	index.scope_snapshots = [
-		ScopeSnapshot.new(first_scene_uid, &"ParentScope"),
-		ScopeSnapshot.new(second_scene_uid, &"OtherScope"),
+		ScopeSnapshot.new(first_scene_uid, ^"Root/FirstScope", &"ParentScope"),
+		ScopeSnapshot.new(second_scene_uid, ^"Root/SecondScope", &"OtherScope"),
 	]
 	var editor := ParentScopeIdEditorProperty.new(index)
 	var candidates := editor._get_candidate_preview()
