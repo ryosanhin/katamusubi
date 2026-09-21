@@ -66,7 +66,7 @@ func _switch_caution_display(text: String) -> void:
 		_erorr_label.visible = not _index.find_by_id(text).is_empty()
 		return
 
-	var node_path := scene_root.get_path_to(edited_node)
+	var node_path := _to_scene_state_path(scene_root.get_path_to(edited_node))
 	_erorr_label.visible = _index.has_duplicate(text, scene_uid, node_path)
 
 
@@ -74,3 +74,10 @@ func _commit(value: StringName) -> void:
 	if get_edited_object().get(get_edited_property()) == value:
 		return
 	emit_changed(get_edited_property(), value)
+
+
+func _to_scene_state_path(node_path: NodePath) -> NodePath:
+	if node_path == ^".":
+		return node_path
+
+	return NodePath("./" + str(node_path))
