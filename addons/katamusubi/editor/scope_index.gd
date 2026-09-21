@@ -34,6 +34,25 @@ func find_by_id(scope_id: StringName) -> Array[ScopeSnapshot]:
 	return matches
 
 
+func has_duplicate(
+	scope_id: StringName,
+	excluded_scene_uid: StringName,
+	excluded_node_path: NodePath,
+) -> bool:
+	if scope_id.is_empty():
+		return false
+	for snapshot in scope_snapshots:
+		if snapshot.scope_id != scope_id:
+			continue
+		if (
+			snapshot.scene_uid == excluded_scene_uid
+			and snapshot.node_path == excluded_node_path
+		):
+			continue
+		return true
+	return false
+
+
 func save() -> Error:
 	if resource_path.is_empty():
 		return ERR_FILE_BAD_PATH
