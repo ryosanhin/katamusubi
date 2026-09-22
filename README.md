@@ -129,11 +129,9 @@ If no matching keyed registration exists, katamusubi falls back to an unkeyed re
 
 ### Resolution order
 
-katamusubi first searches the current scope and its ancestor scopes for a registration matching both the requested type and key.
+katamusubi searches the current scope first, then its ancestor scopes, starting with the nearest ancestor.
 
-If no matching keyed registration is found, it searches the same scopes for an unkeyed registration of the requested type.
-
-For a child scope with one parent, the order is:
+For a child scope with one parent, the search order is:
 
 | Priority | Registration |
 | --- | --- |
@@ -144,7 +142,7 @@ For a child scope with one parent, the order is:
 
 A keyed registration in a parent scope takes precedence over an unkeyed registration in the current scope.
 
-If no matching keyed or unkeyed registration exists, dependency resolution fails.
+If no matching keyed or unkeyed registration exists, dependency injection fails.
 
 ## Use parent and child scopes
 
