@@ -129,7 +129,9 @@ If no matching keyed registration exists, katamusubi falls back to an unkeyed re
 
 ### Resolution order
 
-katamusubi searches the current scope and then its ancestor scopes for a registration matching both the requested type and key, falling back to the same scope order for an unkeyed registration, so for a child scope with one parent the order is:
+katamusubi searches the current scope first, then its ancestor scopes, starting with the nearest ancestor.
+
+For a child scope with one parent, the search order is:
 
 | Priority | Registration |
 | --- | --- |
