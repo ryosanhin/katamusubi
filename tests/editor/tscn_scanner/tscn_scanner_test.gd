@@ -7,7 +7,7 @@ var _runner := TestRunner.new(true)
 
 func _init() -> void:
 	_test_scanner_and_failure()
-	await _runner.finish(self, "ParentScopeSelection")
+	await _runner.finish(self, "TscnScanner")
 
 
 ## シーンの公開スコープを読み取り、スキャンの成功結果と失敗理由を取得できることを確認します。
