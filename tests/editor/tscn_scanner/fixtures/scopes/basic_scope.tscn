@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource path="res://tests/editor/parent_scope_selection/fixtures/scopes/test_container_scope.gd" type="Script" id="1_scope"]
+[ext_resource path="res://tests/editor/tscn_scanner/fixtures/scopes/test_container_scope.gd" type="Script" id="1_scope"]
 
 [node name="BasicScope" type="Node" groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
