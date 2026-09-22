@@ -15,7 +15,6 @@ var _has_pending_edit: bool = false
 
 func _init(init_index: ScopeIndex) -> void:
 	_index = init_index
-	_candidates = _get_candidate_preview()
 
 	var container := VBoxContainer.new()
 
@@ -33,6 +32,7 @@ func _init(init_index: ScopeIndex) -> void:
 	add_focusable(_line_edit)
 	add_focusable(_item_list)
 
+	_line_edit.focus_entered.connect(_on_focus_entered)
 	_line_edit.text_changed.connect(_on_text_changed)
 	_line_edit.text_submitted.connect(_on_text_submitted)
 	_line_edit.focus_exited.connect(_on_focus_exited)
@@ -46,6 +46,10 @@ func _update_property() -> void:
 	_line_edit.text = value
 	_has_pending_edit = false
 	_delete_item_list_menu()
+
+
+func _on_focus_entered() -> void:
+	_candidates = _get_candidate_preview()
 
 
 func _on_text_changed(value: String) -> void:
@@ -134,7 +138,7 @@ func _get_candidate_preview() -> Dictionary[String, StringName]:
 		var scene_name := ResourceUID.uid_to_path(
 			scope_snapshot.scene_uid
 		)
-		var key := "%s::%s" % [scope_snapshot.scope_id, scene_name]
+		var key := "%s (%s)" % [scope_snapshot.scope_id, scene_name]
 		candidates[key] = scope_snapshot.scope_id
 
 	return candidates
