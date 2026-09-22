@@ -14,6 +14,7 @@ func _init() -> void:
 	await _runner.finish(self, "ParentScopeSelection")
 
 
+## シーンの公開スコープを読み取り、スキャンの成功結果と失敗理由を取得できることを確認します。
 func _test_scanner_and_failure() -> void:
 	_runner.change_test_name("scanner")
 	var result := TscnScanner.scan(&"res://tests/editor/parent_scope_selection/fixtures/scopes/basic_scope.tscn")
@@ -30,6 +31,7 @@ func _test_scanner_and_failure() -> void:
 	_runner.assert_true(not failure.error_message.is_empty(), "スキャン失敗の理由を保持する")
 
 
+## フォーカス時に候補を読み込み、表示名の生成、絞り込み、自由入力ができることを確認します。
 func _test_candidate_preview_and_search() -> void:
 	_runner.change_test_name("candidate preview and search")
 	var index := ScopeIndex.new()
@@ -40,13 +42,19 @@ func _test_candidate_preview_and_search() -> void:
 	var first_scene_uid := ResourceUID.id_to_text(first_id)
 	var second_scene_uid := ResourceUID.id_to_text(second_id)
 	index.scope_snapshots = [
-		ScopeSnapshot.new(first_scene_uid, ^"Root/FirstScope", &"ParentScope"),
-		ScopeSnapshot.new(second_scene_uid, ^"Root/SecondScope", &"OtherScope"),
+		ScopeSnapshot.new(first_scene_uid, &"ParentScope"),
+		ScopeSnapshot.new(second_scene_uid, &"OtherScope"),
 	]
 	var editor := ParentScopeIdEditorProperty.new(index)
+	_runner.assert_equal(editor._candidates.size(), 0, "生成時には候補を読み込まない")
+	editor._on_focus_entered()
 	var candidates := editor._get_candidate_preview()
 	_runner.assert_equal(candidates.size(), 2, "保存済み索引から補完候補を作成する")
 	_runner.assert_true(candidates.values().has(&"ParentScope"), "候補はスコープIDを値に持つ")
+	_runner.assert_true(
+		candidates.has("ParentScope (res://first_scene.tscn)"),
+		"候補名にスコープIDとシーンパスを表示する",
+	)
 
 	editor._on_text_changed("parent")
 	_runner.assert_equal(editor._item_list.item_count, 1, "候補を大文字小文字を区別せず部分一致で絞り込む")
