@@ -138,24 +138,11 @@ If no matching keyed or unkeyed registration exists, dependency injection fails.
 
 Parent-child scope relationships are defined by scope IDs rather than the SceneTree hierarchy.
 
-For example, a persistent scene can provide services to a replaceable scene:
+In the Inspector, set the child's **Parent Scope ID** to the ID of the scope you want to use as its parent. A scope used as a parent must have a **Scope ID**.
 
-- `RootScene` (`Node`)
-  - `ParentContainerScope` (`Node`, with `parent_container_scope.gd`)
-  - `ExampleManager` (`Node`, with `example_manager.gd`)
-  - `ReplaceableSceneRoot` (`Node`)
-    - `ExampleScene` (an instance of a separate scene)
-      - `ChildContainerScope` (`Node`, with `child_container_scope.gd`)
-      - `ExampleUser` (`Node`, with `example_user.gd`)
-
-To configure this example:
-
-1. Use `example_container_scope.gd` from [Basic Usage](#basic-usage) as `parent_container_scope.gd`. Attach it to `ParentContainerScope` and assign the `ExampleManager` node to `_example_service`.
-2. Set the parent's `scope_id` to `application` and save the parent scene.
-3. Open `ExampleScene` for editing. Attach the following script to `ChildContainerScope`:
+A child scope can resolve services registered in its parent scope. Even when the child has no services to register, it must provide an empty implementation of the abstract `_register_instance()` method:
 
 ```gdscript
-# child_container_scope.gd
 extends ContainerScope
 
 
@@ -163,18 +150,8 @@ func _register_instance(_container: InjectionContainer) -> void:
 	pass
 ```
 
-4. Set the child's `parent_scope_id` to `application`.
-5. Add `ExampleUser` to the child scope's **Inject Targets** array. Use the receiving script from the basic example, which requests `ExampleManager`.
-6. Save the child scene and run `RootScene` with both scenes present.
-
-`_register_instance()` must be implemented even when the child has no services to register.
-
-A child scope can resolve services registered in its parent scope.
-
 ### Scope IDs
 
-- Set `scope_id` if other scopes need to use this scope as a parent.
-- Set `parent_scope_id` to the parent's `scope_id`. Leave it empty if no parent is needed.
 - A scope can use a parent even when its own `scope_id` is empty.
 - If you change a parent's ID, update its children's `parent_scope_id` too.
 
