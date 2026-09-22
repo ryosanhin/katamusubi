@@ -24,43 +24,6 @@ func replace_scene_snapshots(scene_uid: StringName, snapshots: Array[ScopeSnapsh
 	return true
 
 
-## スコープIDが一致するスナップショットを配列で返す。
-func find_by_id(scope_id: StringName) -> Array[ScopeSnapshot]:
-	var matches: Array[ScopeSnapshot] = []
-	if scope_id.is_empty():
-		return matches
-	for snapshot in scope_snapshots:
-		if snapshot.scope_id == scope_id:
-			matches.append(snapshot)
-	return matches
-
-
-## 重複するスコープIDが存在するか確認する。
-func has_duplicate(
-	scope_id: StringName,
-	origin_scene_uid: StringName,
-	origin_node_path: NodePath,
-) -> bool:
-	if scope_id.is_empty():
-		return false
-	
-	for snapshot in scope_snapshots:
-		# スコープIDが異なるものは比較する必要無し。スキップ。
-		if snapshot.scope_id != scope_id:
-			continue
-		
-		# シーンUIDとノードパスが一致するのは比較対象自身なのでスキップ。
-		if (
-			snapshot.scene_uid == origin_scene_uid
-			and snapshot.node_path == origin_node_path
-		):
-			continue
-		
-		return true
-
-	return false
-
-
 func save() -> Error:
 	if resource_path.is_empty():
 		return ERR_FILE_BAD_PATH
