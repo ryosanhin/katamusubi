@@ -23,31 +23,16 @@ The implementation uses `@abstract`.
 
 This example demonstrates how to register an existing service node and inject it into another node.
 
-Create a scene with the following nodes:
-
-- `RootScene` (`Node`)
-  - `ExampleContainerScope` (`Node`, with `example_container_scope.gd`)
-  - `ExampleManager` (`Node`, with `example_manager.gd`)
-  - `ExampleUser` (`Node`, with `example_user.gd`)
-
-Neither the service nor the injection target needs to be a child of the scope node.
-
-### 1. Create a service
-
-Create `example_manager.gd` and attach it to the `ExampleManager` node.
-
-```gdscript
-extends Node
-class_name ExampleManager
-
-
-func use_service() -> void:
-	print("Service used.")
+```text
+RootScene
+├── ExampleContainerScope (example_container_scope.gd)
+├── ExampleManager (example_manager.gd)
+└── ExampleUser (example_user.gd)
 ```
 
-### 2. Register the service
+**Neither the service nor the injection target needs to be a child of the scope node.**
 
-Create `example_container_scope.gd` with the following code to extend `ContainerScope` and register the service by overriding `_register_instance()`
+### ExampleContainerScope (example_container_scope.gd)
 
 ```gdscript
 extends ContainerScope
@@ -66,13 +51,18 @@ func _register_instance(container: InjectionContainer) -> void:
 
 `create_instance_registration()` registers an existing instance. It does not create the node or add it to the SceneTree.
 
-Attach this script to `ExampleContainerScope`.
+### ExampleManager (example_manager.gd)
 
-In the Inspector, assign the `ExampleManager` node to the exported `_example_service` property.
+```gdscript
+extends Node
+class_name ExampleManager
 
-### 3. Receive the service
 
-Create `example_user.gd` and attach it to `ExampleUser`:
+func use_service() -> void:
+	print("Service used.")
+```
+
+### ExampleUser (example_user.gd)
 
 ```gdscript
 extends Node
@@ -84,7 +74,7 @@ func inject_dependency(example_manager: ExampleManager) -> void:
 	_example_manager = example_manager
 ```
 
-Select `ExampleContainerScope` and add `ExampleUser` to its **Inject Targets** array　in the Inspector.
+In the Inspector for `ExampleContainerScope`, assign `ExampleManager` to `_example_service` and add `ExampleUser` to **Inject Targets**.
 
 During scope initialization, katamusubi calls `inject_dependency()` on each node in the **Inject Targets** array.
 
