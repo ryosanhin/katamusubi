@@ -8,9 +8,10 @@ var _observer: ContainerScopeObserver
 
 
 func _enter_tree() -> void:
-	_observer = ContainerScopeObserver.new(ScopeIndexStorage.PATH)
+	var storage := ScopeIndexStorage.new(ScopeIndexStorage.PATH)
+	_observer = ContainerScopeObserver.new(storage)
 	_inspector = preload("editor/inspector/container_scope_inspector_plugin.gd").new(
-		_observer.get_scope_index()
+		storage.get_index()
 	)
 	add_inspector_plugin(_inspector)
 

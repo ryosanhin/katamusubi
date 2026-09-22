@@ -10,14 +10,10 @@ var _storage: ScopeIndexStorage
 var _is_rebuild_pending := false
 
 
-func _init(storage_path: String) -> void:
-	_storage = ScopeIndexStorage.new(storage_path)
+func _init(init_storage: ScopeIndexStorage) -> void:
+	_storage = init_storage
 	_scope_index = _storage.get_index()
 	_is_rebuild_pending = _storage.needs_rebuild
-
-
-func get_scope_index() -> ScopeIndex:
-	return _scope_index
 
 
 func rebuild_index_if_needed() -> void:
