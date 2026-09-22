@@ -30,20 +30,9 @@ RootScene
 └── ExampleUser (example_user.gd)
 ```
 
-Neither the service nor the injection target needs to be a child of the scope node.
+**Neither the service nor the injection target needs to be a child of the scope node.**
 
-### Service
-
-```gdscript
-extends Node
-class_name ExampleManager
-
-
-func use_service() -> void:
-	print("Service used.")
-```
-
-### Scope
+### ExampleContainerScope (example_container_scope.gd)
 
 ```gdscript
 extends ContainerScope
@@ -62,7 +51,18 @@ func _register_instance(container: InjectionContainer) -> void:
 
 `create_instance_registration()` registers an existing instance. It does not create the node or add it to the SceneTree.
 
-### Injection target
+### ExampleManager (example_manager.gd)
+
+```gdscript
+extends Node
+class_name ExampleManager
+
+
+func use_service() -> void:
+	print("Service used.")
+```
+
+### ExampleUser (example_user.gd)
 
 ```gdscript
 extends Node
@@ -74,7 +74,7 @@ func inject_dependency(example_manager: ExampleManager) -> void:
 	_example_manager = example_manager
 ```
 
-- In the Inspector for `ExampleContainerScope`, assign `ExampleManager` to `_example_service` and add `ExampleUser` to **Inject Targets**.
+In the Inspector for `ExampleContainerScope`, assign `ExampleManager` to `_example_service` and add `ExampleUser` to **Inject Targets**.
 
 During scope initialization, katamusubi calls `inject_dependency()` on each node in the **Inject Targets** array.
 
