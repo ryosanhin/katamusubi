@@ -10,7 +10,7 @@ var _runner := TestRunner.new(true)
 func _init() -> void:
 	_test_scene_replacement()
 	_test_zero_candidates()
-	_test_default_storage_path()
+	_test_storage_path()
 	_test_first_generation_and_loading()
 	_test_regeneration_after_deletion()
 	_test_reconstruction_after_corruption()
@@ -47,15 +47,15 @@ func _test_zero_candidates() -> void:
 	_runner.assert_equal(index.scope_snapshots.size(), 0, "候補ゼロで対象シーンを空にする")
 
 
-## 配布アドオンの外側に既定の索引が保存されることを確認します。
-func _test_default_storage_path() -> void:
-	_runner.change_test_name("default storage path")
+## 配布アドオンの外側に索引が保存されることを確認します。
+func _test_storage_path() -> void:
+	_runner.change_test_name("storage path")
 	_runner.assert_true(
-		ScopeIndexStorage.DEFAULT_PATH.begins_with("res://.godot/"),
-		"既定の保存先を.godot配下にする",
+		ScopeIndexStorage.PATH.begins_with("res://.godot/"),
+		"保存先を.godot配下にする",
 	)
 	_runner.assert_false(
-		ScopeIndexStorage.DEFAULT_PATH.begins_with("res://addons/"),
+		ScopeIndexStorage.PATH.begins_with("res://addons/"),
 		"配布アドオン配下を可変データの保存先にしない",
 	)
 

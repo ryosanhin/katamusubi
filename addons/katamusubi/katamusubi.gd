@@ -2,13 +2,11 @@
 extends EditorPlugin
 
 const ContainerScopeObserver := preload("editor/inspector/container_scope_observer.gd")
-const ScopeIndexStorage := preload("editor/scope_index_storage.gd")
 var _inspector: EditorInspectorPlugin
 var _observer: ContainerScopeObserver
 
 
 func _enter_tree() -> void:
-	ScopeIndexStorage.register_project_setting()
 	_observer = ContainerScopeObserver.new()
 	_inspector = preload("editor/inspector/container_scope_inspector_plugin.gd").new(
 		_observer.get_scope_index()
