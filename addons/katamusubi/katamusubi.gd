@@ -17,11 +17,11 @@ func _enter_tree() -> void:
 	var filesystem := EditorInterface.get_resource_filesystem()
 	filesystem.filesystem_changed.connect(_observer.synchronize_index_with_filesystem)
 
-	add_tool_menu_item("Katamusubi: 公開スコープ索引を再構築", _observer.rebuild_all_index)
+	add_tool_menu_item("katamusubi: 公開スコープ索引を再構築", _observer.rebuild_all_index)
 
 
 func _exit_tree() -> void:
-	remove_tool_menu_item("Katamusubi: 公開スコープ索引を再構築")
+	remove_tool_menu_item("katamusubi: 公開スコープ索引を再構築")
 	if _inspector != null:
 		remove_inspector_plugin(_inspector)
 	
