@@ -24,7 +24,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 
 		if not scope_id.is_empty() and _inherits_container_scope(script):
 			entries.append(
-				ScopeSnapshot.new(scene_uid, state.get_node_path(node_index), scope_id)
+				ScopeSnapshot.new(scene_uid, scope_id)
 			)
 
 	return SceneSnapshot.new(true, scene_uid, entries)
