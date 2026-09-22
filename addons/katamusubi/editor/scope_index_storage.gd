@@ -11,7 +11,7 @@ var _path: String
 var needs_rebuild := false
 
 
-func _init(storage_path: String = PATH) -> void:
+func _init(storage_path: String) -> void:
 	_path = storage_path
 	_load_or_generate()
 
