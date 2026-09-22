@@ -14,6 +14,7 @@ func _init() -> void:
 	await _runner.finish(self, "ParentScopeSelection")
 
 
+## シーンの公開スコープを読み取り、スキャンの成功結果と失敗理由を取得できることを確認します。
 func _test_scanner_and_failure() -> void:
 	_runner.change_test_name("scanner")
 	var result := TscnScanner.scan(&"res://tests/editor/parent_scope_selection/fixtures/scopes/basic_scope.tscn")
@@ -30,6 +31,7 @@ func _test_scanner_and_failure() -> void:
 	_runner.assert_true(not failure.error_message.is_empty(), "スキャン失敗の理由を保持する")
 
 
+## フォーカス時に候補を読み込み、表示名の生成、絞り込み、自由入力ができることを確認します。
 func _test_candidate_preview_and_search() -> void:
 	_runner.change_test_name("candidate preview and search")
 	var index := ScopeIndex.new()

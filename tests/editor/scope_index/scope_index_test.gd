@@ -10,6 +10,7 @@ func _init() -> void:
 	await _runner.finish(self, "ScopeIndex")
 
 
+## 指定シーンのスナップショットだけを置換し、他シーンと同名IDの候補を保持することを確認します。
 func _test_scene_replacement() -> void:
 	_runner.change_test_name("scene replacement")
 	var index := ScopeIndex.new()
@@ -28,6 +29,7 @@ func _test_scene_replacement() -> void:
 	_runner.assert_equal(index.scope_snapshots[1].scope_id, &"same", "置換した候補はスコープIDを保持する")
 
 
+## 空のスナップショット一覧によって、指定シーンの候補をすべて削除できることを確認します。
 func _test_zero_candidates() -> void:
 	_runner.change_test_name("successful empty replacement")
 	var index := ScopeIndex.new()
@@ -37,5 +39,6 @@ func _test_zero_candidates() -> void:
 	_runner.assert_equal(index.scope_snapshots.size(), 0, "候補ゼロで対象シーンを空にする")
 
 
+## テスト用のスコープスナップショットを生成します。
 func _candidate(scene: StringName, id: StringName) -> ScopeSnapshot:
 	return ScopeSnapshot.new(scene, id)
