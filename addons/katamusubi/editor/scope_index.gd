@@ -22,10 +22,3 @@ func replace_scene_snapshots(scene_uid: StringName, snapshots: Array[ScopeSnapsh
 	scope_snapshots.append_array(snapshots)
 	
 	return true
-
-
-func save() -> Error:
-	if resource_path.is_empty():
-		return ERR_FILE_BAD_PATH
-	
-	return ResourceSaver.save(self, resource_path)
