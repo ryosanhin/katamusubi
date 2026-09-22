@@ -150,38 +150,27 @@ If no matching keyed or unkeyed registration exists, dependency resolution fails
 
 Parent-child scope relationships are defined by scope IDs rather than the SceneTree hierarchy.
 
-For example, a persistent scene can provide services to a replaceable scene:
-
-- `RootScene` (`Node`)
-  - `ParentContainerScope` (`Node`, with `parent_container_scope.gd`)
-  - `ExampleManager` (`Node`, with `example_manager.gd`)
-  - `ReplaceableSceneRoot` (`Node`)
-    - `ExampleScene` (an instance of a separate scene)
-      - `ChildContainerScope` (`Node`, with `child_container_scope.gd`)
-      - `ExampleUser` (`Node`, with `example_user.gd`)
-
-To configure this example:
-
-1. Use `example_container_scope.gd` from [Basic Usage](#basic-usage) as `parent_container_scope.gd`. Attach it to `ParentContainerScope` and assign the `ExampleManager` node to `_example_service`.
-2. Set the parent's `scope_id` to `application` and save the parent scene.
-3. Open `ExampleScene` for editing. Attach the following script to `ChildContainerScope`:
+For the minimal configuration, register a service in a parent scope and set:
 
 ```gdscript
-# child_container_scope.gd
+scope_id = &"application"
+```
+
+Set the child scope to reference that ID:
+
+```gdscript
+parent_scope_id = &"application"
+```
+
+A child scope can resolve services registered in its parent scope. Even when the child has no services to register, it must provide an empty implementation of the abstract `_register_instance()` method:
+
+```gdscript
 extends ContainerScope
 
 
 func _register_instance(_container: InjectionContainer) -> void:
 	pass
 ```
-
-4. Set the child's `parent_scope_id` to `application`.
-5. Add `ExampleUser` to the child scope's **Inject Targets** array. Use the receiving script from the basic example, which requests `ExampleManager`.
-6. Save the child scene and run `RootScene` with both scenes present.
-
-`_register_instance()` must be implemented even when the child has no services to register.
-
-A child scope can resolve services registered in its parent scope.
 
 ### Scope IDs
 
