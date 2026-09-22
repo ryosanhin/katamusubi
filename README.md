@@ -150,17 +150,7 @@ If no matching keyed or unkeyed registration exists, dependency resolution fails
 
 Parent-child scope relationships are defined by scope IDs rather than the SceneTree hierarchy.
 
-For the minimal configuration, register a service in a parent scope and set:
-
-```gdscript
-scope_id = &"application"
-```
-
-Set the child scope to reference that ID:
-
-```gdscript
-parent_scope_id = &"application"
-```
+In the Inspector, set the child's **Parent Scope ID** to the ID of the scope you want to use as its parent. A scope used as a parent must have a **Scope ID**.
 
 A child scope can resolve services registered in its parent scope. Even when the child has no services to register, it must provide an empty implementation of the abstract `_register_instance()` method:
 
@@ -174,8 +164,6 @@ func _register_instance(_container: InjectionContainer) -> void:
 
 ### Scope IDs
 
-- Set `scope_id` if other scopes need to use this scope as a parent.
-- Set `parent_scope_id` to the parent's `scope_id`. Leave it empty if no parent is needed.
 - A scope can use a parent even when its own `scope_id` is empty.
 - If you change a parent's ID, update its children's `parent_scope_id` too.
 
