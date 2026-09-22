@@ -56,6 +56,9 @@ func _test_candidate_preview_and_search() -> void:
 		"候補名にスコープIDとシーンパスを表示する",
 	)
 
+	editor.focus_entered.emit()
+	_runner.assert_true(editor._candidates != null, "フォーカス時に候補一覧を生成")
+
 	editor._on_text_changed("parent")
 	_runner.assert_equal(editor._item_list.item_count, 1, "候補を大文字小文字を区別せず部分一致で絞り込む")
 	_runner.assert_true(editor._item_list.visible, "一致する候補があるときは一覧を表示する")
