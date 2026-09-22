@@ -163,7 +163,7 @@ For example, a persistent scene can provide services to a replaceable scene:
 To configure this example:
 
 1. Use `example_container_scope.gd` from [Basic Usage](#basic-usage) as `parent_container_scope.gd`. Attach it to `ParentContainerScope` and assign the `ExampleManager` node to `_example_service`.
-2. Set **Public Scope Name** on `ParentContainerScope` to a stable name such as `application`. A blank name means that the scope is private and is not offered as a parent candidate.
+2. Set the parent's `scope_id` to `application` and save the parent scene.
 3. Open `ExampleScene` for editing. Attach the following script to `ChildContainerScope`:
 
 ```gdscript
@@ -175,7 +175,7 @@ func _register_instance(_container: InjectionContainer) -> void:
 	pass
 ```
 
-4. In the child scope's Inspector, enter `application` in **Parent Scope Name**. The field searches public names and shows each candidate's scene and `NodePath`, but also accepts names that are not currently in the index.
+4. Set the child's `parent_scope_id` to `application`.
 5. Add `ExampleUser` to the child scope's **Inject Targets** array. Use the receiving script from the basic example, which requests `ExampleManager`.
 6. Save the child scene and run `RootScene` with both scenes present.
 
@@ -183,56 +183,34 @@ func _register_instance(_container: InjectionContainer) -> void:
 
 A child scope can resolve services registered in its parent scope.
 
-### Parent scope runtime requirements
+### Scope IDs
+
+- Set `scope_id` if other scopes need to use this scope as a parent.
+- Set `parent_scope_id` to the parent's `scope_id`. Leave it empty if no parent is needed.
+- A scope can use a parent even when its own `scope_id` is empty.
+- If you change a parent's ID, update its children's `parent_scope_id` too.
+
+### Input suggestions
+
+As you type, the Inspector shows matching IDs and their scene paths.
+You can also enter an ID that is not in the suggestions.
+
+Suggestions use saved `.tscn` scenes. Save the scene to update its suggestions.
+To rebuild all suggestions, select **Katamusubi: 公開スコープ索引を再構築** from the editor's Tools menu.
+
+Suggestions only help with input. At runtime, katamusubi finds the parent in the SceneTree using `parent_scope_id`.
+
+### Runtime requirements
 
 When a child scope initializes:
 
-- Exactly one matching parent scope must already exist in the running SceneTree.
-- All required ancestor scopes must be available, and their initialization must succeed.
-- The scope relationships must not contain a cycle.
+- Exactly one parent with the matching ID must already be in the SceneTree.
+- All parent and ancestor scopes must initialize successfully.
+- Parent relationships must not form a cycle.
 
-Initialization fails if a required parent is missing. A failed scope does not automatically retry even if a parent is added later.
-
-When instantiating a child scene at runtime, ensure that all required parent scopes are already present in the SceneTree.
-
-Do not instantiate multiple parent scopes with the same scope ID at the same time. A child scope requires exactly one matching parent scope.
-
-The public name and parent name are independent: a scope with a blank public name can
-still use a parent, and an intermediate scope can have both values. Suggestions are
-editor assistance only. Runtime lookup always uses an exact name match and requires
-exactly one live matching scope. Duplicate suggestions are therefore shown as
-ambiguous rather than being collapsed to one node.
-
-### Candidate index and diagnostics
-
-**Saved scenes are the source of truth for the candidate index.** katamusubi builds
-the index only from saved `.tscn` files. It caches only non-empty public names and their
-scene locations. Saving a scene replaces that scene's cache
-entries. **katamusubi: 公開スコープ索引を再構築** in the editor's Tools menu finds all
-saved `.tscn` scenes again; deleted scenes are also removed from the cache.
-
-A new scene's `scope_id` does not appear in the candidates until the
-scene is saved for the first time. Additions, changes, and deletions in an already
-saved scene also do not affect the candidates until the scene is saved again.
-
-`parent_scope_id` is a free-form field. You can enter an unsaved ID even if it is not
-in the candidates. The candidate list is only input help based on saved scenes. It
-does not guarantee that a value is valid or that the parent scope will exist at
-runtime. Runtime parent resolution does not use the candidate index; it uses the
-actual `parent_scope_id`in the SceneTree.
-
-### Migration from the selectable-parent setting
-
-Older releases automatically generated an ID for every scope and used **Selectable
-As Parent** to control whether it appeared in the picker. The toggle and automatic ID
-generation have been removed. Every existing non-empty ID now acts as a public name,
-including IDs that previously belonged to scopes with the toggle disabled. Clear any
-unnecessary public names manually after upgrading. Katamusubi deliberately does not
-bulk-clear them because doing so could break existing parent references.
-
-Renaming or clearing a public name does not rewrite parent names in other scenes.
-Update those references explicitly; until then the editor reports them as missing and
-runtime initialization fails when no exactly matching live parent exists.
+IDs must match exactly, including letter case.
+Initialization fails if these requirements are not met.
+A failed scope does not automatically retry when a parent is added later.
 
 ## Injection timing
 
