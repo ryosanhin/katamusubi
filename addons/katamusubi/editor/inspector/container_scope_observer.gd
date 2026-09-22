@@ -2,14 +2,27 @@
 extends RefCounted
 
 const ScopeIndex := preload("../scope_index.gd")
+const ScopeIndexStorage := preload("../scope_index_storage.gd")
 const TscnScanner := preload("../scanning/tscn_scanner.gd")
 
 var _scope_index: ScopeIndex
+var _storage: ScopeIndexStorage
 var _is_rebuild_pending := false
 
 
-func _init(init_scope_index: ScopeIndex) -> void:
-	_scope_index = init_scope_index
+func _init(storage_path: String = ScopeIndexStorage.get_configured_path()) -> void:
+	_storage = ScopeIndexStorage.new(storage_path)
+	_scope_index = _storage.index
+	_is_rebuild_pending = _storage.needs_rebuild
+
+
+func get_scope_index() -> ScopeIndex:
+	return _scope_index
+
+
+func rebuild_index_if_needed() -> void:
+	if _is_rebuild_pending:
+		rebuild_all_index()
 
 
 func update_scene_index(path: String) -> void:
@@ -22,6 +35,9 @@ func update_scene_index(path: String) -> void:
 
 
 func synchronize_index_with_filesystem() -> void:
+	if _storage.ensure_available():
+		_is_rebuild_pending = true
+
 	if _is_rebuild_pending:
 		rebuild_all_index()
 		return
@@ -73,7 +89,7 @@ func _update_index(scene_uid: StringName) -> bool:
 
 ## インデックスを保存する。
 func _save_index() -> void:
-	var error := _scope_index.save()
+	var error := _storage.save()
 	if error != OK:
 		push_warning("Failed to save scope candidate cache: %s" % error_string(error))
 		return
