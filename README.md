@@ -161,7 +161,7 @@ As you type, the Inspector shows matching IDs and their scene paths.
 You can also enter an ID that is not in the suggestions.
 
 Suggestions use saved `.tscn` scenes. Save the scene to update its suggestions.
-To rebuild all suggestions, select **Katamusubi: 公開スコープ索引を再構築** from the editor's Tools menu.
+To rebuild all suggestions, select **katamusubi: 公開スコープ索引を再構築** from the editor's Tools menu.
 
 Suggestions only help with input. At runtime, katamusubi finds the parent in the SceneTree using `parent_scope_id`.
 
