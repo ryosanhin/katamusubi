@@ -20,8 +20,8 @@ func get_index() -> ScopeIndex:
 	return _index
 
 
-## 保存先が削除または破損していないか確認し、必要なら空の索引を生成する。
-## 再生成した場合は、呼び出し側が全シーンを走査できるよう true を返す。
+## 保存先が削除または破損していないか確認し、必要ならメモリ上の索引を空にする。
+## 再構築が必要な場合は、呼び出し側が全シーンを走査できるよう true を返す。
 func ensure_available() -> bool:
 	if _load_index():
 		return false
@@ -44,9 +44,9 @@ func _load_or_generate() -> void:
 	if _load_index():
 		return
 
-	var reason := "Scope index does not exist; generating it"
+	var reason := "Scope index does not exist; rebuilding it"
 	if FileAccess.file_exists(_path):
-		reason = "Scope index could not be loaded; replacing the damaged index"
+		reason = "Scope index could not be loaded; rebuilding the damaged index"
 	_generate_empty_index("%s: %s" % [reason, _path])
 
 
@@ -67,9 +67,3 @@ func _generate_empty_index(diagnostic: String) -> void:
 	_index.scope_snapshots.clear()
 	needs_rebuild = true
 	push_warning(diagnostic)
-	var error := save()
-	if error != OK:
-		push_warning(
-			"Failed to generate scope index at %s: %s. Editor suggestions remain available in memory."
-			% [_path, error_string(error)]
-		)

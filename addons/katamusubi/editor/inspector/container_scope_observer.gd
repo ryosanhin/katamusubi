@@ -44,28 +44,31 @@ func synchronize_index_with_filesystem() -> void:
 
 ## プロジェクト内全シーンについて走査しインデックスを再構築する。
 func rebuild_all_index() -> void:
+	# 再構築と保存が完了するまでは、filesystem_changed で再試行できるようにする。
+	_is_rebuild_pending = true
 	var filesystem := EditorInterface.get_resource_filesystem()
 	# ファイルシステムがスキャン中には邪魔しない。
 	# どうせファイルシステム完了後に構築を割り込ませるタイミングがあるので。
 	if filesystem.is_scanning():
-		_is_rebuild_pending = true
 		return
-	
-	_is_rebuild_pending = false
 
 	var root := filesystem.get_filesystem()
 	if root == null:
 		return
 	var scene_paths := _get_scene_paths(root)
+	var previous_snapshots := _scope_index.scope_snapshots.duplicate()
+	_scope_index.scope_snapshots.clear()
 	var failed: PackedStringArray = []
 	for path in scene_paths:
 		var scene_uid := ResourceUID.path_to_uid(path)
 		if scene_uid == path or not _update_index(scene_uid):
 			failed.append(path)
+			for snapshot in previous_snapshots:
+				if snapshot.scene_uid == scene_uid:
+					_scope_index.scope_snapshots.append(snapshot)
 	
-	_remove_index_in_deleted_scenes()
-	
-	_save_index()
+	if _save_index():
+		_is_rebuild_pending = false
 
 	if not failed.is_empty():
 		push_warning("Some scenes could not be scanned; their previous candidates were preserved:\n%s" % "\n".join(failed))
@@ -84,12 +87,13 @@ func _update_index(scene_uid: StringName) -> bool:
 
 
 ## インデックスを保存する。
-func _save_index() -> void:
+func _save_index() -> bool:
 	var error := _storage.save()
 	if error != OK:
 		push_warning("Failed to save scope candidate cache: %s" % error_string(error))
-		return
+		return false
 	EditorInterface.get_resource_filesystem().scan()
+	return true
 
 
 ## 削除されていたシーンUIDに紐づいたインデックスを削除する。[br]
