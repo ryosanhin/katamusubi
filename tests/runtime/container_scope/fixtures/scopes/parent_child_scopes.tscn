@@ -1,16 +1,16 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://lpudmh1xl7h7"]
 
-[ext_resource path="res://tests/runtime/container_scope/fixtures/scopes/test_container_scope.gd" type="Script" id="1_scope"]
+[ext_resource type="Script" uid="uid://c7msjid4guraw" path="res://tests/runtime/container_scope/fixtures/scopes/test_container_scope.gd" id="1_scope"]
 
-[node name="ScopePair" type="Node"]
+[node name="ScopePair" type="Node" unique_id=703372405]
 
-[node name="Child" type="Node" parent="." groups=["katamusubi_scope"]]
+[node name="Child" type="Node" parent="." unique_id=1991718572 groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
+registration_key = &"shared"
 scope_id = &"child"
 parent_scope_id = &"parent"
-registration_key = &"shared"
 
-[node name="Parent" type="Node" parent="." groups=["katamusubi_scope"]]
+[node name="Parent" type="Node" parent="." unique_id=1007854580 groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
-scope_id = &"parent"
 registration_key = &"shared"
+scope_id = &"parent"

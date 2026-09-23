@@ -19,7 +19,7 @@ enabled=PackedStringArray("res://addons/katamusubi/plugin.cfg")
 
 [global_group]
 
-test_group="Group for test"
+katamusubi_scope="Scope group"
 
 [physics]
 

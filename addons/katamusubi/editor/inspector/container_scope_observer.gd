@@ -63,8 +63,7 @@ func rebuild_all_index() -> void:
 
 	if not failed.is_empty():
 		push_warning(
-				"Some scenes could not be scanned; \
-				their previous candidates were preserved:\n%s"
+				"Some scenes could not be scanned; their previous candidates were preserved:\n%s"
 				% "\n".join(failed)
 		)
 

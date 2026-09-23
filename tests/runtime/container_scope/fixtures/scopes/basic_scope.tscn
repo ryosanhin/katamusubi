@@ -1,7 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://jrwhwp1o2vxm"]
 
-[ext_resource path="res://tests/runtime/container_scope/fixtures/scopes/test_container_scope.gd" type="Script" id="1_scope"]
+[ext_resource type="Script" uid="uid://c7msjid4guraw" path="res://tests/runtime/container_scope/fixtures/scopes/test_container_scope.gd" id="1_scope"]
 
-[node name="BasicScope" type="Node" groups=["katamusubi_scope"]]
+[node name="BasicScope" type="Node" unique_id=1726069518 groups=["katamusubi_scope"]]
 script = ExtResource("1_scope")
 scope_id = &"basic"
