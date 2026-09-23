@@ -18,7 +18,7 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 		errors.append("公開するクラスが指定されていません。")
 		return errors
 
-	if registration._is_instance_registration:
+	if registration.is_instance_registration:
 		if registration.instance == null:
 			errors.append("外部インスタンスに null は指定できません。")
 			return errors
@@ -49,9 +49,6 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 					_get_displayable_name(registration.service_type),
 				]
 			)
-
-	if not Lifecycle.is_valid(registration.lifecycle):
-		errors.append("ライフサイクルが不正です: %s" % Lifecycle.to_display_name(registration.lifecycle))
 
 	if not ScriptTypeCompatibility.is_same_or_derived_from(
 			registration.implementation_type,

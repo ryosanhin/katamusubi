@@ -60,7 +60,7 @@ func _validate_registration(registration: ServiceRegistration) -> bool:
 	if entry_map.has(registration.key):
 		push_error(
 			"登録が重複しています: 型=%s, id=%s" % [
-				registration.service_name,
+				registration.service_type.get_global_name(),
 				_display_id(registration.key),
 			]
 		)
