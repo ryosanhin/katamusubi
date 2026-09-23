@@ -5,7 +5,12 @@ const SceneSnapshot := preload("scene_snapshot.gd")
 
 
 static func scan(scene_uid: StringName) -> SceneSnapshot:
-	var packed_scene := load(scene_uid) as PackedScene
+	var packed_scene := ResourceLoader.load(
+			scene_uid,
+			"PackedScene",
+			ResourceLoader.CACHE_MODE_IGNORE
+	) as PackedScene
+
 	if packed_scene == null:
 		return SceneSnapshot.new(false, scene_uid, [], "Scene could not be loaded: %s" % scene_uid)
 	var entries: Array[ScopeSnapshot] = []
