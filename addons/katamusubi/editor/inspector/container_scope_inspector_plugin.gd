@@ -2,9 +2,14 @@
 extends EditorInspectorPlugin
 ## [ContainerScope] のインスペクター表示を拡張する。
 
-const SCOPE_INDEX := preload("res://addons/katamusubi/scope_index.tres")
-
+const ScopeIndex := preload("../scope_index.gd")
 const ParentScopeIdEditorProperty := preload("parent_scope_id_editor_property.gd")
+
+var _scope_index: ScopeIndex
+
+
+func _init(init_scope_index: ScopeIndex) -> void:
+	_scope_index = init_scope_index
 
 
 func _can_handle(object: Object) -> bool:
@@ -23,7 +28,7 @@ func _parse_property(
 	if name == "parent_scope_id":
 		add_property_editor(
 			name,
-			ParentScopeIdEditorProperty.new(SCOPE_INDEX)
+			ParentScopeIdEditorProperty.new(_scope_index)
 		)
 		return true
 	
