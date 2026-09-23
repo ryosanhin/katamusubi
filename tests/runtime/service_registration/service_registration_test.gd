@@ -13,39 +13,23 @@ var _runner := TestRunner.new(true)
 
 
 func _init() -> void:
-	# 公開APIの生成・更新、継承判定、検証、Lifecycleの全ケースを順番に確認します。
-	_test_create_class_registration()
+	# 公開APIの生成・更新、継承判定、検証の各ケースを順番に確認します。
 	_test_create_instance_registration()
 	_test_dedicated_validator()
 	_test_instance_validation()
 	_test_fluent_updates()
-	_test_missing_types_and_invalid_lifecycle()
+	_test_missing_types()
 	_test_unnamed_type()
 	_test_unrelated_registration()
 	_test_valid_registration()
-	_test_lifecycle_helpers()
 
 	await _runner.finish(self, "ServiceRegistration")
 
 
-## クラス登録の生成時に実装型と公開型を設定し、指定したライフサイクルを保持することを確認します。
-func _test_create_class_registration() -> void:
-	_runner.change_test_name("create_class_registration")
-	# クラス登録の生成時に実装型と公開型が一致し、指定した生成規則が保存されます。
-	var registration := ServiceRegistration.create_class_registration(
-		DerivedService,
-		Lifecycle.Type.TRANSIENT,
-	)
-
-	_expect(registration.implementation_type == DerivedService, "クラス登録に実装型を設定する")
-	_expect(registration.service_type == DerivedService, "クラス登録は実装型自身を公開する")
-	_expect(registration.lifecycle == Lifecycle.Type.TRANSIENT, "指定したライフサイクルを設定する")
-
-
-## 外部生成したインスタンスを同じ参照のままSingletonとして登録することを確認します。
+## 外部生成したインスタンスを同じ参照のまま登録することを確認します。
 func _test_create_instance_registration() -> void:
 	_runner.change_test_name("create_instance_registration")
-	# 外部生成した同じインスタンスを保持し、指定にかかわらずSingletonとして登録します。
+	# 外部生成した同じインスタンスを保持します。
 	var provided_instance := DerivedService.new()
 	var registration := ServiceRegistration.create_instance_registration(
 		provided_instance,
@@ -55,7 +39,6 @@ func _test_create_instance_registration() -> void:
 	_runner.assert_same(registration.instance, provided_instance, "渡されたインスタンスそのものを保持する")
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
-	_expect(registration.lifecycle == Lifecycle.Type.SINGLETON, "インスタンスをSingleton登録する")
 
 
 ## 専用バリデーターが登録を検証し、従来APIも同じ結果へ委譲することを確認します。
@@ -120,9 +103,9 @@ func _test_instance_validation() -> void:
 func _test_fluent_updates() -> void:
 	_runner.change_test_name("fluent_updates")
 	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
-	var registration := ServiceRegistration.create_class_registration(
+	var registration := ServiceRegistration.create_instance_registration(
+		DerivedService.new(),
 		DerivedService,
-		Lifecycle.Type.TRANSIENT,
 	)
 	var as_type_result = registration.as_type(BaseService)
 	var with_key_result = registration.with_key(&"primary")
@@ -133,10 +116,10 @@ func _test_fluent_updates() -> void:
 	_expect(registration.key == &"primary", "with_keyは登録キーを更新する")
 
 
-## 必須型の欠落と未知のライフサイクルが検証エラーとして報告されることを確認します。
-func _test_missing_types_and_invalid_lifecycle() -> void:
-	_runner.change_test_name("missing_types_and_invalid_lifecycle")
-	# 必須型の欠落と未知のライフサイクルを検証エラーとして報告します。
+## 必須型の欠落が検証エラーとして報告されることを確認します。
+func _test_missing_types() -> void:
+	_runner.change_test_name("missing_types")
+	# 必須型の欠落を検証エラーとして報告します。
 	var missing_implementation := _valid_registration()
 	missing_implementation.implementation_type = null
 	_expect_validation_error(missing_implementation, "生成するクラスが指定されていません")
@@ -145,65 +128,47 @@ func _test_missing_types_and_invalid_lifecycle() -> void:
 	missing_service.service_type = null
 	_expect_validation_error(missing_service, "公開するクラスが指定されていません")
 
-	var invalid_lifecycle := _valid_registration()
-	# enum型の静的検査を迂回し、外部データなどから混入した不正な整数を再現します。
-	invalid_lifecycle.set(&"lifecycle", 999)
-	_expect_validation_error(invalid_lifecycle, "ライフサイクルが不正です: UNKNOWN(999)")
-
 
 ## グローバルクラス名を持たないScriptも正常なサービス型として登録できることを確認します。
 func _test_unnamed_type() -> void:
 	_runner.change_test_name("unnamed_type")
 	# Scriptそのものを解決キーに使うため、グローバルクラス名がない型も登録できます。
-	var registration := ServiceRegistration.create_class_registration(
+	var registration := ServiceRegistration.create_instance_registration(
+		UnnamedService.new(),
 		UnnamedService,
-		Lifecycle.Type.TRANSIENT,
 	)
 	var errors: PackedStringArray = registration.validate()
 
 	_expect(errors.is_empty(), "class_nameのないScriptを正常な登録として扱う")
-	_expect(registration.service_name.is_empty(), "class_nameのない公開型のサービス名は空になる")
 
 
 ## 公開型を継承していない実装型の組み合わせが検証エラーになることを確認します。
 func _test_unrelated_registration() -> void:
 	_runner.change_test_name("unrelated_registration")
 	# 実装型が公開型を継承していない組み合わせを検証エラーとして報告します。
-	var registration := ServiceRegistration.create_class_registration(
+	var registration := ServiceRegistration.create_instance_registration(
+		UnrelatedService.new(),
 		UnrelatedService,
-		Lifecycle.Type.SINGLETON,
 	).as_type(BaseService)
 
 	_expect_validation_error(registration, "継承していません")
 
 
-## 型、継承関係、ライフサイクルが正しいサービス登録では検証エラーがないことを確認します。
+## 型と継承関係が正しいサービス登録では検証エラーがないことを確認します。
 func _test_valid_registration() -> void:
 	_runner.change_test_name("valid_registration")
-	# class_name、継承関係、ライフサイクルが正しい登録には検証エラーがありません。
+	# class_nameと継承関係が正しい登録には検証エラーがありません。
 	var registration := _valid_registration()
 	var errors: PackedStringArray = registration.validate()
 
 	_expect(errors.is_empty(), "正常な登録のエラー配列が空になる")
 
 
-## ライフサイクルの全列挙値を検証・表示でき、未知の値をUNKNOWNとして扱うことを確認します。
-func _test_lifecycle_helpers() -> void:
-	_runner.change_test_name("lifecycle_helpers")
-	# 全列挙値を有効と判定して名前へ変換し、列挙外の値はUNKNOWNとして扱います。
-	_expect(Lifecycle.is_valid(Lifecycle.Type.SINGLETON), "SINGLETONを有効と判定する")
-	_expect(Lifecycle.to_display_name(Lifecycle.Type.SINGLETON) == "SINGLETON", "SINGLETON名を返す")
-	_expect(Lifecycle.is_valid(Lifecycle.Type.TRANSIENT), "TRANSIENTを有効と判定する")
-	_expect(Lifecycle.to_display_name(Lifecycle.Type.TRANSIENT) == "TRANSIENT", "TRANSIENT名を返す")
-	_expect(not Lifecycle.is_valid(999), "未知のライフサイクルを無効と判定する")
-	_expect(Lifecycle.to_display_name(999) == "UNKNOWN(999)", "未知値を含む表示名を返す")
-
-
 func _valid_registration() -> ServiceRegistration:
 	# 各異常系テストの開始点となる、派生実装を基底型として公開する正常な登録です。
-	return ServiceRegistration.create_class_registration(
+	return ServiceRegistration.create_instance_registration(
+		DerivedService.new(),
 		DerivedService,
-		Lifecycle.Type.TRANSIENT,
 	).as_type(BaseService).with_key(&"fixture")
 
 

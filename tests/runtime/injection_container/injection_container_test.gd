@@ -3,7 +3,6 @@ extends SceneTree
 
 const BaseService := preload("fixtures/services/base_service.gd")
 const DerivedService := preload("fixtures/services/derived_service.gd")
-const TrackedService := preload("fixtures/services/tracked_service.gd")
 const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
 
 var _runner := TestRunner.new(true)
@@ -12,8 +11,6 @@ var _runner := TestRunner.new(true)
 func _init() -> void:
 	_test_default_resolution()
 	_test_registration_error_state_transitions()
-	_test_singleton()
-	_test_transient()
 	_test_instance_registration()
 	_test_invalid_instance_registrations()
 	_test_key_precedence_and_default_fallback()
@@ -33,11 +30,14 @@ func _init() -> void:
 func _test_default_resolution() -> void:
 	_runner.change_test_name("default_resolution")
 	var container := InjectionContainer.new(null)
-	var succeeded := container.register(_class_registration(TrackedService, Lifecycle.Type.TRANSIENT))
+	var provided := DerivedService.new()
+	var succeeded := container.register(
+		ServiceRegistration.create_instance_registration(provided, DerivedService)
+	)
 
-	var resolved = container.resolve(TrackedService, &"")
+	var resolved = container.resolve(DerivedService, &"")
 	_runner.assert_true(succeeded, "正常な登録は成功を返す")
-	_runner.assert_true(resolved is InjectionContainerTestTrackedService, "Scriptからデフォルト登録を解決する")
+	_runner.assert_same(resolved, provided, "Scriptからデフォルト登録を解決する")
 
 
 ## 登録エラーの発生後も既存サービスを解決でき、clear後に登録可能な状態へ戻ることを確認します。
@@ -65,40 +65,15 @@ func _test_registration_error_state_transitions() -> void:
 	_runner.assert_true(container.has_registration_errors, "後続の正常登録は累積エラー状態を解除しない")
 
 
-## Singleton登録を複数回解決したとき、同じインスタンスが返されることを確認します。
-func _test_singleton() -> void:
-	_runner.change_test_name("singleton")
-	TrackedService.reset_generation_count()
-	var container := InjectionContainer.new(null)
-	container.register(_class_registration(TrackedService, Lifecycle.Type.SINGLETON))
-	var first = container.resolve(TrackedService, &"")
-	var second = container.resolve(TrackedService, &"")
-
-	_runner.assert_same(second, first, "Singletonは同じ参照を返す")
-	_runner.assert_equal(TrackedService.generation_count, 1, "Singletonを一度だけ生成する")
-
-
-## Transient登録を複数回解決したとき、毎回異なるインスタンスが返されることを確認します。
-func _test_transient() -> void:
-	_runner.change_test_name("transient")
-	var container := InjectionContainer.new(null)
-	container.register(_class_registration(TrackedService, Lifecycle.Type.TRANSIENT))
-	var first = container.resolve(TrackedService, &"")
-	var second = container.resolve(TrackedService, &"")
-
-	_runner.assert_true(not is_same(second, first), "Transientは異なる参照を返す")
-	_runner.assert_not_equal(second.instance_id, first.instance_id, "Transientごとに異なるIDを付ける")
-
-
 ## 外部から渡したインスタンスが、その参照を保ったまま解決されることを確認します。
 func _test_instance_registration() -> void:
 	_runner.change_test_name("instance_registration")
 	var container := InjectionContainer.new(null)
-	var provided := TrackedService.new()
-	container.register(ServiceRegistration.create_instance_registration(provided, TrackedService))
+	var provided := DerivedService.new()
+	container.register(ServiceRegistration.create_instance_registration(provided, DerivedService))
 
-	_runner.assert_same(container.resolve(TrackedService, &""), provided, "提供された参照を返す")
-	_runner.assert_same(container.resolve(TrackedService, &""), provided, "再解決でも提供された参照を返す")
+	_runner.assert_same(container.resolve(DerivedService, &""), provided, "提供された参照を返す")
+	_runner.assert_same(container.resolve(DerivedService, &""), provided, "再解決でも提供された参照を返す")
 
 
 ## null、非Object、Scriptなしなどの不正な外部インスタンス登録を拒否することを確認します。
@@ -238,28 +213,28 @@ func _test_unregistered_service() -> void:
 	_runner.assert_null(result, "未登録サービスはnullになる")
 
 
-## clearで生成済みインスタンスと登録を破棄し、その後の解決や再登録が正しく動作することを確認します。
+## clearで登録インスタンスを破棄し、その後の解決や再登録が正しく動作することを確認します。
 func _test_clear() -> void:
 	_runner.change_test_name("clear")
 	var parent := InjectionContainer.new(null)
 	var child := InjectionContainer.new(parent)
-	parent.register(_class_registration(TrackedService, Lifecycle.Type.SINGLETON))
+	var parent_service := DerivedService.new()
+	parent.register(ServiceRegistration.create_instance_registration(parent_service, DerivedService))
 	child.register(_instance_as(DerivedService.new(), DerivedService, BaseService))
-	var singleton = parent.resolve(TrackedService, &"")
-	var singleton_weak: WeakRef = weakref(singleton)
-	singleton = null
+	var parent_service_weak: WeakRef = weakref(parent_service)
+	parent_service = null
 	child.clear()
 	parent.clear()
 
 	var capture := ErrorCapture.new()
 	capture.start()
 	var local_result = child.resolve(BaseService, &"")
-	var parent_result = child.resolve(TrackedService, &"")
+	var parent_result = child.resolve(DerivedService, &"")
 	capture.stop()
 	_runner.assert_null(local_result, "clear後はローカル登録を利用できない")
 	_runner.assert_null(parent_result, "clear後は親参照を利用できない")
 	_runner.assert_true(capture.errors.size() == 2, "利用不能な各解決がpush_errorを発生させる")
-	_runner.assert_null(singleton_weak.get_ref(), "生成済みSingletonへの参照を保持しない")
+	_runner.assert_null(parent_service_weak.get_ref(), "登録インスタンスへの参照を保持しない")
 
 
 ## 空キーと文字列キーの登録が衝突せず、それぞれ対応するサービスを解決することを確認します。
@@ -273,10 +248,6 @@ func _test_empty_and_nonempty_keys_do_not_collide() -> void:
 
 	_runner.assert_same(container.resolve(BaseService, &""), default_service, "空IDの登録を独立して解決する")
 	_runner.assert_same(container.resolve(BaseService, &"TestBaseService"), keyed_service, "通常IDの登録を独立して解決する")
-
-
-func _class_registration(type: Script, lifecycle: Lifecycle.Type) -> ServiceRegistration:
-	return ServiceRegistration.create_class_registration(type, lifecycle)
 
 
 func _instance_as(
