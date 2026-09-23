@@ -8,7 +8,7 @@ static func scan(scene_uid: StringName) -> SceneSnapshot:
 	var packed_scene := ResourceLoader.load(
 			scene_uid,
 			"PackedScene",
-			ResourceLoader.CACHE_MODE_IGNORE
+			ResourceLoader.CACHE_MODE_REPLACE_DEEP
 	) as PackedScene
 
 	if packed_scene == null:
