@@ -24,7 +24,7 @@ static func validate(registration: ServiceRegistration) -> ErrorCode:
 	if registration.instance == null:
 		return ErrorCode.NULL_INSTANCE
 		
-	if not (registration.instance is Object) or not is_instance_valid(registration.instance):
+	if not is_instance_valid(registration.instance):
 		return ErrorCode.INVALID_INSTANCE
 	
 	var actual_type: Script = registration.instance.get_script() as Script
