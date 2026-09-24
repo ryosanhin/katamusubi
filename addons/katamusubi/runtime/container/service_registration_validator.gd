@@ -1,12 +1,32 @@
 extends RefCounted
 
 const ScriptTypeCompatibility := preload("../utility/script_type_compatibility.gd")
-const ValidationError := preload("service_registration_validation_error.gd")
+
+## 登録検証エラーを、表示文言に依存せず識別するための安定したコードです。
+enum Code {
+	NULL_REGISTRATION,
+	NULL_INSTANCE,
+	INVALID_INSTANCE,
+	MISSING_INSTANCE_SCRIPT,
+	MISSING_IMPLEMENTATION_TYPE,
+	INCOMPATIBLE_IMPLEMENTATION_TYPE,
+	MISSING_SERVICE_TYPE,
+	INCOMPATIBLE_SERVICE_TYPE,
+}
+
+## 登録検証エラーのコードと診断用メッセージを保持します。
+class ValidationError:
+	var code: Code
+	var message: String
+
+	func _init(init_code: Code, init_message: String) -> void:
+		code = init_code
+		message = init_message
 
 ## 登録情報に不備がないか検証し、従来APIとの互換性のため表示文言の一覧を返す
 static func validate(registration: ServiceRegistration) -> PackedStringArray:
 	var messages := PackedStringArray()
-	for error: ServiceRegistrationValidationError in validate_structured(registration):
+	for error: ValidationError in validate_structured(registration):
 		messages.append(error.message)
 	return messages
 
@@ -14,26 +34,26 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 ## 登録情報に不備がないか検証し、コードと表示文言を持つ問題一覧を返す
 static func validate_structured(
 		registration: ServiceRegistration,
-) -> Array[ServiceRegistrationValidationError]:
-	var errors: Array[ServiceRegistrationValidationError] = []
+) -> Array[ValidationError]:
+	var errors: Array[ValidationError] = []
 
 	if registration == null:
 		errors.append(ValidationError.new(
-				ValidationError.Code.NULL_REGISTRATION,
+				Code.NULL_REGISTRATION,
 				"ServiceRegistration に null は指定できません。",
 		))
 		return errors
 
 	if registration.instance == null:
 		errors.append(ValidationError.new(
-				ValidationError.Code.NULL_INSTANCE,
+				Code.NULL_INSTANCE,
 				"インスタンスに null は指定できません。",
 		))
 		return errors
 
 	if not (registration.instance is Object) or not is_instance_valid(registration.instance):
 		errors.append(ValidationError.new(
-				ValidationError.Code.INVALID_INSTANCE,
+				Code.INVALID_INSTANCE,
 				"インスタンスが有効な Object ではありません。",
 		))
 		return errors
@@ -41,14 +61,14 @@ static func validate_structured(
 	var actual_type: Script = registration.instance.get_script() as Script
 	if actual_type == null:
 		errors.append(ValidationError.new(
-				ValidationError.Code.MISSING_INSTANCE_SCRIPT,
+				Code.MISSING_INSTANCE_SCRIPT,
 				"インスタンスにスクリプトがアタッチされていません。",
 		))
 		return errors
 
 	if registration.implementation_type == null:
 		errors.append(ValidationError.new(
-				ValidationError.Code.MISSING_IMPLEMENTATION_TYPE,
+				Code.MISSING_IMPLEMENTATION_TYPE,
 				"生成するクラスが指定されていません。",
 		))
 		return errors
@@ -58,7 +78,7 @@ static func validate_structured(
 			registration.implementation_type,
 	):
 		errors.append(ValidationError.new(
-				ValidationError.Code.INCOMPATIBLE_IMPLEMENTATION_TYPE,
+				Code.INCOMPATIBLE_IMPLEMENTATION_TYPE,
 				"生成するインスタンスはスクリプト %s を実装していません。"
 				% _get_displayable_name(registration.implementation_type),
 		))
@@ -66,7 +86,7 @@ static func validate_structured(
 
 	if registration.service_type == null:
 		errors.append(ValidationError.new(
-				ValidationError.Code.MISSING_SERVICE_TYPE,
+				Code.MISSING_SERVICE_TYPE,
 				"公開するクラスが指定されていません。",
 		))
 		return errors
@@ -76,7 +96,7 @@ static func validate_structured(
 			registration.service_type,
 	):
 		errors.append(ValidationError.new(
-				ValidationError.Code.INCOMPATIBLE_SERVICE_TYPE,
+				Code.INCOMPATIBLE_SERVICE_TYPE,
 				"生成するクラス %s は公開型 %s を継承していません。" % [
 					_get_displayable_name(registration.implementation_type),
 					_get_displayable_name(registration.service_type),

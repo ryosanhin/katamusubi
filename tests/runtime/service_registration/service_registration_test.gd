@@ -8,9 +8,6 @@ const UnnamedService := preload("fixtures/services/unnamed_service.gd")
 const RegistrationValidator := preload(
 		"res://addons/katamusubi/runtime/container/service_registration_validator.gd"
 )
-const ValidationError := preload(
-		"res://addons/katamusubi/runtime/container/service_registration_validation_error.gd"
-)
 
 var _runner := TestRunner.new(true)
 
@@ -49,7 +46,7 @@ func _test_dedicated_validator() -> void:
 
 	_assert_error_codes(
 			validator_errors,
-			[ValidationError.Code.NULL_INSTANCE],
+			[RegistrationValidator.Code.NULL_INSTANCE],
 			"専用バリデーターが不正な登録を検出する",
 	)
 	_runner.assert_equal(
@@ -59,7 +56,7 @@ func _test_dedicated_validator() -> void:
 	)
 	_assert_error_codes(
 			RegistrationValidator.validate_structured(null),
-			[ValidationError.Code.NULL_REGISTRATION],
+			[RegistrationValidator.Code.NULL_REGISTRATION],
 			"専用バリデーターがnull登録を安全に拒否する",
 	)
 
@@ -75,19 +72,19 @@ func _test_instance_validation() -> void:
 			UnrelatedService.new(),
 	).as_type(BaseService)
 	unrelated.implementation_type = DerivedService
-	_expect_validation_error(unrelated, ValidationError.Code.INCOMPATIBLE_IMPLEMENTATION_TYPE)
+	_expect_validation_error(unrelated, RegistrationValidator.Code.INCOMPATIBLE_IMPLEMENTATION_TYPE)
 
 	var null_instance := ServiceRegistration.create_instance_registration(null)
-	_expect_validation_error(null_instance, ValidationError.Code.NULL_INSTANCE)
+	_expect_validation_error(null_instance, RegistrationValidator.Code.NULL_INSTANCE)
 	var non_object := ServiceRegistration.create_instance_registration(42)
-	_expect_validation_error(non_object, ValidationError.Code.INVALID_INSTANCE)
+	_expect_validation_error(non_object, RegistrationValidator.Code.INVALID_INSTANCE)
 	var object_without_script := ServiceRegistration.create_instance_registration(RefCounted.new())
-	_expect_validation_error(object_without_script, ValidationError.Code.MISSING_INSTANCE_SCRIPT)
+	_expect_validation_error(object_without_script, RegistrationValidator.Code.MISSING_INSTANCE_SCRIPT)
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
 			DerivedService.new(),
 	).as_type(UnrelatedService)
-	_expect_validation_error(incompatible_service, ValidationError.Code.INCOMPATIBLE_SERVICE_TYPE)
+	_expect_validation_error(incompatible_service, RegistrationValidator.Code.INCOMPATIBLE_SERVICE_TYPE)
 
 
 ## fluent APIが新しい登録を生成せず、同じ登録の公開型とキーを更新することを確認します。
@@ -110,11 +107,11 @@ func _test_missing_types() -> void:
 	# 必須型の欠落を検証エラーとして報告します。
 	var missing_implementation := _valid_registration()
 	missing_implementation.implementation_type = null
-	_expect_validation_error(missing_implementation, ValidationError.Code.MISSING_IMPLEMENTATION_TYPE)
+	_expect_validation_error(missing_implementation, RegistrationValidator.Code.MISSING_IMPLEMENTATION_TYPE)
 
 	var missing_service := _valid_registration()
 	missing_service.service_type = null
-	_expect_validation_error(missing_service, ValidationError.Code.MISSING_SERVICE_TYPE)
+	_expect_validation_error(missing_service, RegistrationValidator.Code.MISSING_SERVICE_TYPE)
 
 
 ## グローバルクラス名を持たないScriptも正常なサービス型として登録できることを確認します。
@@ -135,7 +132,7 @@ func _test_unrelated_registration() -> void:
 			UnrelatedService.new(),
 	).as_type(BaseService)
 
-	_expect_validation_error(registration, ValidationError.Code.INCOMPATIBLE_SERVICE_TYPE)
+	_expect_validation_error(registration, RegistrationValidator.Code.INCOMPATIBLE_SERVICE_TYPE)
 
 
 ## 型と継承関係が正しいサービス登録では検証エラーがないことを確認します。
@@ -157,7 +154,7 @@ func _valid_registration() -> ServiceRegistration:
 
 func _expect_validation_error(
 		registration: ServiceRegistration,
-		expected_code: ServiceRegistrationValidationError.Code,
+		expected_code: RegistrationValidator.Code,
 ) -> void:
 	# 表示文言ではなく、安定したコードで期待する検証エラーを確認します。
 	var errors := RegistrationValidator.validate_structured(registration)
@@ -165,12 +162,12 @@ func _expect_validation_error(
 
 
 func _assert_error_codes(
-		errors: Array[ServiceRegistrationValidationError],
+		errors: Array[RegistrationValidator.ValidationError],
 		expected_codes: Array,
 		message: String,
 ) -> void:
 	var actual_codes: Array = errors.map(
-			func(error: ServiceRegistrationValidationError) -> int: return error.code,
+			func(error: RegistrationValidator.ValidationError) -> int: return error.code,
 	)
 
 	_runner.assert_false(errors.is_empty(), "%s: 検証エラーを返す" % message)

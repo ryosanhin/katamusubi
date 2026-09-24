@@ -41,7 +41,7 @@ func _validate_registration(registration: ServiceRegistration) -> bool:
 	var validation_errors := RegistrationValidator.validate_structured(registration)
 	if not validation_errors.is_empty():
 		var messages := PackedStringArray()
-		for error: ServiceRegistrationValidationError in validation_errors:
+		for error: RegistrationValidator.ValidationError in validation_errors:
 			messages.append(error.message)
 		var error_message := "\n".join(messages)
 		push_error("登録情報が不正です:\n%s" % error_message)
