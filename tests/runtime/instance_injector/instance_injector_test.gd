@@ -59,8 +59,8 @@ func _test_type_overrides_and_normal_resolution_async() -> void:
 	var local_service := UnnamedService.new()
 	var derived_service := DerivedService.new()
 	var base_service := DerivedService.new()
-	_container.register(ServiceRegistration.create_instance_registration(local_service, UnnamedService))
-	_container.register(ServiceRegistration.create_instance_registration(derived_service, DerivedService))
+	_container.register(ServiceRegistration.create_instance_registration(local_service))
+	_container.register(ServiceRegistration.create_instance_registration(derived_service))
 	_container.register(_instance_as(base_service))
 	var result = _injector().try_inject_arguments(_target)
 
@@ -79,10 +79,10 @@ func _test_overridden_type_prefers_argument_key_async() -> void:
 	_setup_target(KeyedTypeOverrideNode.new())
 	var default_service := DerivedService.new()
 	var keyed_service := DerivedService.new()
-	_container.register(ServiceRegistration.create_instance_registration(default_service, DerivedService))
+	_container.register(ServiceRegistration.create_instance_registration(default_service))
 	_container.register(
-		ServiceRegistration.create_instance_registration(keyed_service, DerivedService)
-			.with_key(&"overridden_service")
+			ServiceRegistration.create_instance_registration(keyed_service)
+					.with_key(&"overridden_service")
 	)
 	var result = _injector().try_inject_arguments(_target)
 
@@ -111,7 +111,7 @@ func _test_missing_overridden_type_is_atomic_async() -> void:
 	_runner.change_test_name("missing_overridden_type_is_atomic")
 	_setup_target(TypeOverridesNode.new())
 	_container.register(
-		ServiceRegistration.create_instance_registration(UnnamedService.new(), UnnamedService)
+			ServiceRegistration.create_instance_registration(UnnamedService.new())
 	)
 	var capture := ErrorCapture.new()
 	capture.start()
@@ -138,9 +138,9 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 	_runner.assert_same(_target.received_services[0], keyed_service, "引数名と同じキー付き登録を優先する")
 	_runner.assert_same(_target.received_services[1], default_service, "対応するキーがなければデフォルト登録を使う")
 	_runner.assert_array(
-		_target.call_order,
-		[&"primary_service", &"fallback_service", &"method_completed"],
-		"サービスを宣言順に渡してメソッドを完了する",
+			_target.call_order,
+			[&"primary_service", &"fallback_service", &"method_completed"],
+			"サービスを宣言順に渡してメソッドを完了する",
 	)
 	_runner.assert_true(_target.was_injected, "Callableの有効性だけでなく注入先の状態変更を確認する")
 	await _cleanup_async()
@@ -182,7 +182,7 @@ func _test_resolved_reference_and_success_state_async() -> void:
 	_runner.change_test_name("resolved_reference_and_success_state")
 	_setup_target(SingleServiceNode.new())
 	var provided := TrackedService.new()
-	_container.register(ServiceRegistration.create_instance_registration(provided, TrackedService))
+	_container.register(ServiceRegistration.create_instance_registration(provided))
 	var expected = _container.resolve(TrackedService, &"")
 	var result = _injector().try_inject_arguments(_target)
 
@@ -203,7 +203,7 @@ func _injector():
 
 
 func _instance_as(instance: InstanceInjectorTestDerivedService, key: StringName = &"") -> ServiceRegistration:
-	return ServiceRegistration.create_instance_registration(instance, DerivedService).as_type(BaseService).with_key(key)
+	return ServiceRegistration.create_instance_registration(instance).as_type(BaseService).with_key(key)
 
 
 func _cleanup_async() -> void:

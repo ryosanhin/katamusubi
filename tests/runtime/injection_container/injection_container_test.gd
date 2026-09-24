@@ -32,7 +32,7 @@ func _test_default_resolution() -> void:
 	var container := InjectionContainer.new(null)
 	var provided := DerivedService.new()
 	var succeeded := container.register(
-		ServiceRegistration.create_instance_registration(provided, DerivedService)
+			ServiceRegistration.create_instance_registration(provided)
 	)
 
 	var resolved = container.resolve(DerivedService, &"")
@@ -46,7 +46,7 @@ func _test_registration_error_state_transitions() -> void:
 	var container := InjectionContainer.new(null)
 	_runner.assert_false(container.has_registration_errors, "新規コンテナには登録エラーがない")
 
-	container.register(_instance_as(DerivedService.new(), DerivedService, BaseService, &"first"))
+	container.register(_instance_as(DerivedService.new(), BaseService, &"first"))
 	_runner.assert_false(container.has_registration_errors, "正常登録では登録エラー状態を変更しない")
 
 	var capture := ErrorCapture.new()
@@ -54,11 +54,11 @@ func _test_registration_error_state_transitions() -> void:
 	container.register(ServiceRegistration.new())
 	_runner.assert_true(container.has_registration_errors, "不正登録で登録エラー状態になる")
 
-	container.register(_instance_as(DerivedService.new(), DerivedService, BaseService, &"first"))
+	container.register(_instance_as(DerivedService.new(), BaseService, &"first"))
 	_runner.assert_true(container.has_registration_errors, "重複登録後も登録エラー状態である")
 
 	var succeeded := container.register(
-		_instance_as(DerivedService.new(), DerivedService, BaseService, &"after_failure")
+			_instance_as(DerivedService.new(), BaseService, &"after_failure")
 	)
 	capture.stop()
 	_runner.assert_true(succeeded, "失敗後でも別の正常な登録は成功する")
@@ -70,7 +70,7 @@ func _test_instance_registration() -> void:
 	_runner.change_test_name("instance_registration")
 	var container := InjectionContainer.new(null)
 	var provided := DerivedService.new()
-	container.register(ServiceRegistration.create_instance_registration(provided, DerivedService))
+	container.register(ServiceRegistration.create_instance_registration(provided))
 
 	_runner.assert_same(container.resolve(DerivedService, &""), provided, "提供された参照を返す")
 	_runner.assert_same(container.resolve(DerivedService, &""), provided, "再解決でも提供された参照を返す")
@@ -80,20 +80,15 @@ func _test_instance_registration() -> void:
 func _test_invalid_instance_registrations() -> void:
 	_runner.change_test_name("invalid_instance_registrations")
 	var container := InjectionContainer.new(null)
-	var derived := DerivedService.new()
-	container.register(ServiceRegistration.create_instance_registration(derived, BaseService))
-	_runner.assert_same(container.resolve(BaseService, &""), derived, "指定実装型の派生インスタンスを登録できる")
 
 	var capture := ErrorCapture.new()
 	capture.start()
-	container.register(ServiceRegistration.create_instance_registration(null, DerivedService))
+	container.register(ServiceRegistration.create_instance_registration(null))
 	container.register(ServiceRegistration.create_instance_registration(
-		UnrelatedService.new(),
-		DerivedService,
+			UnrelatedService.new()
 	))
 	container.register(ServiceRegistration.create_instance_registration(
-		DerivedService.new(),
-		DerivedService,
+			DerivedService.new()
 	).as_type(UnrelatedService))
 	capture.stop()
 
@@ -110,8 +105,8 @@ func _test_key_precedence_and_default_fallback() -> void:
 	var container := InjectionContainer.new(null)
 	var default_service := DerivedService.new()
 	var keyed_service := DerivedService.new()
-	container.register(_instance_as(default_service, DerivedService, BaseService))
-	container.register(_instance_as(keyed_service, DerivedService, BaseService, &"primary"))
+	container.register(_instance_as(default_service,  BaseService))
+	container.register(_instance_as(keyed_service, BaseService, &"primary"))
 
 	_runner.assert_same(container.resolve(BaseService, &"primary"), keyed_service, "同じキーの登録を優先する")
 	_runner.assert_same(container.resolve(BaseService, &"missing"), default_service, "不明なキーはローカルのデフォルトへフォールバックする")
@@ -125,11 +120,11 @@ func _test_parent_lookup_order() -> void:
 	var parent_default := DerivedService.new()
 	var parent_keyed := DerivedService.new()
 	var child_default := DerivedService.new()
-	parent.register(_instance_as(parent_default, DerivedService, BaseService))
-	parent.register(_instance_as(parent_keyed, DerivedService, BaseService, &"primary"))
+	parent.register(_instance_as(parent_default, BaseService))
+	parent.register(_instance_as(parent_keyed, BaseService, &"primary"))
 
 	_runner.assert_same(child.resolve(BaseService, &"primary"), parent_keyed, "要求キーを維持して親から解決する")
-	child.register(_instance_as(child_default, DerivedService, BaseService))
+	child.register(_instance_as(child_default, BaseService))
 	_runner.assert_same(child.resolve(BaseService, &""), child_default, "子のローカル登録が親の同一登録を上書きする")
 	_runner.assert_same(child.resolve(BaseService, &"primary"), parent_keyed, "親のキー付き登録を子のデフォルトより優先する")
 
@@ -140,11 +135,11 @@ func _test_duplicate_registrations() -> void:
 	var container := InjectionContainer.new(null)
 	var first := DerivedService.new()
 	var rejected := DerivedService.new()
-	container.register(_instance_as(first, DerivedService, BaseService, &"same"))
+	container.register(_instance_as(first, BaseService, &"same"))
 
 	var capture := ErrorCapture.new()
 	capture.start()
-	var succeeded := container.register(_instance_as(rejected, DerivedService, BaseService, &"same"))
+	var succeeded := container.register(_instance_as(rejected, BaseService, &"same"))
 	capture.stop()
 	_runner.assert_false(succeeded, "重複登録は失敗を返す")
 	_runner.assert_true(container.has_registration_errors, "重複登録を累積エラー状態へ反映する")
@@ -159,9 +154,9 @@ func _test_key_scopes() -> void:
 	var first := DerivedService.new()
 	var second := DerivedService.new()
 	var unrelated := UnrelatedService.new()
-	container.register(_instance_as(first, DerivedService, BaseService, &"first"))
-	container.register(_instance_as(second, DerivedService, BaseService, &"second"))
-	container.register(ServiceRegistration.create_instance_registration(unrelated, UnrelatedService).with_key(&"first"))
+	container.register(_instance_as(first,  BaseService, &"first"))
+	container.register(_instance_as(second, BaseService, &"second"))
+	container.register(ServiceRegistration.create_instance_registration(unrelated).with_key(&"first"))
 
 	_runner.assert_same(container.resolve(BaseService, &"first"), first, "同じ契約型の第一キーを解決する")
 	_runner.assert_same(container.resolve(BaseService, &"second"), second, "同じ契約型の異なるキーが併存する")
@@ -219,8 +214,8 @@ func _test_clear() -> void:
 	var parent := InjectionContainer.new(null)
 	var child := InjectionContainer.new(parent)
 	var parent_service := DerivedService.new()
-	parent.register(ServiceRegistration.create_instance_registration(parent_service, DerivedService))
-	child.register(_instance_as(DerivedService.new(), DerivedService, BaseService))
+	parent.register(ServiceRegistration.create_instance_registration(parent_service))
+	child.register(_instance_as(DerivedService.new(), BaseService))
 	var parent_service_weak: WeakRef = weakref(parent_service)
 	parent_service = null
 	child.clear()
@@ -243,17 +238,16 @@ func _test_empty_and_nonempty_keys_do_not_collide() -> void:
 	var container := InjectionContainer.new(null)
 	var default_service := DerivedService.new()
 	var keyed_service := DerivedService.new()
-	container.register(_instance_as(default_service, DerivedService, BaseService))
-	container.register(_instance_as(keyed_service, DerivedService, BaseService, &"TestBaseService"))
+	container.register(_instance_as(default_service, BaseService))
+	container.register(_instance_as(keyed_service, BaseService, &"TestBaseService"))
 
 	_runner.assert_same(container.resolve(BaseService, &""), default_service, "空IDの登録を独立して解決する")
 	_runner.assert_same(container.resolve(BaseService, &"TestBaseService"), keyed_service, "通常IDの登録を独立して解決する")
 
 
 func _instance_as(
-	instance: Variant,
-	implementation: Script,
-	service: Script,
-	key: StringName = &"",
+		instance: Variant,
+		service: Script,
+		key: StringName = &"",
 ) -> ServiceRegistration:
-	return ServiceRegistration.create_instance_registration(instance, implementation).as_type(service).with_key(key)
+	return ServiceRegistration.create_instance_registration(instance).as_type(service).with_key(key)

@@ -16,20 +16,16 @@ var key: StringName = &""
 ## 外部インスタンス
 var instance: Variant
 
-## 外部インスタンスを利用する登録かどうか
-var is_instance_registration := false
-
 
 ## シーンに存在するインスタンスを登録
 static func create_instance_registration(
-	provided_instance: Variant,
-	type: Script,
+		provided_instance: Variant,
 ) -> ServiceRegistration:
 	var registration := ServiceRegistration.new()
 	registration.instance = provided_instance
-	registration.is_instance_registration = true
-	registration.implementation_type = type
-	registration.service_type = type
+	if provided_instance != null:
+		registration.implementation_type = provided_instance.get_script()
+		registration.service_type = provided_instance.get_script()
 	return registration
 
 

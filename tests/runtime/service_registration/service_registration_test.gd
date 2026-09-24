@@ -6,7 +6,7 @@ const DerivedService := preload("fixtures/services/derived_service.gd")
 const UnrelatedService := preload("fixtures/services/unrelated_service.gd")
 const UnnamedService := preload("fixtures/services/unnamed_service.gd")
 const RegistrationValidator := preload(
-	"res://addons/katamusubi/runtime/container/service_registration_validator.gd"
+		"res://addons/katamusubi/runtime/container/service_registration_validator.gd"
 )
 
 var _runner := TestRunner.new(true)
@@ -31,10 +31,7 @@ func _test_create_instance_registration() -> void:
 	_runner.change_test_name("create_instance_registration")
 	# 外部生成した同じインスタンスを保持します。
 	var provided_instance := DerivedService.new()
-	var registration := ServiceRegistration.create_instance_registration(
-		provided_instance,
-		DerivedService,
-	)
+	var registration := ServiceRegistration.create_instance_registration(provided_instance)
 
 	_runner.assert_same(registration.instance, provided_instance, "渡されたインスタンスそのものを保持する")
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
@@ -48,19 +45,19 @@ func _test_dedicated_validator() -> void:
 	var validator_errors: PackedStringArray = RegistrationValidator.validate(registration)
 
 	_runner.assert_expected_error(
-		validator_errors,
-		"生成するクラスが指定されていません",
-		"専用バリデーターが不正な登録を検出する",
+			validator_errors,
+			"生成するクラスが指定されていません",
+			"専用バリデーターが不正な登録を検出する",
 	)
 	_runner.assert_equal(
-		registration.validate(),
-		validator_errors,
-		"ServiceRegistration.validateは専用バリデーターへ委譲する",
+			registration.validate(),
+			validator_errors,
+			"ServiceRegistration.validateは専用バリデーターへ委譲する",
 	)
 	_runner.assert_expected_error(
-		RegistrationValidator.validate(null),
-		"ServiceRegistration に null は指定できません",
-		"専用バリデーターがnull登録を安全に拒否する",
+			RegistrationValidator.validate(null),
+			"ServiceRegistration に null は指定できません",
+			"専用バリデーターがnull登録を安全に拒否する",
 	)
 
 
@@ -68,33 +65,25 @@ func _test_dedicated_validator() -> void:
 func _test_instance_validation() -> void:
 	_runner.change_test_name("instance_validation")
 	# 実インスタンス自身の継承関係を、指定された実装型と公開型の両方に対して検証します。
-	var derived_as_base := ServiceRegistration.create_instance_registration(
-		DerivedService.new(),
-		BaseService,
-	)
+	var derived_as_base := ServiceRegistration.create_instance_registration(DerivedService.new())
 	_expect(derived_as_base.validate().is_empty(), "指定実装型の派生インスタンスを許可する")
 
 	var unrelated := ServiceRegistration.create_instance_registration(
-		UnrelatedService.new(),
-		DerivedService,
+			UnrelatedService.new(),
 	).as_type(BaseService)
 	_expect_validation_error(unrelated, "実際の型=ServiceRegistrationTestUnrelatedService")
 	_expect_validation_error(unrelated, "指定された実装型=ServiceRegistrationTestDerivedService")
 	_expect_validation_error(unrelated, "公開型=ServiceRegistrationTestBaseService")
 
-	var null_instance := ServiceRegistration.create_instance_registration(null, DerivedService)
+	var null_instance := ServiceRegistration.create_instance_registration(null)
 	_expect_validation_error(null_instance, "外部インスタンスに null は指定できません")
-	var non_object := ServiceRegistration.create_instance_registration(42, DerivedService)
+	var non_object := ServiceRegistration.create_instance_registration(42)
 	_expect_validation_error(non_object, "外部インスタンスが有効な Object ではありません")
-	var object_without_script := ServiceRegistration.create_instance_registration(
-		RefCounted.new(),
-		DerivedService,
-	)
+	var object_without_script := ServiceRegistration.create_instance_registration(RefCounted.new())
 	_expect_validation_error(object_without_script, "外部インスタンスにスクリプトがアタッチされていません")
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
-		DerivedService.new(),
-		DerivedService,
+			DerivedService.new(),
 	).as_type(UnrelatedService)
 	_expect_validation_error(incompatible_service, "公開型=ServiceRegistrationTestUnrelatedService")
 
@@ -103,10 +92,7 @@ func _test_instance_validation() -> void:
 func _test_fluent_updates() -> void:
 	_runner.change_test_name("fluent_updates")
 	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
-	var registration := ServiceRegistration.create_instance_registration(
-		DerivedService.new(),
-		DerivedService,
-	)
+	var registration := ServiceRegistration.create_instance_registration(DerivedService.new())
 	var as_type_result = registration.as_type(BaseService)
 	var with_key_result = registration.with_key(&"primary")
 
@@ -133,10 +119,7 @@ func _test_missing_types() -> void:
 func _test_unnamed_type() -> void:
 	_runner.change_test_name("unnamed_type")
 	# Scriptそのものを解決キーに使うため、グローバルクラス名がない型も登録できます。
-	var registration := ServiceRegistration.create_instance_registration(
-		UnnamedService.new(),
-		UnnamedService,
-	)
+	var registration := ServiceRegistration.create_instance_registration(UnnamedService.new())
 	var errors: PackedStringArray = registration.validate()
 
 	_expect(errors.is_empty(), "class_nameのないScriptを正常な登録として扱う")
@@ -147,8 +130,7 @@ func _test_unrelated_registration() -> void:
 	_runner.change_test_name("unrelated_registration")
 	# 実装型が公開型を継承していない組み合わせを検証エラーとして報告します。
 	var registration := ServiceRegistration.create_instance_registration(
-		UnrelatedService.new(),
-		UnrelatedService,
+			UnrelatedService.new(),
 	).as_type(BaseService)
 
 	_expect_validation_error(registration, "継承していません")
@@ -167,23 +149,22 @@ func _test_valid_registration() -> void:
 func _valid_registration() -> ServiceRegistration:
 	# 各異常系テストの開始点となる、派生実装を基底型として公開する正常な登録です。
 	return ServiceRegistration.create_instance_registration(
-		DerivedService.new(),
-		DerivedService,
+			DerivedService.new(),
 	).as_type(BaseService).with_key(&"fixture")
 
 
 func _expect_validation_error(
-	registration: ServiceRegistration,
-	expected_error: String,
+		registration: ServiceRegistration,
+		expected_error: String,
 ) -> void:
 	# validate()がエラーと期待するメッセージを返すことを確認します。
 	var errors: PackedStringArray = registration.validate()
 
 	_runner.assert_false(errors.is_empty(), "%s: 検証エラーを返す" % expected_error)
 	_runner.assert_expected_error(
-		errors,
-		expected_error,
-		"%s: 想定した検証エラーを返す" % expected_error,
+			errors,
+			expected_error,
+			"%s: 想定した検証エラーを返す" % expected_error,
 	)
 
 
