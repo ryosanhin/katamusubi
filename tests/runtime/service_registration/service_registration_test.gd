@@ -13,15 +13,13 @@ var _runner := TestRunner.new(true)
 
 
 func _init() -> void:
-	# 公開APIの生成・更新、継承判定、検証の各ケースを順番に確認します。
 	_test_create_instance_registration()
 	_test_dedicated_validator()
-	_test_instance_validation()
+	_test_validation_codes()
 	_test_fluent_updates()
-	_test_missing_types()
 	_test_unnamed_type()
-	_test_unrelated_registration()
 	_test_valid_registration()
+	_test_error_formatting()
 
 	await _runner.finish(self, "ServiceRegistration")
 
@@ -29,7 +27,6 @@ func _init() -> void:
 ## 外部生成したインスタンスを同じ参照のまま登録することを確認します。
 func _test_create_instance_registration() -> void:
 	_runner.change_test_name("create_instance_registration")
-	# 外部生成した同じインスタンスを保持します。
 	var provided_instance := DerivedService.new()
 	var registration := ServiceRegistration.create_instance_registration(provided_instance)
 
@@ -38,134 +35,207 @@ func _test_create_instance_registration() -> void:
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
 
 
-## 専用バリデーターが登録を検証し、従来APIも同じ結果へ委譲することを確認します。
+## 専用バリデーターとServiceRegistrationのAPIが同じコードを返すことを確認します。
 func _test_dedicated_validator() -> void:
 	_runner.change_test_name("dedicated_validator")
 	var registration := ServiceRegistration.new()
-	var validator_errors: PackedStringArray = RegistrationValidator.validate(registration)
+	var validator_code := RegistrationValidator.validate(registration)
 
-	_runner.assert_expected_error(
-			validator_errors,
-			"生成するクラスが指定されていません",
-			"専用バリデーターが不正な登録を検出する",
+	_runner.assert_equal(
+			validator_code,
+			RegistrationValidator.ErrorCode.NULL_INSTANCE,
+			"空の登録は検証順序上最初のインスタンス欠落を返す",
 	)
 	_runner.assert_equal(
 			registration.validate(),
-			validator_errors,
+			validator_code,
 			"ServiceRegistration.validateは専用バリデーターへ委譲する",
 	)
-	_runner.assert_expected_error(
+	_runner.assert_equal(
 			RegistrationValidator.validate(null),
-			"ServiceRegistration に null は指定できません",
+			RegistrationValidator.ErrorCode.NULL_REGISTRATION,
 			"専用バリデーターがnull登録を安全に拒否する",
 	)
 
 
-## 外部インスタンスと実装型・公開型の継承関係を検証し、不正な値を報告することを確認します。
-func _test_instance_validation() -> void:
-	_runner.change_test_name("instance_validation")
-	# 実インスタンス自身の継承関係を、指定された実装型と公開型の両方に対して検証します。
-	var derived_as_base := ServiceRegistration.create_instance_registration(DerivedService.new())
-	_expect(derived_as_base.validate().is_empty(), "指定実装型の派生インスタンスを許可する")
+## 検証順序の各段階に対応する入力が、それぞれ固有のコードを返すことを確認します。
+func _test_validation_codes() -> void:
+	_runner.change_test_name("validation_codes")
 
-	var unrelated := ServiceRegistration.create_instance_registration(
-			UnrelatedService.new(),
-	).as_type(BaseService)
-	_expect_validation_error(unrelated, "実際の型=ServiceRegistrationTestUnrelatedService")
-	_expect_validation_error(unrelated, "指定された実装型=ServiceRegistrationTestDerivedService")
-	_expect_validation_error(unrelated, "公開型=ServiceRegistrationTestBaseService")
+	_expect_validation_code(
+			ServiceRegistration.create_instance_registration(null),
+			RegistrationValidator.ErrorCode.NULL_INSTANCE,
+			"nullインスタンス",
+	)
+	_expect_validation_code(
+			ServiceRegistration.create_instance_registration(42),
+			RegistrationValidator.ErrorCode.INVALID_INSTANCE,
+			"非Objectインスタンス",
+	)
 
-	var null_instance := ServiceRegistration.create_instance_registration(null)
-	_expect_validation_error(null_instance, "外部インスタンスに null は指定できません")
-	var non_object := ServiceRegistration.create_instance_registration(42)
-	_expect_validation_error(non_object, "外部インスタンスが有効な Object ではありません")
-	var object_without_script := ServiceRegistration.create_instance_registration(RefCounted.new())
-	_expect_validation_error(object_without_script, "外部インスタンスにスクリプトがアタッチされていません")
+	var freed_node := Node.new()
+	var freed_registration := ServiceRegistration.new()
+	freed_registration.instance = freed_node
+	freed_node.free()
+	_expect_validation_code(
+			freed_registration,
+			RegistrationValidator.ErrorCode.NULL_INSTANCE,
+			"Godotがnullとして扱う解放済みインスタンス",
+	)
+
+	var missing_script := ServiceRegistration.new()
+	missing_script.instance = RefCounted.new()
+	_expect_validation_code(
+			missing_script,
+			RegistrationValidator.ErrorCode.MISSING_SCRIPT,
+			"Scriptなしインスタンス",
+	)
+
+	var missing_implementation := _valid_registration()
+	missing_implementation.implementation_type = null
+	_expect_validation_code(
+			missing_implementation,
+			RegistrationValidator.ErrorCode.MISSING_IMPLEMENTATION_TYPE,
+			"実装型欠落",
+	)
+
+	var incompatible_implementation := _valid_registration()
+	incompatible_implementation.implementation_type = UnrelatedService
+	incompatible_implementation.service_type = UnrelatedService
+	_expect_validation_code(
+			incompatible_implementation,
+			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
+			"登録インスタンスと実装型の不一致",
+	)
+
+	var missing_service := _valid_registration()
+	missing_service.service_type = null
+	_expect_validation_code(
+			missing_service,
+			RegistrationValidator.ErrorCode.MISSING_SERVICE_TYPE,
+			"公開型欠落",
+	)
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
-			DerivedService.new(),
-	).as_type(UnrelatedService)
-	_expect_validation_error(incompatible_service, "公開型=ServiceRegistrationTestUnrelatedService")
+			UnrelatedService.new(),
+	).as_type(BaseService)
+	_expect_validation_code(
+			incompatible_service,
+			RegistrationValidator.ErrorCode.INCOMPATIBLE_SERVICE_TYPE,
+			"実装型と公開型の不一致",
+	)
 
 
 ## fluent APIが新しい登録を生成せず、同じ登録の公開型とキーを更新することを確認します。
 func _test_fluent_updates() -> void:
 	_runner.change_test_name("fluent_updates")
-	# fluent APIは新しい登録を作らず、同一オブジェクトの公開型とキーを更新します。
 	var registration := ServiceRegistration.create_instance_registration(DerivedService.new())
 	var as_type_result = registration.as_type(BaseService)
 	var with_key_result = registration.with_key(&"primary")
 
 	_runner.assert_same(as_type_result, registration, "as_typeは同一登録オブジェクトを返す")
 	_expect(registration.service_type == BaseService, "as_typeは公開型を更新する")
-	_expect(with_key_result == registration, "with_keyは同一登録オブジェクトを返す")
+	_runner.assert_same(with_key_result, registration, "with_keyは同一登録オブジェクトを返す")
 	_expect(registration.key == &"primary", "with_keyは登録キーを更新する")
-
-
-## 必須型の欠落が検証エラーとして報告されることを確認します。
-func _test_missing_types() -> void:
-	_runner.change_test_name("missing_types")
-	# 必須型の欠落を検証エラーとして報告します。
-	var missing_implementation := _valid_registration()
-	missing_implementation.implementation_type = null
-	_expect_validation_error(missing_implementation, "生成するクラスが指定されていません")
-
-	var missing_service := _valid_registration()
-	missing_service.service_type = null
-	_expect_validation_error(missing_service, "公開するクラスが指定されていません")
 
 
 ## グローバルクラス名を持たないScriptも正常なサービス型として登録できることを確認します。
 func _test_unnamed_type() -> void:
 	_runner.change_test_name("unnamed_type")
-	# Scriptそのものを解決キーに使うため、グローバルクラス名がない型も登録できます。
 	var registration := ServiceRegistration.create_instance_registration(UnnamedService.new())
-	var errors: PackedStringArray = registration.validate()
 
-	_expect(errors.is_empty(), "class_nameのないScriptを正常な登録として扱う")
-
-
-## 公開型を継承していない実装型の組み合わせが検証エラーになることを確認します。
-func _test_unrelated_registration() -> void:
-	_runner.change_test_name("unrelated_registration")
-	# 実装型が公開型を継承していない組み合わせを検証エラーとして報告します。
-	var registration := ServiceRegistration.create_instance_registration(
-			UnrelatedService.new(),
-	).as_type(BaseService)
-
-	_expect_validation_error(registration, "継承していません")
+	_runner.assert_equal(
+			registration.validate(),
+			RegistrationValidator.ErrorCode.OK,
+			"class_nameのないScriptを正常な登録として扱う",
+	)
 
 
-## 型と継承関係が正しいサービス登録では検証エラーがないことを確認します。
+## 型と継承関係が正しいサービス登録が成功コードを返すことを確認します。
 func _test_valid_registration() -> void:
 	_runner.change_test_name("valid_registration")
-	# class_nameと継承関係が正しい登録には検証エラーがありません。
-	var registration := _valid_registration()
-	var errors: PackedStringArray = registration.validate()
+	_runner.assert_equal(
+			_valid_registration().validate(),
+			RegistrationValidator.ErrorCode.OK,
+			"派生実装を基底型として公開できる",
+	)
 
-	_expect(errors.is_empty(), "正常な登録のエラー配列が空になる")
+
+## 説明文の整形が検証から独立し、診断に必要な情報だけを安全に含むことを確認します。
+func _test_error_formatting() -> void:
+	_runner.change_test_name("error_formatting")
+	_runner.assert_equal(
+			RegistrationValidator.format_error(RegistrationValidator.ErrorCode.OK, null),
+			"",
+			"OKは説明文を持たない",
+	)
+
+	var null_message := RegistrationValidator.format_error(
+			RegistrationValidator.ErrorCode.NULL_REGISTRATION,
+			null,
+	)
+	_runner.assert_false(null_message.is_empty(), "null登録の説明文を生成できる")
+	var null_instance_message := RegistrationValidator.format_error(
+			RegistrationValidator.ErrorCode.NULL_INSTANCE,
+			ServiceRegistration.new(),
+	)
+	_runner.assert_false(null_instance_message.is_empty(), "nullインスタンスの説明文を生成できる")
+
+	var freed_node := Node.new()
+	var freed_registration := ServiceRegistration.new()
+	freed_registration.instance = freed_node
+	freed_node.free()
+	var invalid_message := RegistrationValidator.format_error(
+			RegistrationValidator.ErrorCode.INVALID_INSTANCE,
+			freed_registration,
+	)
+	_runner.assert_false(invalid_message.is_empty(), "解放済みインスタンスの説明文を安全に生成できる")
+
+	var incompatible_implementation := _valid_registration()
+	incompatible_implementation.implementation_type = UnrelatedService
+	var implementation_message := RegistrationValidator.format_error(
+			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
+			incompatible_implementation,
+	)
+	var actual_type: Script = incompatible_implementation.instance.get_script()
+	_expect(actual_type.get_global_name() in implementation_message, "実装型不適合に実際の型名を含める")
+	_expect(
+			incompatible_implementation.implementation_type.get_global_name() in implementation_message,
+			"実装型不適合に指定実装型名を含める",
+	)
+
+	var incompatible_service := ServiceRegistration.create_instance_registration(
+			UnrelatedService.new(),
+	).as_type(BaseService)
+	var service_message := RegistrationValidator.format_error(
+			RegistrationValidator.ErrorCode.INCOMPATIBLE_SERVICE_TYPE,
+			incompatible_service,
+	)
+	_expect(incompatible_service.implementation_type.get_global_name() in service_message, "公開型不適合に実装型名を含める")
+	_expect(incompatible_service.service_type.get_global_name() in service_message, "公開型不適合に公開型名を含める")
+
+	var unnamed_registration := ServiceRegistration.create_instance_registration(UnnamedService.new())
+	unnamed_registration.implementation_type = UnrelatedService
+	var unnamed_message := RegistrationValidator.format_error(
+			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
+			unnamed_registration,
+	)
+	var unnamed_type: Script = unnamed_registration.instance.get_script()
+	_expect(unnamed_type.resource_path in unnamed_message, "class_nameのない型をScriptパスで識別する")
 
 
 func _valid_registration() -> ServiceRegistration:
-	# 各異常系テストの開始点となる、派生実装を基底型として公開する正常な登録です。
 	return ServiceRegistration.create_instance_registration(
 			DerivedService.new(),
 	).as_type(BaseService).with_key(&"fixture")
 
 
-func _expect_validation_error(
+func _expect_validation_code(
 		registration: ServiceRegistration,
-		expected_error: String,
+		expected_code: RegistrationValidator.ErrorCode,
+		message: String,
 ) -> void:
-	# validate()がエラーと期待するメッセージを返すことを確認します。
-	var errors: PackedStringArray = registration.validate()
-
-	_runner.assert_false(errors.is_empty(), "%s: 検証エラーを返す" % expected_error)
-	_runner.assert_expected_error(
-			errors,
-			expected_error,
-			"%s: 想定した検証エラーを返す" % expected_error,
-	)
+	_runner.assert_equal(registration.validate(), expected_code, message)
 
 
 func _expect(condition: bool, message: String) -> void:

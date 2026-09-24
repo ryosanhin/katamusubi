@@ -44,6 +44,6 @@ func with_key(new_key: StringName) -> ServiceRegistration:
 	return self
 
 
-## 登録情報に不備がないか検証し、問題一覧を返す
-func validate() -> PackedStringArray:
+## 登録情報に不備がないか検証し、最初に見つかった問題を返す
+func validate() -> ServiceRegistrationValidator.ErrorCode:
 	return ServiceRegistrationValidator.validate(self)

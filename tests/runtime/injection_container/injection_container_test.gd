@@ -46,23 +46,38 @@ func _test_registration_error_state_transitions() -> void:
 	var container := InjectionContainer.new(null)
 	_runner.assert_false(container.has_registration_errors, "新規コンテナには登録エラーがない")
 
-	container.register(_instance_as(DerivedService.new(), BaseService, &"first"))
+	var first := DerivedService.new()
+	container.register(_instance_as(first, BaseService, &"first"))
 	_runner.assert_false(container.has_registration_errors, "正常登録では登録エラー状態を変更しない")
 
-	var capture := ErrorCapture.new()
-	capture.start()
-	container.register(ServiceRegistration.new())
+	var invalid_capture := ErrorCapture.new()
+	invalid_capture.start()
+	var invalid_succeeded := container.register(ServiceRegistration.new())
+	invalid_capture.stop()
+	_runner.assert_false(invalid_succeeded, "不正登録は失敗を返す")
+	_runner.assert_equal(invalid_capture.errors.size(), 1, "不正登録を一度だけpush_errorで報告する")
 	_runner.assert_true(container.has_registration_errors, "不正登録で登録エラー状態になる")
 
-	container.register(_instance_as(DerivedService.new(), BaseService, &"first"))
+	var duplicate_capture := ErrorCapture.new()
+	duplicate_capture.start()
+	var duplicate_succeeded := container.register(
+			_instance_as(DerivedService.new(), BaseService, &"first")
+	)
+	duplicate_capture.stop()
+	_runner.assert_false(duplicate_succeeded, "重複登録は失敗を返す")
+	_runner.assert_equal(duplicate_capture.errors.size(), 1, "重複登録を一度だけpush_errorで報告する")
 	_runner.assert_true(container.has_registration_errors, "重複登録後も登録エラー状態である")
 
 	var succeeded := container.register(
 			_instance_as(DerivedService.new(), BaseService, &"after_failure")
 	)
-	capture.stop()
 	_runner.assert_true(succeeded, "失敗後でも別の正常な登録は成功する")
 	_runner.assert_true(container.has_registration_errors, "後続の正常登録は累積エラー状態を解除しない")
+	_runner.assert_same(
+			container.resolve(BaseService, &"first"),
+			first,
+			"登録失敗後も既存の正常な登録を維持する",
+	)
 
 
 ## 外部から渡したインスタンスが、その参照を保ったまま解決されることを確認します。
@@ -81,17 +96,30 @@ func _test_invalid_instance_registrations() -> void:
 	_runner.change_test_name("invalid_instance_registrations")
 	var container := InjectionContainer.new(null)
 
-	var capture := ErrorCapture.new()
-	capture.start()
-	container.register(ServiceRegistration.create_instance_registration(null))
-	container.register(ServiceRegistration.create_instance_registration(
-			DerivedService.new()
-	).as_type(UnrelatedService))
-	capture.stop()
+	var null_capture := ErrorCapture.new()
+	null_capture.start()
+	var null_succeeded := container.register(
+			ServiceRegistration.create_instance_registration(null)
+	)
+	null_capture.stop()
+	_runner.assert_false(null_succeeded, "nullインスタンス登録は失敗を返す")
+	_runner.assert_equal(null_capture.errors.size(), 1, "nullインスタンス拒否を一度だけ報告する")
 
-	_runner.assert_equal(capture.errors.size(), 2, "null・公開型不整合を拒否する")
-	_runner.assert_true(capture.contains("インスタンスに null は指定できません"), "null拒否理由を報告する")
-	_runner.assert_true(capture.contains("を継承していません"), "型不一致で公開型を報告する")
+	var incompatible_capture := ErrorCapture.new()
+	incompatible_capture.start()
+	var incompatible_succeeded := container.register(
+			ServiceRegistration.create_instance_registration(
+					DerivedService.new()
+			).as_type(UnrelatedService)
+	)
+	incompatible_capture.stop()
+	_runner.assert_false(incompatible_succeeded, "公開型不適合は失敗を返す")
+	_runner.assert_equal(incompatible_capture.errors.size(), 1, "公開型不適合を一度だけ報告する")
+	_runner.assert_null(
+			container.find_resolve_entry(UnrelatedService, &""),
+			"不適合な公開型の登録を追加しない",
+	)
+	_runner.assert_true(container.has_registration_errors, "拒否した登録を累積エラー状態へ反映する")
 
 
 ## 指定キーの登録を優先し、見つからない場合は既定キーの登録へフォールバックすることを確認します。
@@ -138,7 +166,7 @@ func _test_duplicate_registrations() -> void:
 	capture.stop()
 	_runner.assert_false(succeeded, "重複登録は失敗を返す")
 	_runner.assert_true(container.has_registration_errors, "重複登録を累積エラー状態へ反映する")
-	_runner.assert_true(capture.contains("登録が重複しています"), "重複登録がpush_errorを発生させる")
+	_runner.assert_equal(capture.errors.size(), 1, "重複登録が一度だけpush_errorを発生させる")
 	_runner.assert_same(container.resolve(BaseService, &"same"), first, "先に登録したサービスを維持する")
 
 
@@ -166,14 +194,15 @@ func _test_invalid_registration() -> void:
 	var capture := ErrorCapture.new()
 	capture.start()
 	var succeeded := container.register(invalid)
-	var result = container.resolve(BaseService, &"")
 	capture.stop()
 
-	_runner.assert_true(capture.contains("登録情報が不正です"), "不正登録がpush_errorを発生させる")
 	_runner.assert_false(succeeded, "不正登録は失敗を返す")
 	_runner.assert_true(container.has_registration_errors, "不正登録を累積エラー状態へ反映する")
-	_runner.assert_true(capture.contains("登録が見つかりません"), "不正登録のエントリが追加されていない")
-	_runner.assert_null(result, "不正登録を解決できない")
+	_runner.assert_equal(capture.errors.size(), 1, "不正登録が一度だけpush_errorを発生させる")
+	_runner.assert_null(
+			container.find_resolve_entry(BaseService, &""),
+			"不正登録のエントリを追加しない",
+	)
 
 
 ## nullのサービス登録を安全に拒否し、コンテナを利用可能な状態に保つことを確認します。
@@ -187,7 +216,7 @@ func _test_null_registration() -> void:
 
 	_runner.assert_false(succeeded, "nullの登録は失敗を返す")
 	_runner.assert_true(container.has_registration_errors, "null登録を累積エラー状態へ反映する")
-	_runner.assert_true(capture.contains("ServiceRegistration に null は指定できません"), "nullの拒否理由を報告する")
+	_runner.assert_equal(capture.errors.size(), 1, "null登録を一度だけpush_errorで報告する")
 
 
 ## 未登録のサービスを解決したとき、nullを返してエラーを報告することを確認します。
@@ -199,7 +228,7 @@ func _test_unregistered_service() -> void:
 	var result = container.resolve(BaseService, &"")
 	capture.stop()
 
-	_runner.assert_true(capture.contains("登録が見つかりません"), "未登録解決がpush_errorを発生させる")
+	_runner.assert_equal(capture.errors.size(), 1, "未登録解決が一度だけpush_errorを発生させる")
 	_runner.assert_null(result, "未登録サービスはnullになる")
 
 

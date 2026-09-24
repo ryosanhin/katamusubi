@@ -37,15 +37,9 @@ func register(registration: ServiceRegistration) -> bool:
 
 ## 登録情報の検証
 func _validate_registration(registration: ServiceRegistration) -> bool:
-	# nullチェック
-	if registration == null:
-		push_error("登録情報が不正です:\nServiceRegistration に null は指定できません。")
-		return false
-	
-	# 登録情報の検証
-	var validation_errors := registration.validate()
-	if not validation_errors.is_empty():
-		var error_message := "\n".join(validation_errors)
+	var error_code := RegistrationValidator.validate(registration)
+	if error_code != RegistrationValidator.ErrorCode.OK:
+		var error_message := RegistrationValidator.format_error(error_code, registration)
 		push_error("登録情報が不正です:\n%s" % error_message)
 		return false
 
