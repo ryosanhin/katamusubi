@@ -61,31 +61,30 @@ func _test_dedicated_validator() -> void:
 	)
 
 
-## 外部インスタンスと実装型・公開型の継承関係を検証し、不正な値を報告することを確認します。
+## インスタンスから取得した実装型と公開型の継承関係を検証することを確認します。
 func _test_instance_validation() -> void:
 	_runner.change_test_name("instance_validation")
-	# 実インスタンス自身の継承関係を、指定された実装型と公開型の両方に対して検証します。
+	# 実装型は実インスタンスから取得され、公開型との継承関係が検証されます。
 	var derived_as_base := ServiceRegistration.create_instance_registration(DerivedService.new())
-	_expect(derived_as_base.validate().is_empty(), "指定実装型の派生インスタンスを許可する")
+	derived_as_base.as_type(BaseService)
+	_expect(derived_as_base.validate().is_empty(), "インスタンスから取得した実装型の派生インスタンスを許可する")
 
 	var unrelated := ServiceRegistration.create_instance_registration(
 			UnrelatedService.new(),
 	).as_type(BaseService)
-	_expect_validation_error(unrelated, "実際の型=ServiceRegistrationTestUnrelatedService")
-	_expect_validation_error(unrelated, "指定された実装型=ServiceRegistrationTestDerivedService")
-	_expect_validation_error(unrelated, "公開型=ServiceRegistrationTestBaseService")
+	_expect_validation_error(unrelated, "生成するクラス ServiceRegistrationTestUnrelatedService")
+	_expect_validation_error(unrelated, "公開するクラス ServiceRegistrationTestBaseService")
 
 	var null_instance := ServiceRegistration.create_instance_registration(null)
-	_expect_validation_error(null_instance, "外部インスタンスに null は指定できません")
-	var non_object := ServiceRegistration.create_instance_registration(42)
-	_expect_validation_error(non_object, "外部インスタンスが有効な Object ではありません")
+	_expect_validation_error(null_instance, "生成するクラスが指定されていません")
 	var object_without_script := ServiceRegistration.create_instance_registration(RefCounted.new())
-	_expect_validation_error(object_without_script, "外部インスタンスにスクリプトがアタッチされていません")
+	_expect_validation_error(object_without_script, "生成するクラスが指定されていません")
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
 			DerivedService.new(),
 	).as_type(UnrelatedService)
-	_expect_validation_error(incompatible_service, "公開型=ServiceRegistrationTestUnrelatedService")
+	_expect_validation_error(incompatible_service, "生成するクラス ServiceRegistrationTestDerivedService")
+	_expect_validation_error(incompatible_service, "公開するクラス ServiceRegistrationTestUnrelatedService")
 
 
 ## fluent APIが新しい登録を生成せず、同じ登録の公開型とキーを更新することを確認します。
