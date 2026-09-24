@@ -33,6 +33,7 @@ func _test_create_instance_registration() -> void:
 	_runner.assert_same(registration.instance, provided_instance, "渡されたインスタンスそのものを保持する")
 	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
+	provided_instance.free()
 
 
 ## 専用バリデーターとServiceRegistrationのAPIが同じコードを返すことを確認します。
@@ -67,12 +68,6 @@ func _test_validation_codes() -> void:
 			RegistrationValidator.ErrorCode.NULL_INSTANCE,
 			"nullインスタンス",
 	)
-	_expect_validation_code(
-			ServiceRegistration.create_instance_registration(42),
-			RegistrationValidator.ErrorCode.INVALID_INSTANCE,
-			"非Objectインスタンス",
-	)
-
 	var freed_node := Node.new()
 	var freed_registration := ServiceRegistration.new()
 	freed_registration.instance = freed_node
@@ -84,12 +79,13 @@ func _test_validation_codes() -> void:
 	)
 
 	var missing_script := ServiceRegistration.new()
-	missing_script.instance = RefCounted.new()
+	missing_script.instance = Node.new()
 	_expect_validation_code(
 			missing_script,
 			RegistrationValidator.ErrorCode.MISSING_SCRIPT,
 			"Scriptなしインスタンス",
 	)
+	missing_script.instance.free()
 
 	var missing_implementation := _valid_registration()
 	missing_implementation.implementation_type = null
@@ -98,6 +94,7 @@ func _test_validation_codes() -> void:
 			RegistrationValidator.ErrorCode.MISSING_IMPLEMENTATION_TYPE,
 			"実装型欠落",
 	)
+	missing_implementation.instance.free()
 
 	var incompatible_implementation := _valid_registration()
 	incompatible_implementation.implementation_type = UnrelatedService
@@ -107,6 +104,7 @@ func _test_validation_codes() -> void:
 			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
 			"登録インスタンスと実装型の不一致",
 	)
+	incompatible_implementation.instance.free()
 
 	var missing_service := _valid_registration()
 	missing_service.service_type = null
@@ -115,6 +113,7 @@ func _test_validation_codes() -> void:
 			RegistrationValidator.ErrorCode.MISSING_SERVICE_TYPE,
 			"公開型欠落",
 	)
+	missing_service.instance.free()
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
 			UnrelatedService.new(),
@@ -124,6 +123,7 @@ func _test_validation_codes() -> void:
 			RegistrationValidator.ErrorCode.INCOMPATIBLE_SERVICE_TYPE,
 			"実装型と公開型の不一致",
 	)
+	incompatible_service.instance.free()
 
 
 ## fluent APIが新しい登録を生成せず、同じ登録の公開型とキーを更新することを確認します。
@@ -137,6 +137,7 @@ func _test_fluent_updates() -> void:
 	_expect(registration.service_type == BaseService, "as_typeは公開型を更新する")
 	_runner.assert_same(with_key_result, registration, "with_keyは同一登録オブジェクトを返す")
 	_expect(registration.key == &"primary", "with_keyは登録キーを更新する")
+	registration.instance.free()
 
 
 ## グローバルクラス名を持たないScriptも正常なサービス型として登録できることを確認します。
@@ -149,16 +150,19 @@ func _test_unnamed_type() -> void:
 			RegistrationValidator.ErrorCode.OK,
 			"class_nameのないScriptを正常な登録として扱う",
 	)
+	registration.instance.free()
 
 
 ## 型と継承関係が正しいサービス登録が成功コードを返すことを確認します。
 func _test_valid_registration() -> void:
 	_runner.change_test_name("valid_registration")
+	var registration := _valid_registration()
 	_runner.assert_equal(
-			_valid_registration().validate(),
+			registration.validate(),
 			RegistrationValidator.ErrorCode.OK,
 			"派生実装を基底型として公開できる",
 	)
+	registration.instance.free()
 
 
 ## 説明文の整形が検証から独立し、診断に必要な情報だけを安全に含むことを確認します。
@@ -203,6 +207,7 @@ func _test_error_formatting() -> void:
 			incompatible_implementation.implementation_type.get_global_name() in implementation_message,
 			"実装型不適合に指定実装型名を含める",
 	)
+	incompatible_implementation.instance.free()
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
 			UnrelatedService.new(),
@@ -213,6 +218,7 @@ func _test_error_formatting() -> void:
 	)
 	_expect(incompatible_service.implementation_type.get_global_name() in service_message, "公開型不適合に実装型名を含める")
 	_expect(incompatible_service.service_type.get_global_name() in service_message, "公開型不適合に公開型名を含める")
+	incompatible_service.instance.free()
 
 	var unnamed_registration := ServiceRegistration.create_instance_registration(UnnamedService.new())
 	unnamed_registration.implementation_type = UnrelatedService
@@ -222,6 +228,7 @@ func _test_error_formatting() -> void:
 	)
 	var unnamed_type: Script = unnamed_registration.instance.get_script()
 	_expect(unnamed_type.resource_path in unnamed_message, "class_nameのない型をScriptパスで識別する")
+	unnamed_registration.instance.free()
 
 
 func _valid_registration() -> ServiceRegistration:

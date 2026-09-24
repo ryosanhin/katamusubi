@@ -47,6 +47,7 @@ func _test_root_scope_initialization_async() -> void:
 	var manual: ContainerScopeTestContainerScope = ContainerScopeTestContainerScope.new()
 	_runner.assert_true(manual.initialize_for_test(), "親なしスコープを明示的に初期化できる")
 	_runner.assert_equal(manual.state, ContainerScopeScript.State.INITIALIZED, "明示初期化でINITIALIZEDになる")
+	manual.registered_service.free()
 	manual.free()
 
 	var scene_scope: ContainerScopeTestContainerScope = BasicScopeScene.instantiate()

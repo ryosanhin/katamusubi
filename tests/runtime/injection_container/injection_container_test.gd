@@ -38,6 +38,7 @@ func _test_default_resolution() -> void:
 	var resolved = container.resolve(DerivedService, &"")
 	_runner.assert_true(succeeded, "正常な登録は成功を返す")
 	_runner.assert_same(resolved, provided, "Scriptからデフォルト登録を解決する")
+	provided.free()
 
 
 ## 登録エラーの発生後も既存サービスを解決でき、clear後に登録可能な状態へ戻ることを確認します。
@@ -60,17 +61,15 @@ func _test_registration_error_state_transitions() -> void:
 
 	var duplicate_capture := ErrorCapture.new()
 	duplicate_capture.start()
-	var duplicate_succeeded := container.register(
-			_instance_as(DerivedService.new(), BaseService, &"first")
-	)
+	var duplicate := DerivedService.new()
+	var duplicate_succeeded := container.register(_instance_as(duplicate, BaseService, &"first"))
 	duplicate_capture.stop()
 	_runner.assert_false(duplicate_succeeded, "重複登録は失敗を返す")
 	_runner.assert_equal(duplicate_capture.errors.size(), 1, "重複登録を一度だけpush_errorで報告する")
 	_runner.assert_true(container.has_registration_errors, "重複登録後も登録エラー状態である")
 
-	var succeeded := container.register(
-			_instance_as(DerivedService.new(), BaseService, &"after_failure")
-	)
+	var after_failure := DerivedService.new()
+	var succeeded := container.register(_instance_as(after_failure, BaseService, &"after_failure"))
 	_runner.assert_true(succeeded, "失敗後でも別の正常な登録は成功する")
 	_runner.assert_true(container.has_registration_errors, "後続の正常登録は累積エラー状態を解除しない")
 	_runner.assert_same(
@@ -78,6 +77,9 @@ func _test_registration_error_state_transitions() -> void:
 			first,
 			"登録失敗後も既存の正常な登録を維持する",
 	)
+	first.free()
+	duplicate.free()
+	after_failure.free()
 
 
 ## 外部から渡したインスタンスが、その参照を保ったまま解決されることを確認します。
@@ -89,6 +91,7 @@ func _test_instance_registration() -> void:
 
 	_runner.assert_same(container.resolve(DerivedService, &""), provided, "提供された参照を返す")
 	_runner.assert_same(container.resolve(DerivedService, &""), provided, "再解決でも提供された参照を返す")
+	provided.free()
 
 
 ## null、非Object、Scriptなしなどの不正な外部インスタンス登録を拒否することを確認します。
@@ -107,10 +110,9 @@ func _test_invalid_instance_registrations() -> void:
 
 	var incompatible_capture := ErrorCapture.new()
 	incompatible_capture.start()
+	var incompatible := DerivedService.new()
 	var incompatible_succeeded := container.register(
-			ServiceRegistration.create_instance_registration(
-					DerivedService.new()
-			).as_type(UnrelatedService)
+			ServiceRegistration.create_instance_registration(incompatible).as_type(UnrelatedService)
 	)
 	incompatible_capture.stop()
 	_runner.assert_false(incompatible_succeeded, "公開型不適合は失敗を返す")
@@ -120,6 +122,7 @@ func _test_invalid_instance_registrations() -> void:
 			"不適合な公開型の登録を追加しない",
 	)
 	_runner.assert_true(container.has_registration_errors, "拒否した登録を累積エラー状態へ反映する")
+	incompatible.free()
 
 
 ## 指定キーの登録を優先し、見つからない場合は既定キーの登録へフォールバックすることを確認します。
@@ -133,6 +136,8 @@ func _test_key_precedence_and_default_fallback() -> void:
 
 	_runner.assert_same(container.resolve(BaseService, &"primary"), keyed_service, "同じキーの登録を優先する")
 	_runner.assert_same(container.resolve(BaseService, &"missing"), default_service, "不明なキーはローカルのデフォルトへフォールバックする")
+	default_service.free()
+	keyed_service.free()
 
 
 ## 現在のコンテナで見つからないサービスを親コンテナから解決できることを確認します。
@@ -150,6 +155,9 @@ func _test_parent_lookup_order() -> void:
 	child.register(_instance_as(child_default, BaseService))
 	_runner.assert_same(child.resolve(BaseService, &""), child_default, "子のローカル登録が親の同一登録を上書きする")
 	_runner.assert_same(child.resolve(BaseService, &"primary"), parent_keyed, "親のキー付き登録を子のデフォルトより優先する")
+	parent_default.free()
+	parent_keyed.free()
+	child_default.free()
 
 
 ## 同じ型とキーの重複登録を拒否し、先に登録したサービスを維持することを確認します。
@@ -168,6 +176,8 @@ func _test_duplicate_registrations() -> void:
 	_runner.assert_true(container.has_registration_errors, "重複登録を累積エラー状態へ反映する")
 	_runner.assert_equal(capture.errors.size(), 1, "重複登録が一度だけpush_errorを発生させる")
 	_runner.assert_same(container.resolve(BaseService, &"same"), first, "先に登録したサービスを維持する")
+	first.free()
+	rejected.free()
 
 
 ## 同じサービス型でもキーごとに独立した登録として解決できることを確認します。
@@ -184,6 +194,9 @@ func _test_key_scopes() -> void:
 	_runner.assert_same(container.resolve(BaseService, &"first"), first, "同じ契約型の第一キーを解決する")
 	_runner.assert_same(container.resolve(BaseService, &"second"), second, "同じ契約型の異なるキーが併存する")
 	_runner.assert_same(container.resolve(UnrelatedService, &"first"), unrelated, "異なる契約型で同じキーを使用する")
+	first.free()
+	second.free()
+	unrelated.free()
 
 
 ## 検証に失敗するサービス登録を拒否し、解決対象へ追加しないことを確認します。
@@ -239,9 +252,9 @@ func _test_clear() -> void:
 	var child := InjectionContainer.new(parent)
 	var parent_service := DerivedService.new()
 	parent.register(ServiceRegistration.create_instance_registration(parent_service))
-	child.register(_instance_as(DerivedService.new(), BaseService))
+	var child_service := DerivedService.new()
+	child.register(_instance_as(child_service, BaseService))
 	var parent_service_weak: WeakRef = weakref(parent_service)
-	parent_service = null
 	child.clear()
 	parent.clear()
 
@@ -253,7 +266,9 @@ func _test_clear() -> void:
 	_runner.assert_null(local_result, "clear後はローカル登録を利用できない")
 	_runner.assert_null(parent_result, "clear後は親参照を利用できない")
 	_runner.assert_true(capture.errors.size() == 2, "利用不能な各解決がpush_errorを発生させる")
-	_runner.assert_null(parent_service_weak.get_ref(), "登録インスタンスへの参照を保持しない")
+	_runner.assert_same(parent_service_weak.get_ref(), parent_service, "Nodeの所有権を奪わず登録参照だけを破棄する")
+	parent_service.free()
+	child_service.free()
 
 
 ## 空キーと文字列キーの登録が衝突せず、それぞれ対応するサービスを解決することを確認します。
@@ -267,10 +282,12 @@ func _test_empty_and_nonempty_keys_do_not_collide() -> void:
 
 	_runner.assert_same(container.resolve(BaseService, &""), default_service, "空IDの登録を独立して解決する")
 	_runner.assert_same(container.resolve(BaseService, &"TestBaseService"), keyed_service, "通常IDの登録を独立して解決する")
+	default_service.free()
+	keyed_service.free()
 
 
 func _instance_as(
-		instance: Variant,
+		instance: Node,
 		service: Script,
 		key: StringName = &"",
 ) -> ServiceRegistration:

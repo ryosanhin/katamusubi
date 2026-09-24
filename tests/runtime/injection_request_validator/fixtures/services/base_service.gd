@@ -1,3 +1,3 @@
-extends RefCounted
+extends Node
 ## 注入要求の型検証で公開型として扱う、テスト用の基底サービスです。
 class_name InjectionRequestValidatorTestBaseService
