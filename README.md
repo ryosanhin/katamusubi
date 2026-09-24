@@ -42,10 +42,7 @@ extends ContainerScope
 
 func _register_instance(container: InjectionContainer) -> void:
 	container.register(
-			ServiceRegistration.create_instance_registration(
-					_example_service,
-					ExampleManager,
-			)
+			ServiceRegistration.create_instance_registration(_example_service)
 	)
 ```
 
@@ -84,7 +81,6 @@ During scope initialization, katamusubi calls `inject_dependency()` on each node
 container.register(
         ServiceRegistration.create_instance_registration(
                 _example_service,
-                ExampleManager,
         ).as_type(AbstractExampleManager)
 )
 ```
@@ -103,7 +99,6 @@ Use `with_key()` to distinguish multiple registrations of the same service type.
 container.register(
         ServiceRegistration.create_instance_registration(
                 _specific_example_service,
-                ExampleManager,
         ).with_key(&"specific")
 )
 ```

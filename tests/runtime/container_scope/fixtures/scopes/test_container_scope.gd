@@ -11,6 +11,7 @@ const DerivedService := preload("../services/derived_service.gd")
 
 var registration_count := 0
 var registered_service: ContainerScopeTestDerivedService
+var _registered_services: Array[Node] = []
 
 
 func initialize_for_test() -> bool:
@@ -33,28 +34,39 @@ func parent_container_for_test() -> InjectionContainer:
 	return _container._parent_container
 
 
+func _exit_tree() -> void:
+	super()
+	for service in _registered_services:
+		if is_instance_valid(service):
+			service.free()
+	_registered_services.clear()
+	registered_service = null
+
+
 func _register_instance(container: InjectionContainer) -> void:
 	registration_count += 1
 	registered_service = DerivedService.new()
+	_registered_services.append(registered_service)
 	container.register(
-		ServiceRegistration.create_instance_registration(
-			registered_service,
-			DerivedService,
-		).as_type(BaseService).with_key(registration_key)
+			ServiceRegistration.create_instance_registration(
+					registered_service,
+			).as_type(BaseService).with_key(registration_key)
 	)
 	if add_invalid_registration:
 		container.register(ServiceRegistration.new())
 	if add_duplicate_registration:
+		var duplicate_service := DerivedService.new()
+		_registered_services.append(duplicate_service)
 		container.register(
-			ServiceRegistration.create_instance_registration(
-				DerivedService.new(),
-				DerivedService,
-			).as_type(BaseService).with_key(registration_key)
+				ServiceRegistration.create_instance_registration(
+						duplicate_service,
+				).as_type(BaseService).with_key(registration_key)
 		)
 	if add_valid_registration_after_failure:
+		var service_after_failure := DerivedService.new()
+		_registered_services.append(service_after_failure)
 		container.register(
-			ServiceRegistration.create_instance_registration(
-				DerivedService.new(),
-				DerivedService,
-			).as_type(BaseService).with_key(&"after_failure")
+				ServiceRegistration.create_instance_registration(
+						service_after_failure,
+				).as_type(BaseService).with_key(&"after_failure")
 		)
