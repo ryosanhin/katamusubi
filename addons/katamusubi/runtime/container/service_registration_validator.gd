@@ -9,14 +9,6 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 	if registration == null:
 		errors.append("ServiceRegistration に null は指定できません。")
 		return errors
-	
-	if registration.implementation_type == null:
-		errors.append("生成するクラスが指定されていません。")
-		return errors
-
-	if registration.service_type == null:
-		errors.append("公開するクラスが指定されていません。")
-		return errors
 
 	if registration.instance == null:
 		errors.append("外部インスタンスに null は指定できません。")
@@ -26,16 +18,45 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 		errors.append("外部インスタンスが有効な Object ではありません。")
 		return errors
 
+	var actual_type: Script = registration.instance.get_script() as Script
+	if actual_type == null:
+		errors.append("外部インスタンスにスクリプトがアタッチされていません。")
+		return errors
+
+	if registration.implementation_type == null:
+		errors.append("生成するクラスが指定されていません。")
+		return errors
+
+	if registration.service_type == null:
+		errors.append("公開するクラスが指定されていません。")
+		return errors
+
+	if not ScriptTypeCompatibility.is_same_or_derived_from(
+			actual_type,
+			registration.implementation_type,
+	):
+		errors.append(
+			"外部インスタンスの型が登録型と互換性がありません: 実際の型=%s, 指定された実装型=%s, 公開型=%s" % [
+				_get_displayable_name(actual_type),
+				_get_displayable_name(registration.implementation_type),
+				_get_displayable_name(registration.service_type),
+			]
+		)
+		return errors
+
 	if not ScriptTypeCompatibility.is_same_or_derived_from(
 			registration.implementation_type,
 			registration.service_type,
 	):
 		errors.append(
-			"生成するクラス %s は公開するクラス %s を継承していません。" % [
-				registration.implementation_type.get_global_name(),
-				registration.service_type.get_global_name(),
+			"生成するクラス %s は公開するクラス %s を継承していません（指定された実装型=%s, 公開型=%s）。" % [
+				_get_displayable_name(registration.implementation_type),
+				_get_displayable_name(registration.service_type),
+				_get_displayable_name(registration.implementation_type),
+				_get_displayable_name(registration.service_type),
 			]
 		)
+		return errors
 
 	return errors
 

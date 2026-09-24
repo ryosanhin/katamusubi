@@ -46,7 +46,7 @@ func _test_dedicated_validator() -> void:
 
 	_runner.assert_expected_error(
 			validator_errors,
-			"生成するクラスが指定されていません",
+			"外部インスタンスに null は指定できません",
 			"専用バリデーターが不正な登録を検出する",
 	)
 	_runner.assert_equal(
@@ -71,15 +71,18 @@ func _test_instance_validation() -> void:
 	var unrelated := ServiceRegistration.create_instance_registration(
 			UnrelatedService.new(),
 	).as_type(BaseService)
+	unrelated.implementation_type = DerivedService
 	_expect_validation_error(unrelated, "実際の型=ServiceRegistrationTestUnrelatedService")
 	_expect_validation_error(unrelated, "指定された実装型=ServiceRegistrationTestDerivedService")
 	_expect_validation_error(unrelated, "公開型=ServiceRegistrationTestBaseService")
 
-	var null_instance := ServiceRegistration.create_instance_registration(null)
+	var null_instance := ServiceRegistration.new()
 	_expect_validation_error(null_instance, "外部インスタンスに null は指定できません")
-	var non_object := ServiceRegistration.create_instance_registration(42)
+	var non_object := ServiceRegistration.new()
+	non_object.instance = 42
 	_expect_validation_error(non_object, "外部インスタンスが有効な Object ではありません")
-	var object_without_script := ServiceRegistration.create_instance_registration(RefCounted.new())
+	var object_without_script := ServiceRegistration.new()
+	object_without_script.instance = RefCounted.new()
 	_expect_validation_error(object_without_script, "外部インスタンスにスクリプトがアタッチされていません")
 
 	var incompatible_service := ServiceRegistration.create_instance_registration(
