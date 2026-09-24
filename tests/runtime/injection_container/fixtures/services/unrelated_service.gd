@@ -1,3 +1,3 @@
-extends RefCounted
+extends Node
 ## InjectionContainerTestBaseServiceと継承関係を持たない、テスト用のサービスです。
 class_name InjectionContainerTestUnrelatedService

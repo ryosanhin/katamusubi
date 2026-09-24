@@ -70,6 +70,9 @@ func _test_type_overrides_and_normal_resolution_async() -> void:
 	_runner.assert_same(_target.received_derived_service, derived_service, "宣言型の派生型で解決する")
 	_runner.assert_same(_target.received_base_service, base_service, "宣言型自身の指定で解決する")
 	_runner.assert_same(_target.received_normal_service, base_service, "辞書にない引数は通常の宣言型で解決する")
+	local_service.free()
+	derived_service.free()
+	base_service.free()
 	await _cleanup_async()
 
 
@@ -88,6 +91,8 @@ func _test_overridden_type_prefers_argument_key_async() -> void:
 
 	_runner.assert_true(result, "オーバーライド後の型を解決できる")
 	_runner.assert_same(_target.received_service, keyed_service, "オーバーライド後も引数名と同じキーを優先する")
+	default_service.free()
+	keyed_service.free()
 	await _cleanup_async()
 
 
@@ -110,9 +115,8 @@ func _test_missing_type_override_async() -> void:
 func _test_missing_overridden_type_is_atomic_async() -> void:
 	_runner.change_test_name("missing_overridden_type_is_atomic")
 	_setup_target(TypeOverridesNode.new())
-	_container.register(
-			ServiceRegistration.create_instance_registration(UnnamedService.new())
-	)
+	var service := UnnamedService.new()
+	_container.register(ServiceRegistration.create_instance_registration(service))
 	var capture := ErrorCapture.new()
 	capture.start()
 	var result = _injector().try_inject_arguments(_target)
@@ -120,6 +124,7 @@ func _test_missing_overridden_type_is_atomic_async() -> void:
 
 	_runner.assert_false(result, "オーバーライド型の登録がなければfalseを返す")
 	_runner.assert_equal(_target.injection_count, 0, "解決済み引数があっても注入メソッドを呼ばない")
+	service.free()
 	await _cleanup_async()
 
 
@@ -143,6 +148,8 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 			"サービスを宣言順に渡してメソッドを完了する",
 	)
 	_runner.assert_true(_target.was_injected, "Callableの有効性だけでなく注入先の状態変更を確認する")
+	default_service.free()
+	keyed_service.free()
 	await _cleanup_async()
 
 
@@ -150,7 +157,8 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 func _test_resolution_failure_is_atomic_async() -> void:
 	_runner.change_test_name("resolution_failure_is_atomic")
 	_setup_target(FailedResolutionNode.new())
-	_container.register(_instance_as(DerivedService.new()))
+	var service := DerivedService.new()
+	_container.register(_instance_as(service))
 	var capture := ErrorCapture.new()
 	capture.start()
 	var result = _injector().try_inject_arguments(_target)
@@ -159,6 +167,7 @@ func _test_resolution_failure_is_atomic_async() -> void:
 	_runner.assert_false(result, "途中の引数を解決できなければfalseを返す")
 	_runner.assert_equal(_target.injection_count, 0, "一部を解決済みでも注入メソッドを呼ばない")
 	_runner.assert_false(_target.was_injected, "失敗時は注入先の状態を変更しない")
+	service.free()
 	await _cleanup_async()
 
 
@@ -189,6 +198,7 @@ func _test_resolved_reference_and_success_state_async() -> void:
 	_runner.assert_true(result, "注入メソッドを実行できた成功時にtrueを返す")
 	_runner.assert_same(_target.received_service, expected, "対象が保持する参照はコンテナの解決結果と一致する")
 	_runner.assert_true(_target.was_injected, "注入先メソッドの状態変更が行われる")
+	provided.free()
 	await _cleanup_async()
 
 
