@@ -1,3 +1,3 @@
-extends RefCounted
+extends Node
 ## InjectionRequestValidatorTestBaseServiceと継承関係を持たない、テスト用のサービスです。
 class_name InjectionRequestValidatorTestUnrelatedService
