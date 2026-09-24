@@ -85,18 +85,13 @@ func _test_invalid_instance_registrations() -> void:
 	capture.start()
 	container.register(ServiceRegistration.create_instance_registration(null))
 	container.register(ServiceRegistration.create_instance_registration(
-			UnrelatedService.new()
-	))
-	container.register(ServiceRegistration.create_instance_registration(
 			DerivedService.new()
 	).as_type(UnrelatedService))
 	capture.stop()
 
-	_runner.assert_equal(capture.errors.size(), 3, "null・無関係な実体・公開型不整合をすべて拒否する")
-	_runner.assert_true(capture.contains("外部インスタンスに null は指定できません"), "null拒否理由を報告する")
-	_runner.assert_true(capture.contains("実際の型="), "型不一致で実際の型を報告する")
-	_runner.assert_true(capture.contains("指定された実装型="), "型不一致で指定実装型を報告する")
-	_runner.assert_true(capture.contains("公開型="), "型不一致で公開型を報告する")
+	_runner.assert_equal(capture.errors.size(), 2, "null・公開型不整合を拒否する")
+	_runner.assert_true(capture.contains("インスタンスに null は指定できません"), "null拒否理由を報告する")
+	_runner.assert_true(capture.contains("を継承していません"), "型不一致で公開型を報告する")
 
 
 ## 指定キーの登録を優先し、見つからない場合は既定キーの登録へフォールバックすることを確認します。

@@ -23,9 +23,12 @@ static func create_instance_registration(
 ) -> ServiceRegistration:
 	var registration := ServiceRegistration.new()
 	registration.instance = provided_instance
-	if provided_instance != null:
-		registration.implementation_type = provided_instance.get_script()
-		registration.service_type = provided_instance.get_script()
+
+	if is_instance_valid(provided_instance):
+		if provided_instance is Object:
+			registration.implementation_type = provided_instance.get_script()
+			registration.service_type = provided_instance.get_script()
+	
 	return registration
 
 

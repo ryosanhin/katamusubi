@@ -10,20 +10,35 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 		errors.append("ServiceRegistration に null は指定できません。")
 		return errors
 	
+	if registration.instance == null:
+		errors.append("インスタンスに null は指定できません。")
+		return errors
+		
+	if not (registration.instance is Object) or not is_instance_valid(registration.instance):
+		errors.append("インスタンスが有効な Object ではありません。")
+		return errors
+	
+	var actual_type: Script = registration.instance.get_script() as Script
+	if actual_type == null:
+		errors.append("インスタンスにスクリプトがアタッチされていません。")
+		return errors
+	
 	if registration.implementation_type == null:
 		errors.append("生成するクラスが指定されていません。")
 		return errors
 
+	if not ScriptTypeCompatibility.is_same_or_derived_from(
+			actual_type,
+			registration.implementation_type,
+	):
+		errors.append(
+				"生成するインスタンスはスクリプト %s を実装していません。" 
+				% registration.implementation_type.get_global_name()
+		)
+		return errors
+	
 	if registration.service_type == null:
 		errors.append("公開するクラスが指定されていません。")
-		return errors
-
-	if registration.instance == null:
-		errors.append("外部インスタンスに null は指定できません。")
-		return errors
-
-	if not (registration.instance is Object) or not is_instance_valid(registration.instance):
-		errors.append("外部インスタンスが有効な Object ではありません。")
 		return errors
 
 	if not ScriptTypeCompatibility.is_same_or_derived_from(
@@ -31,10 +46,10 @@ static func validate(registration: ServiceRegistration) -> PackedStringArray:
 			registration.service_type,
 	):
 		errors.append(
-			"生成するクラス %s は公開するクラス %s を継承していません。" % [
-				registration.implementation_type.get_global_name(),
-				registration.service_type.get_global_name(),
-			]
+				"生成するクラス %s は公開型 %s を継承していません。" % [
+					registration.implementation_type.get_global_name(),
+					registration.service_type.get_global_name(),
+				]
 		)
 
 	return errors
