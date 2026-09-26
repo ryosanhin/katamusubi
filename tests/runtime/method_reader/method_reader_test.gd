@@ -2,7 +2,7 @@ extends SceneTree
 
 
 const MethodReader := preload("res://addons/katamusubi/runtime/injection/method_reader.gd")
-const ArgumentData := preload("res://addons/katamusubi/runtime/injection/argument_data.gd")
+const ArgumentEntry := preload("res://addons/katamusubi/runtime/injection/argument_entry.gd")
 
 const InstanceInjector := preload(
 		"res://addons/katamusubi/runtime/injection/instance_injector.gd"
@@ -52,7 +52,7 @@ func _test_class_arguments_and_defaults() -> void:
 
 	_runner.assert_equal(arguments.size(), 2, "デフォルト引数を含むすべての引数を返す")
 	_runner.assert_array(
-		arguments.map(func(argument: ArgumentData) -> StringName: return argument.arg_name),
+		arguments.map(func(argument: ArgumentEntry) -> StringName: return argument.arg_name),
 		[&"base_service", &"derived_service"],
 		"複数のクラス型引数を宣言順に返す",
 	)
@@ -69,7 +69,7 @@ func _test_builtin_arguments() -> void:
 
 	_runner.assert_equal(arguments.size(), 3, "すべての組み込み型引数を返す")
 	_runner.assert_array(
-		arguments.map(func(argument: ArgumentData) -> StringName: return argument.arg_name),
+		arguments.map(func(argument: ArgumentEntry) -> StringName: return argument.arg_name),
 		[&"count", &"display_name", &"position"],
 		"組み込み型引数を宣言順に返す",
 	)
@@ -84,7 +84,7 @@ func _test_builtin_arguments() -> void:
 ## 引数データの文字列表現に、引数名、クラス名、型番号、型名が含まれることを確認します。
 func _test_argument_data_string() -> void:
 	_runner.change_test_name("argument_data_string")
-	var argument := ArgumentData.new(&"service", BaseService, TYPE_OBJECT)
+	var argument := ArgumentEntry.new(&"service", BaseService, TYPE_OBJECT)
 	var description := str(argument)
 
 	_runner.assert_true("service" in description, "文字列表現に引数名を含む")
@@ -94,5 +94,5 @@ func _test_argument_data_string() -> void:
 
 
 ## MethodReaderを使って引数を取得
-func _read(script: Script) -> Array[ArgumentData]:
+func _read(script: Script) -> Array[ArgumentEntry]:
 	return MethodReader.new(InstanceInjector.INJECTION_METHOD_NAME).get_injection_arguments(script)
