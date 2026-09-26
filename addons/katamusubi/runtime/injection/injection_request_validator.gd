@@ -104,7 +104,7 @@ static func validate_type_overrides(
 					target,
 					argument_name,
 					declared_arguments_by_name[override_key].arg_type,
-					"オーバーライド対象がオブジェクト型ではありません",
+					"オーバーライド対象がオブジェクト型（24）ではありません",
 				)
 			)
 			return result
@@ -127,7 +127,7 @@ static func validate_type_overrides(
 		# もともと引数の型として定義されていたスクリプトと同一、または派生か確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var declared_type: Script = declared_arguments_by_name[argument_name].service_type
-		if not ScriptTypeCompatibility.is_same_or_derived_from(
+		if declared_type != null and not ScriptTypeCompatibility.is_same_or_derived_from(
 			specified_type,
 			declared_type,
 		):
