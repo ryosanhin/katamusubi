@@ -1,7 +1,7 @@
 extends RefCounted
 ## スクリプトから[code]inject_dependency[/code]メソッドを探して引数を抽出
 
-const ArgumentData := preload("argument_data.gd")
+const ArgumentEntry := preload("argument_entry.gd")
 var _method_name: StringName
 
 
@@ -19,12 +19,12 @@ func _find_injection_method(script: Script) -> Dictionary:
 
 
 ## inject_dependencyの引数情報を解決要求として読み取り
-func _get_arguments(method_data: Dictionary) -> Array[ArgumentData]:
+func _get_arguments(method_data: Dictionary) -> Array[ArgumentEntry]:
 	const KEY_NAME := "name"
 	const KEY_CLASS_NAME := "class_name"
 	const KEY_TYPE := "type"
 
-	var arguments: Array[ArgumentData] = []
+	var arguments: Array[ArgumentEntry] = []
 
 	for argument_data: Dictionary in method_data.get("args", []):
 		var arg_name := StringName(argument_data.get(KEY_NAME, ""))
@@ -33,14 +33,14 @@ func _get_arguments(method_data: Dictionary) -> Array[ArgumentData]:
 		var service_type := _get_global_class_script(arg_class_name)
 
 		arguments.append(
-				ArgumentData.new(arg_name, service_type, arg_variant_type)
+				ArgumentEntry.new(arg_name, service_type, arg_variant_type)
 		)
 
 	return arguments
 
 
 ## 指定したスクリプトから依存注入用のメソッドの引数情報を返す
-func get_injection_arguments(script: Script) -> Array[ArgumentData]:
+func get_injection_arguments(script: Script) -> Array[ArgumentEntry]:
 	var method_data := _find_injection_method(script)
 	return _get_arguments(method_data)
 

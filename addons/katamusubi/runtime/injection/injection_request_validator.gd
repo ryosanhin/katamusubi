@@ -1,7 +1,7 @@
 extends RefCounted
 ## 注入対象と型オーバーライドを検証し、注入処理で利用できる形へ正規化する
 
-const ArgumentData := preload("argument_data.gd")
+const ArgumentEntry := preload("argument_entry.gd")
 const ScriptTypeCompatibility := preload("../utility/script_type_compatibility.gd")
 
 
@@ -45,7 +45,7 @@ static func validate_target(target: Variant, scope_name: StringName) -> PackedSt
 ## 型オーバーライドを検証し、キーと値を厳密に型付けした辞書を返す
 static func validate_type_overrides(
 	target: Node,
-	arguments: Array[ArgumentData],
+	arguments: Array[ArgumentEntry],
 	override_value: Variant,
 ) -> TypeOverrideValidationResult:
 	var result := TypeOverrideValidationResult.new()
@@ -60,9 +60,10 @@ static func validate_type_overrides(
 		)
 		return result
 
-	var argument_types: Dictionary[StringName, Script] = {}
+	# オーバーライド前の引数データを取得
+	var declared_arguments_by_name: Dictionary[StringName, ArgumentEntry] = {}
 	for argument in arguments:
-		argument_types[argument.arg_name] = argument.service_type
+		declared_arguments_by_name[argument.arg_name] = argument
 
 	for override_key: Variant in override_value:
 		# まず文字列系か確認
@@ -82,7 +83,7 @@ static func validate_type_overrides(
 		# 指定された引数名が存在するか確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var argument_name := StringName(override_key)
-		if not argument_types.has(argument_name):
+		if not declared_arguments_by_name.has(argument_name):
 			result.overrides.clear()
 			result.diagnostics.append(
 				_create_invalid_override_diagnostic(
@@ -94,10 +95,24 @@ static func validate_type_overrides(
 			)
 			return result
 
-		# 引数名に示されたスクリプトが存在するか確認
+		# オーバーライド対象がオーバーライド可能なオブジェクト型か確認
+		# 一個でもルールに沿っていないものが存在したら結果を破棄
+		if not declared_arguments_by_name[override_key].arg_type == TYPE_OBJECT:
+			result.overrides.clear()
+			result.diagnostics.append(
+				_create_invalid_override_diagnostic(
+					target,
+					argument_name,
+					declared_arguments_by_name[override_key].arg_type,
+					"オーバーライド対象がオブジェクト型ではありません",
+				)
+			)
+			return result
+
+		# 引数名に示された値がスクリプトであるか確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var specified_type: Variant = override_value[override_key]
-		if specified_type == null or not specified_type is Script:
+		if not specified_type is Script:
 			result.overrides.clear()
 			result.diagnostics.append(
 				_create_invalid_override_diagnostic(
@@ -111,8 +126,8 @@ static func validate_type_overrides(
 
 		# もともと引数の型として定義されていたスクリプトと同一、または派生か確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
-		var declared_type: Script = argument_types[argument_name]
-		if declared_type != null and not ScriptTypeCompatibility.is_same_or_derived_from(
+		var declared_type: Script = declared_arguments_by_name[argument_name].service_type
+		if not ScriptTypeCompatibility.is_same_or_derived_from(
 			specified_type,
 			declared_type,
 		):
