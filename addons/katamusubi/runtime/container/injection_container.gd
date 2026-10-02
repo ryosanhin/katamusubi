@@ -2,7 +2,7 @@ extends RefCounted
 class_name InjectionContainer
 
 const ResolveEntryMap := preload("resolve_entry_map.gd")
-const RegistrationValidator := preload("service_registration_validator.gd")
+const RegistrationValidator := preload("../registration/service_registration_validator.gd")
 
 ## 親スコープのコンテナです。このコンテナ内で見つからない依存を親へ問い合わせ
 var _parent_container: InjectionContainer
