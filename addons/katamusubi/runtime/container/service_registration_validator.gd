@@ -57,7 +57,10 @@ static func format_error(code: ErrorCode, registration: ServiceRegistration) -> 
 		ErrorCode.MISSING_SERVICE_TYPE:
 			return "公開型が指定されていません。"
 		ErrorCode.INCOMPATIBLE_SERVICE_TYPE:
-			var actual_type := _get_valid_instance_script(registration)
+			var actual_type: Script = (
+					registration.instance.get_script()
+					if not is_instance_valid(registration.instance) else null
+			)
 			var service_type := registration.service_type if registration != null else null
 			return "登録インスタンスの型 %s は公開型 %s と同一または派生型ではありません。" % [
 					_get_displayable_name(actual_type),
@@ -65,15 +68,6 @@ static func format_error(code: ErrorCode, registration: ServiceRegistration) -> 
 			]
 
 	return "不明な登録検証エラーです。"
-
-
-## 有効な登録インスタンスにアタッチされたスクリプトを返す
-static func _get_valid_instance_script(registration: ServiceRegistration) -> Script:
-	if registration == null:
-		return null
-	if not (registration.instance is Object) or not is_instance_valid(registration.instance):
-		return null
-	return registration.instance.get_script() as Script
 
 
 ## 診断に利用できるスクリプト名を返す
