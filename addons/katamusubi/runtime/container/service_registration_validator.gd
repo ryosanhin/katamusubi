@@ -59,7 +59,7 @@ static func format_error(code: ErrorCode, registration: ServiceRegistration) -> 
 		ErrorCode.INCOMPATIBLE_SERVICE_TYPE:
 			var actual_type: Script = (
 					registration.instance.get_script()
-					if not is_instance_valid(registration.instance) else null
+					if is_instance_valid(registration.instance) else null
 			)
 			var service_type := registration.service_type if registration != null else null
 			return "登録インスタンスの型 %s は公開型 %s と同一または派生型ではありません。" % [
