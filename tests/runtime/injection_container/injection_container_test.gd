@@ -12,6 +12,8 @@ func _init() -> void:
 	_test_default_resolution()
 	_test_registration_error_state_transitions()
 	_test_instance_registration()
+	_test_registration_settings_are_independent()
+	_test_freed_registration_does_not_fallback()
 	_test_invalid_instance_registrations()
 	_test_key_precedence_and_default_fallback()
 	_test_parent_lookup_order()
@@ -94,6 +96,43 @@ func _test_instance_registration() -> void:
 	provided.free()
 
 
+## 登録後の設定変更は、登録済みの型・キー・Node参照に影響しません。
+func _test_registration_settings_are_independent() -> void:
+	_runner.change_test_name("registration_settings_are_independent")
+	var container := InjectionContainer.new(null)
+	var original := DerivedService.new()
+	var replacement := UnrelatedService.new()
+	var registration := _instance_as(original, BaseService, &"original")
+	container.register(registration)
+	registration.instance = replacement
+	registration.as_type(UnrelatedService).with_key(&"replacement")
+	_runner.assert_same(container.resolve(BaseService, &"original"), original, "設定変更後も登録時のNodeを返す")
+	_runner.assert_true(container.register(registration), "変更した設定は新しい登録に使用できる")
+	_runner.assert_same(container.resolve(UnrelatedService, &"replacement"), replacement, "再登録では変更後の設定を使う")
+	original.free()
+	replacement.free()
+
+
+## 解放済みの登録も存在し、祖先や既定キーへのフォールバックを抑止します。
+func _test_freed_registration_does_not_fallback() -> void:
+	_runner.change_test_name("freed_registration_does_not_fallback")
+	var parent := InjectionContainer.new(null)
+	var child := InjectionContainer.new(parent)
+	var fallback := DerivedService.new()
+	var freed := DerivedService.new()
+	parent.register(_instance_as(fallback, BaseService, &"primary"))
+	child.register(_instance_as(fallback, BaseService))
+	child.register(_instance_as(freed, BaseService, &"primary"))
+	freed.free()
+	var capture := ErrorCapture.new()
+	capture.start()
+	var result = child.resolve(BaseService, &"primary")
+	capture.stop()
+	_runner.assert_false(is_instance_valid(result), "解放済みNodeを別の登録に置き換えない")
+	_runner.assert_equal(capture.errors.size(), 0, "解放済み登録を未登録エラーにしない")
+	fallback.free()
+
+
 ## null、非Object、Scriptなしなどの不正な外部インスタンス登録を拒否することを確認します。
 func _test_invalid_instance_registrations() -> void:
 	_runner.change_test_name("invalid_instance_registrations")
@@ -117,10 +156,6 @@ func _test_invalid_instance_registrations() -> void:
 	incompatible_capture.stop()
 	_runner.assert_false(incompatible_succeeded, "公開型不適合は失敗を返す")
 	_runner.assert_equal(incompatible_capture.errors.size(), 1, "公開型不適合を一度だけ報告する")
-	_runner.assert_null(
-			container.find_resolve_entry(UnrelatedService, &""),
-			"不適合な公開型の登録を追加しない",
-	)
 	_runner.assert_true(container.has_registration_errors, "拒否した登録を累積エラー状態へ反映する")
 	incompatible.free()
 
@@ -212,10 +247,6 @@ func _test_invalid_registration() -> void:
 	_runner.assert_false(succeeded, "不正登録は失敗を返す")
 	_runner.assert_true(container.has_registration_errors, "不正登録を累積エラー状態へ反映する")
 	_runner.assert_equal(capture.errors.size(), 1, "不正登録が一度だけpush_errorを発生させる")
-	_runner.assert_null(
-			container.find_resolve_entry(BaseService, &""),
-			"不正登録のエントリを追加しない",
-	)
 
 
 ## nullのサービス登録を安全に拒否し、コンテナを利用可能な状態に保つことを確認します。
@@ -245,7 +276,7 @@ func _test_unregistered_service() -> void:
 	_runner.assert_null(result, "未登録サービスはnullになる")
 
 
-## clearで登録インスタンスを破棄し、その後の解決や再登録が正しく動作することを確認します。
+## clearで登録と親参照だけを解除し、取得済み参照を維持することを確認します。
 func _test_clear() -> void:
 	_runner.change_test_name("clear")
 	var parent := InjectionContainer.new(null)
@@ -254,9 +285,8 @@ func _test_clear() -> void:
 	parent.register(ServiceRegistration.create_instance_registration(parent_service))
 	var child_service := DerivedService.new()
 	child.register(_instance_as(child_service, BaseService))
-	var parent_service_weak: WeakRef = weakref(parent_service)
+	var retained = child.resolve(BaseService, &"")
 	child.clear()
-	parent.clear()
 
 	var capture := ErrorCapture.new()
 	capture.start()
@@ -266,7 +296,11 @@ func _test_clear() -> void:
 	_runner.assert_null(local_result, "clear後はローカル登録を利用できない")
 	_runner.assert_null(parent_result, "clear後は親参照を利用できない")
 	_runner.assert_true(capture.errors.size() == 2, "利用不能な各解決がpush_errorを発生させる")
-	_runner.assert_same(parent_service_weak.get_ref(), parent_service, "Nodeの所有権を奪わず登録参照だけを破棄する")
+	_runner.assert_same(retained, child_service, "clear後も取得済みのNode参照を維持する")
+	_runner.assert_true(is_instance_valid(retained), "clearでNode自体は破棄しない")
+	_runner.assert_same(parent.resolve(DerivedService, &""), parent_service, "親コンテナの登録は維持する")
+	_runner.assert_true(child.register(_instance_as(child_service, BaseService)), "clear後に再登録できる")
+	_runner.assert_same(child.resolve(BaseService, &""), child_service, "再登録後はNodeを解決できる")
 	parent_service.free()
 	child_service.free()
 

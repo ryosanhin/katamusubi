@@ -1,7 +1,6 @@
 extends RefCounted
 class_name InjectionContainer
 
-const ResolveEntry := preload("resolve_entry.gd")
 const ResolveEntryMap := preload("resolve_entry_map.gd")
 const RegistrationValidator := preload("service_registration_validator.gd")
 
@@ -31,7 +30,7 @@ func register(registration: ServiceRegistration) -> bool:
 
 	var entry_map := _entry_maps_by_service_type[registration.service_type]
 
-	entry_map.register(registration.key, ResolveEntry.new(registration))
+	entry_map.register(registration.key, registration.instance)
 	return true
 
 
@@ -67,16 +66,20 @@ func resolve(
 	service_type: Script,
 	key: StringName,
 ) -> Variant:
-	var resolve_entry: ResolveEntry = null
-
+	# キー一致を祖先まで検索した後、キーなしを祖先まで検索します。
+	var lookup_keys: Array[StringName] = [key]
 	if not key.is_empty():
-		resolve_entry = find_resolve_entry(service_type, key)
-	
-	if resolve_entry == null:
-		resolve_entry = find_resolve_entry(service_type, &"")
+		lookup_keys.append(&"")
 
-	if resolve_entry != null:
-		return resolve_entry.resolve()
+	for lookup_key in lookup_keys:
+		var container := self
+		while container != null:
+			if container._entry_maps_by_service_type.has(service_type):
+				var entry_map := container._entry_maps_by_service_type[service_type]
+				# 解放済みNodeも登録として扱い、別の登録へフォールバックしません。
+				if entry_map.has(lookup_key):
+					return entry_map.resolve(lookup_key)
+			container = container._parent_container
 
 	push_error(
 		"登録が見つかりません: 型=%s, id=%s" % [
@@ -87,22 +90,7 @@ func resolve(
 	return null
 
 
-func find_resolve_entry(
-	service_type: Script,
-	key: StringName,
-) -> ResolveEntry:
-	if _entry_maps_by_service_type.has(service_type):
-		var entry_map := _entry_maps_by_service_type[service_type]
-		if entry_map.has(key):
-			return entry_map.find(key)
-
-	if _parent_container != null:
-		return _parent_container.find_resolve_entry(service_type, key)
-
-	return null
-
-
-## Singleton参照とローカル登録を解放します。
+## ローカル登録と親コンテナ参照を解除します。Nodeや注入済み参照は破棄しません。
 func clear() -> void:
 	for entries: ResolveEntryMap in _entry_maps_by_service_type.values():
 		entries.clear()

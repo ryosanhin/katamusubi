@@ -1,5 +1,6 @@
 extends RefCounted
 class_name ServiceRegistration
+## 登録設定。register()は登録時の型・キー・Node参照を保持します。
 
 const ServiceRegistrationValidator := preload("service_registration_validator.gd")
 

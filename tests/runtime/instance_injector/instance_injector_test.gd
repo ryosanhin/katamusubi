@@ -148,6 +148,9 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 			"サービスを宣言順に渡してメソッドを完了する",
 	)
 	_runner.assert_true(_target.was_injected, "Callableの有効性だけでなく注入先の状態変更を確認する")
+	_container.clear()
+	_runner.assert_same(_target.received_services[0], keyed_service, "clear後も注入先のキー付き参照を維持する")
+	_runner.assert_same(_target.received_services[1], default_service, "clear後も注入先の既定参照を維持する")
 	default_service.free()
 	keyed_service.free()
 	await _cleanup_async()
