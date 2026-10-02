@@ -133,13 +133,19 @@ func _test_empty_parent_id_skips_lookup_async() -> void:
 func _test_missing_parent_fails_async() -> void:
 	_runner.change_test_name("missing_parent_fails")
 	var scope := _get_new_container_scope(&"child", &"missing")
+	scope.name = &"MissingParentChild"
 	var capture := ErrorCapture.new()
 	capture.start()
 	root.add_child(scope)
 	capture.stop()
 	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "一致する親が0件ならFAILEDになる")
 	_runner.assert_true(capture.contains("親スコープID 'missing' は1個必要ですが、0個見つかりました"), "親が0件のエラーを出す")
+	_runner.assert_true(capture.contains("スコープ 'MissingParentChild'"), "親検索失敗の診断に要求元のスコープ名を含む")
+	_runner.assert_equal(capture.errors.size(), 1, "親検索失敗の診断は一度だけ行う")
 	_runner.assert_false(scope.has_container(), "親探索失敗時はコンテナを保持しない")
+	root.remove_child(scope)
+	_runner.assert_equal(scope.state, ContainerScopeScript.State.NOT_INITIALIZED, "コンテナ未生成の失敗スコープも退出で状態をリセットする")
+	_runner.assert_false(scope.has_container(), "コンテナ未生成でも安全に退出できる")
 	await _free_node(scope)
 
 
@@ -147,6 +153,7 @@ func _test_missing_parent_fails_async() -> void:
 func _test_duplicate_parent_fails_async() -> void:
 	_runner.change_test_name("duplicate_parent_fails")
 	var child := _get_new_container_scope(&"child", &"duplicate")
+	child.name = &"DuplicateParentChild"
 	var holder := _holder_with([child, _get_new_container_scope(&"duplicate"), _get_new_container_scope(&"duplicate")])
 	var capture := ErrorCapture.new()
 	capture.start()
@@ -154,6 +161,9 @@ func _test_duplicate_parent_fails_async() -> void:
 	capture.stop()
 	_runner.assert_equal(child.state, ContainerScopeScript.State.FAILED, "一致する親が複数ならFAILEDになる")
 	_runner.assert_true(capture.contains("親スコープID 'duplicate' は1個必要ですが、2個見つかりました"), "親が複数のエラーを出す")
+	_runner.assert_true(capture.contains("スコープ 'DuplicateParentChild'"), "重複時の診断に要求元のスコープ名を含む")
+	_runner.assert_equal(capture.errors.size(), 1, "親の重複でも診断は一度だけ行う")
+	_runner.assert_false(child.has_container(), "親が複数の場合もコンテナを保持しない")
 	await _free_node(holder)
 
 
@@ -170,6 +180,12 @@ func _test_circular_parent_relationship_async() -> void:
 	_runner.assert_equal(scope_a.state, ContainerScopeScript.State.CIRCULAR, "循環を開始したスコープをCIRCULARにする")
 	_runner.assert_equal(scope_b.state, ContainerScopeScript.State.FAILED, "循環相手の初期化も失敗する")
 	_runner.assert_true(capture.contains("コンテナの親子関係が循環しています"), "循環エラーを出す")
+	_runner.assert_false(scope_a.has_container(), "循環元はコンテナを保持しない")
+	_runner.assert_false(scope_b.has_container(), "循環相手もコンテナを保持しない")
+	_runner.assert_false(scope_a.initialize_for_test(), "循環元を再初期化しても失敗する")
+	_runner.assert_equal(scope_a.state, ContainerScopeScript.State.CIRCULAR, "再初期化でもCIRCULARを保持する")
+	_runner.assert_equal(scope_a.registration_count, 0, "循環検出後は登録へ進まない")
+	_runner.assert_equal(scope_b.registration_count, 0, "循環相手も登録へ進まない")
 	await _free_node(holder)
 
 
@@ -186,6 +202,7 @@ func _test_parent_failure_propagates_to_child_async() -> void:
 	_runner.assert_equal(parent.state, ContainerScopeScript.State.FAILED, "親の初期化失敗を確認する")
 	_runner.assert_equal(child.state, ContainerScopeScript.State.FAILED, "失敗した親を持つ子もFAILEDになる")
 	_runner.assert_false(child.has_container(), "親失敗時に子はコンテナを保持しない")
+	_runner.assert_true(capture.contains("の初期化に失敗したため初期化できません"), "親の初期化失敗が子へ伝播した診断を残す")
 	await _free_node(holder)
 
 
@@ -238,6 +255,10 @@ func _test_duplicate_registration_fails_async() -> void:
 	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "重複登録でFAILEDになる")
 	_runner.assert_false(scope.has_container(), "重複登録時にコンテナを破棄する")
 	_runner.assert_equal(target.injection_count, 0, "重複登録失敗時は注入へ進まない")
+	_runner.assert_false(scope.initialize_for_test(), "登録に失敗したスコープは再初期化しない")
+	_runner.assert_equal(scope.registration_count, 1, "失敗後は登録を再試行しない")
+	_runner.assert_equal(target.injection_count, 0, "失敗後の再初期化でも注入へ進まない")
+	_runner.assert_true(is_instance_valid(scope.registered_service), "コンテナの破棄で登録済みNodeを破棄しない")
 	await _free_node(holder)
 
 
@@ -303,6 +324,10 @@ func _test_injection_stops_at_first_failure_async() -> void:
 	capture.stop()
 	_runner.assert_array(order, [&"first"], "途中の失敗後は残りの対象へ注入しない")
 	_runner.assert_equal(scope.state, ContainerScopeScript.State.FAILED, "途中の注入失敗でFAILEDになる")
+	_runner.assert_false(scope.has_container(), "途中の注入失敗でもコンテナを破棄する")
+	_runner.assert_false(scope.initialize_for_test(), "注入に失敗したスコープは再初期化しない")
+	_runner.assert_equal(scope.registration_count, 1, "注入失敗後も登録を繰り返さない")
+	_runner.assert_array(order, [&"first"], "注入失敗後も注入済み対象の結果を維持し、再注入しない")
 	await _free_node(holder)
 
 

@@ -46,11 +46,23 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_clear_container()
+	state = State.NOT_INITIALIZED
+
+
+func _clear_container() -> void:
 	if _container != null:
 		_container.clear()
 
 	_container = null
-	state = State.NOT_INITIALIZED
+
+
+func _fail_initialization() -> bool:
+	_clear_container()
+	# 再帰呼び出しから戻っても、循環元の診断用状態を保持する。
+	if state != State.CIRCULAR:
+		state = State.FAILED
+	return false
 
 
 ## 論理IDが一致する親スコープを取得
@@ -72,8 +84,8 @@ func _find_parent_scope() -> ContainerScope:
 
 	if matched.size() != 1:
 		push_error(
-				"親スコープID '%s' は1個必要ですが、%d個見つかりました。"
-				% [parent_scope_id, matched.size()]
+				"スコープ '%s' が要求する親スコープID '%s' は1個必要ですが、%d個見つかりました。"
+				% [scope_name, parent_scope_id, matched.size()]
 		)
 		return null
 	
@@ -99,12 +111,7 @@ func _initialize_scope() -> bool:
 		
 		# 親スコープが見つからない場合は初期化を失敗させる
 		if parent_scope == null:
-			push_error(
-				"スコープ '%s' (scope_id: '%s') が要求する親スコープ (parent_scope_id: '%s') が見つかりません。"
-				% [scope_name, scope_id, parent_scope_id]
-			)
-			state = State.FAILED
-			return false
+			return _fail_initialization()
 
 		# 先に親スコープを初期化
 		if not parent_scope._initialize_scope():
@@ -112,11 +119,7 @@ func _initialize_scope() -> bool:
 				"スコープ '%s' (scope_id: '%s') は親スコープ (parent_scope_id: '%s') の初期化に失敗したため初期化できません。"
 				% [scope_name, scope_id, parent_scope_id]
 			)
-			# 再帰呼び出しの途中で自身が循環元と判定された場合は、診断用の状態を
-			# FAILED で上書きしない。循環元を待っていた側は通常どおり FAILED になる。
-			if state != State.CIRCULAR:
-				state = State.FAILED
-			return false
+			return _fail_initialization()
 		# 親スコープのコンテナを取得
 		parent_container = parent_scope._container
 
@@ -124,17 +127,11 @@ func _initialize_scope() -> bool:
 	
 	_register_instance(_container)
 	if _container.has_registration_errors:
-		_container.clear()
-		_container = null
-		state = State.FAILED
-		return false
+		return _fail_initialization()
 
 	# 登録完了後、指定されたすべてのノードへ依存を注入
 	if not _inject_dependencies():
-		_container.clear()
-		_container = null
-		state = State.FAILED
-		return false
+		return _fail_initialization()
 	state = State.INITIALIZED
 	return true
 
