@@ -1,12 +1,7 @@
 @tool
 extends Resource
 
-## 保存形式を変更したら、この値を増やす。
-const CURRENT_FORMAT_VERSION := 1
-
-## 古いファイルでプロパティが存在しない場合を検出するため、初期値は0。
-@export_storage var format_version: int = 0
-@export_storage var scope_snapshots: Array[ScopeSnapshot] = []
+var scope_snapshots: Array[ScopeSnapshot] = []
 
 
 ## 各シーン毎に渡されたスナップショットでインデックスを置き換える。[br]
