@@ -5,41 +5,58 @@ const ArgumentEntry := preload("argument_entry.gd")
 const ScriptTypeCompatibility := preload("../utility/script_type_compatibility.gd")
 
 
-## 型オーバーライドの検証結果
-class TypeOverrideValidationResult extends RefCounted:
-	var overrides: Dictionary[StringName, Script] = {}
-	var diagnostics := PackedStringArray()
+enum ErrorCode {
+	OK,
+	NULL_TARGET,
+	FREED_TARGET,
+	TARGET_OUTSIDE_TREE,
+	MISSING_TARGET_SCRIPT,
+	OVERRIDES_NOT_DICTIONARY,
+	INVALID_OVERRIDE_KEY,
+	UNKNOWN_ARGUMENT,
+	NON_OBJECT_ARGUMENT,
+	INVALID_OVERRIDE_SCRIPT,
+	INCOMPATIBLE_OVERRIDE_TYPE,
+}
+
+
+## 最初の失敗理由と、説明文の生成に必要な補足情報。
+class ValidationResult extends RefCounted:
+	var code: ErrorCode = ErrorCode.OK
+	var target_path: String
+	var scope_name: StringName
+	var argument_name: Variant
+	var specified_value: Variant
+	var expected_type: Script
+	var argument_type: int = TYPE_NIL
 
 
 	func is_valid() -> bool:
-		return diagnostics.is_empty()
+		return code == ErrorCode.OK
 
 
-## 注入対象として必要な状態を検証する
-static func validate_target(target: Variant, scope_name: StringName) -> PackedStringArray:
-	var diagnostics := PackedStringArray()
-	# 解放済みObjectもnullとの比較がtrueになるため、Variantの実型で未指定を判別する。
+class TypeOverrideValidationResult extends ValidationResult:
+	var overrides: Dictionary[StringName, Script] = {}
+
+
+## 注入対象として必要な状態を検証する。
+static func validate_target(target: Variant, scope_name: StringName) -> ValidationResult:
+	var result := ValidationResult.new()
+	result.scope_name = scope_name
 	if typeof(target) == TYPE_NIL:
-		diagnostics.append("対象が null です: スコープ名=%s" % scope_name)
-		return diagnostics
-
+		result.code = ErrorCode.NULL_TARGET
+		return result
 	if not is_instance_valid(target):
-		diagnostics.append("対象は既に解放されています: スコープ名=%s" % scope_name)
-		return diagnostics
-
+		result.code = ErrorCode.FREED_TARGET
+		return result
 	if not target.is_inside_tree():
-		diagnostics.append(
-			"対象はツリーに存在しません: 対象=%s, スコープ名=%s" % [target.name, scope_name]
-		)
-		return diagnostics
-
+		result.target_path = str(target.name)
+		result.code = ErrorCode.TARGET_OUTSIDE_TREE
+		return result
+	result.target_path = str(target.get_path())
 	if target.get_script() == null:
-		diagnostics.append(
-			"対象にスクリプトがありません: 対象=%s, スコープ名=%s"
-			% [target.get_path(), scope_name]
-		)
-
-	return diagnostics
+		result.code = ErrorCode.MISSING_TARGET_SCRIPT
+	return result
 
 
 ## 型オーバーライドを検証し、キーと値を厳密に型付けした辞書を返す
@@ -49,15 +66,11 @@ static func validate_type_overrides(
 	override_value: Variant,
 ) -> TypeOverrideValidationResult:
 	var result := TypeOverrideValidationResult.new()
+	result.target_path = str(target.get_path())
 	if not override_value is Dictionary:
-		result.diagnostics.append(
-			_create_invalid_override_diagnostic(
-				target,
-				&"<判定不能>",
-				override_value,
-				"戻り値がDictionaryではありません",
-			)
-		)
+		result.code = ErrorCode.OVERRIDES_NOT_DICTIONARY
+		result.argument_name = &"<判定不能>"
+		result.specified_value = override_value
 		return result
 
 	# オーバーライド前の引数データを取得
@@ -70,14 +83,9 @@ static func validate_type_overrides(
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		if not (override_key is String or override_key is StringName):
 			result.overrides.clear()
-			result.diagnostics.append(
-				_create_invalid_override_diagnostic(
-					target,
-					override_key,
-					override_value[override_key],
-					"存在しない引数名です",
-				)
-			)
+			result.code = ErrorCode.INVALID_OVERRIDE_KEY
+			result.argument_name = override_key
+			result.specified_value = override_value[override_key]
 			return result
 
 		# 指定された引数名が存在するか確認
@@ -85,28 +93,19 @@ static func validate_type_overrides(
 		var argument_name := StringName(override_key)
 		if not declared_arguments_by_name.has(argument_name):
 			result.overrides.clear()
-			result.diagnostics.append(
-				_create_invalid_override_diagnostic(
-					target,
-					argument_name,
-					override_value[override_key],
-					"存在しない引数名です",
-				)
-			)
+			result.code = ErrorCode.UNKNOWN_ARGUMENT
+			result.argument_name = argument_name
+			result.specified_value = override_value[override_key]
 			return result
 
 		# オーバーライド対象がオーバーライド可能なオブジェクト型か確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
-		if not declared_arguments_by_name[override_key].arg_type == TYPE_OBJECT:
+		if not declared_arguments_by_name[argument_name].arg_type == TYPE_OBJECT:
 			result.overrides.clear()
-			result.diagnostics.append(
-				_create_invalid_override_diagnostic(
-					target,
-					argument_name,
-					declared_arguments_by_name[override_key].arg_type,
-					"オーバーライド対象がオブジェクト型（24）ではありません",
-				)
-			)
+			result.code = ErrorCode.NON_OBJECT_ARGUMENT
+			result.argument_name = argument_name
+			result.specified_value = override_value[override_key]
+			result.argument_type = declared_arguments_by_name[argument_name].arg_type
 			return result
 
 		# 引数名に示された値がスクリプトであるか確認
@@ -114,14 +113,9 @@ static func validate_type_overrides(
 		var specified_type: Variant = override_value[override_key]
 		if not specified_type is Script:
 			result.overrides.clear()
-			result.diagnostics.append(
-				_create_invalid_override_diagnostic(
-					target,
-					argument_name,
-					specified_type,
-					"指定値が有効なScriptではありません",
-				)
-			)
+			result.code = ErrorCode.INVALID_OVERRIDE_SCRIPT
+			result.argument_name = argument_name
+			result.specified_value = specified_type
 			return result
 
 		# もともと引数の型として定義されていたスクリプトと同一、または派生か確認
@@ -132,14 +126,10 @@ static func validate_type_overrides(
 			declared_type,
 		):
 			result.overrides.clear()
-			result.diagnostics.append(
-				_create_invalid_override_diagnostic(
-					target,
-					argument_name,
-					specified_type,
-					"指定型が宣言型自身または派生型ではありません",
-				)
-			)
+			result.code = ErrorCode.INCOMPATIBLE_OVERRIDE_TYPE
+			result.argument_name = argument_name
+			result.specified_value = specified_type
+			result.expected_type = declared_type
 			return result
 
 		# 最後まで残った場合、引数名をキー、オーバーライド型を値として登録
@@ -148,13 +138,34 @@ static func validate_type_overrides(
 	return result
 
 
-static func _create_invalid_override_diagnostic(
-	target: Node,
-	argument_name: Variant,
-	specified_value: Variant,
-	reason: String,
-) -> String:
-	return (
-		"型オーバーライドの設定が不正です: %s, 対象=%s, 引数=%s, 指定値=%s"
-		% [reason, target.get_path(), argument_name, specified_value]
-	)
+## 検証コードを人間向けの説明文へ変換する。検証処理自体は文字列に依存しない。
+static func format_error(result: ValidationResult) -> String:
+	match result.code:
+		ErrorCode.OK:
+			return ""
+		ErrorCode.NULL_TARGET:
+			return "対象が null です: スコープ名=%s" % result.scope_name
+		ErrorCode.FREED_TARGET:
+			return "対象は既に解放されています: スコープ名=%s" % result.scope_name
+		ErrorCode.TARGET_OUTSIDE_TREE:
+			return "対象はツリーに存在しません: 対象=%s, スコープ名=%s" % [result.target_path, result.scope_name]
+		ErrorCode.MISSING_TARGET_SCRIPT:
+			return "対象にスクリプトがありません: 対象=%s, スコープ名=%s" % [result.target_path, result.scope_name]
+
+	var reason: String
+	match result.code:
+		ErrorCode.OVERRIDES_NOT_DICTIONARY:
+			reason = "戻り値がDictionaryではありません"
+		ErrorCode.INVALID_OVERRIDE_KEY, ErrorCode.UNKNOWN_ARGUMENT:
+			reason = "存在しない引数名です"
+		ErrorCode.NON_OBJECT_ARGUMENT:
+			reason = "オーバーライド対象がオブジェクト型（24）ではありません"
+		ErrorCode.INVALID_OVERRIDE_SCRIPT:
+			reason = "指定値が有効なScriptではありません"
+		ErrorCode.INCOMPATIBLE_OVERRIDE_TYPE:
+			reason = "指定型が宣言型自身または派生型ではありません"
+		_:
+			return "不明な注入検証エラーです。"
+	return "型オーバーライドの設定が不正です: %s, 対象=%s, 引数=%s, 指定値=%s" % [
+		reason, result.target_path, result.argument_name, result.specified_value,
+	]
