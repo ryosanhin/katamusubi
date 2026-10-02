@@ -71,7 +71,7 @@ func try_inject_arguments(target: Variant) -> bool:
 			)
 			return false
 		
-		# 引数名をKeyとして渡し、コンテナ側の優先順位に従って生成する
+		# 引数名をKeyとして渡し、コンテナ側の優先順位に従ってNode参照を解決する
 		var resolved_service: Variant = _container.resolve(
 				service_type,
 				key
