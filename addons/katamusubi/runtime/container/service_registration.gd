@@ -3,9 +3,6 @@ class_name ServiceRegistration
 
 const ServiceRegistrationValidator := preload("service_registration_validator.gd")
 
-## 実際に生成するインスタンスのクラスのスクリプト
-var implementation_type: Script
-
 ## 注入先から参照される公開クラスのスクリプト
 var service_type: Script
 
@@ -25,7 +22,6 @@ static func create_instance_registration(
 	registration.instance = provided_instance
 
 	if is_instance_valid(provided_instance):
-		registration.implementation_type = provided_instance.get_script()
 		registration.service_type = provided_instance.get_script()
 	
 	return registration

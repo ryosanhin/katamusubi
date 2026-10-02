@@ -8,8 +8,6 @@ enum ErrorCode {
 	NULL_INSTANCE,
 	INVALID_INSTANCE,
 	MISSING_SCRIPT,
-	MISSING_IMPLEMENTATION_TYPE,
-	INCOMPATIBLE_IMPLEMENTATION_TYPE,
 	MISSING_SERVICE_TYPE,
 	INCOMPATIBLE_SERVICE_TYPE,
 }
@@ -31,20 +29,11 @@ static func validate(registration: ServiceRegistration) -> ErrorCode:
 	if actual_type == null:
 		return ErrorCode.MISSING_SCRIPT
 	
-	if registration.implementation_type == null:
-		return ErrorCode.MISSING_IMPLEMENTATION_TYPE
-
-	if not ScriptTypeCompatibility.is_same_or_derived_from(
-			actual_type,
-			registration.implementation_type,
-	):
-		return ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE
-	
 	if registration.service_type == null:
 		return ErrorCode.MISSING_SERVICE_TYPE
 
 	if not ScriptTypeCompatibility.is_same_or_derived_from(
-			registration.implementation_type,
+			actual_type,
 			registration.service_type,
 	):
 		return ErrorCode.INCOMPATIBLE_SERVICE_TYPE
@@ -65,35 +54,21 @@ static func format_error(code: ErrorCode, registration: ServiceRegistration) -> 
 			return "登録インスタンスが有効な Object ではありません。"
 		ErrorCode.MISSING_SCRIPT:
 			return "登録インスタンスにスクリプトがアタッチされていません。"
-		ErrorCode.MISSING_IMPLEMENTATION_TYPE:
-			return "実装型が指定されていません。"
-		ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE:
-			var actual_type := _get_valid_instance_script(registration)
-			var implementation_type := registration.implementation_type if registration != null else null
-			return "登録インスタンスの型 %s は実装型 %s と同一または派生型ではありません。" % [
-					_get_displayable_name(actual_type),
-					_get_displayable_name(implementation_type),
-			]
 		ErrorCode.MISSING_SERVICE_TYPE:
 			return "公開型が指定されていません。"
 		ErrorCode.INCOMPATIBLE_SERVICE_TYPE:
-			var implementation_type := registration.implementation_type if registration != null else null
+			var actual_type: Script = (
+					registration.instance.get_script()
+					if registration != null and is_instance_valid(registration.instance)
+					else null
+			)
 			var service_type := registration.service_type if registration != null else null
-			return "実装型 %s は公開型 %s と同一または派生型ではありません。" % [
-					_get_displayable_name(implementation_type),
+			return "登録インスタンスの型 %s は公開型 %s と同一または派生型ではありません。" % [
+					_get_displayable_name(actual_type),
 					_get_displayable_name(service_type),
 			]
 
 	return "不明な登録検証エラーです。"
-
-
-## 有効な登録インスタンスにアタッチされたスクリプトを返す
-static func _get_valid_instance_script(registration: ServiceRegistration) -> Script:
-	if registration == null:
-		return null
-	if not (registration.instance is Object) or not is_instance_valid(registration.instance):
-		return null
-	return registration.instance.get_script() as Script
 
 
 ## 診断に利用できるスクリプト名を返す

@@ -31,7 +31,6 @@ func _test_create_instance_registration() -> void:
 	var registration := ServiceRegistration.create_instance_registration(provided_instance)
 
 	_runner.assert_same(registration.instance, provided_instance, "渡されたインスタンスそのものを保持する")
-	_expect(registration.implementation_type == DerivedService, "インスタンス登録に実装型を設定する")
 	_expect(registration.service_type == DerivedService, "インスタンス登録は実装型自身を公開する")
 	provided_instance.free()
 
@@ -86,25 +85,6 @@ func _test_validation_codes() -> void:
 			"Scriptなしインスタンス",
 	)
 	missing_script.instance.free()
-
-	var missing_implementation := _valid_registration()
-	missing_implementation.implementation_type = null
-	_expect_validation_code(
-			missing_implementation,
-			RegistrationValidator.ErrorCode.MISSING_IMPLEMENTATION_TYPE,
-			"実装型欠落",
-	)
-	missing_implementation.instance.free()
-
-	var incompatible_implementation := _valid_registration()
-	incompatible_implementation.implementation_type = UnrelatedService
-	incompatible_implementation.service_type = UnrelatedService
-	_expect_validation_code(
-			incompatible_implementation,
-			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
-			"登録インスタンスと実装型の不一致",
-	)
-	incompatible_implementation.instance.free()
 
 	var missing_service := _valid_registration()
 	missing_service.service_type = null
@@ -195,20 +175,6 @@ func _test_error_formatting() -> void:
 	)
 	_runner.assert_false(invalid_message.is_empty(), "解放済みインスタンスの説明文を安全に生成できる")
 
-	var incompatible_implementation := _valid_registration()
-	incompatible_implementation.implementation_type = UnrelatedService
-	var implementation_message := RegistrationValidator.format_error(
-			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
-			incompatible_implementation,
-	)
-	var actual_type: Script = incompatible_implementation.instance.get_script()
-	_expect(actual_type.get_global_name() in implementation_message, "実装型不適合に実際の型名を含める")
-	_expect(
-			incompatible_implementation.implementation_type.get_global_name() in implementation_message,
-			"実装型不適合に指定実装型名を含める",
-	)
-	incompatible_implementation.instance.free()
-
 	var incompatible_service := ServiceRegistration.create_instance_registration(
 			UnrelatedService.new(),
 	).as_type(BaseService)
@@ -216,14 +182,14 @@ func _test_error_formatting() -> void:
 			RegistrationValidator.ErrorCode.INCOMPATIBLE_SERVICE_TYPE,
 			incompatible_service,
 	)
-	_expect(incompatible_service.implementation_type.get_global_name() in service_message, "公開型不適合に実装型名を含める")
+	_expect(incompatible_service.instance.get_script().get_global_name() in service_message, "公開型不適合に実際の型名を含める")
 	_expect(incompatible_service.service_type.get_global_name() in service_message, "公開型不適合に公開型名を含める")
 	incompatible_service.instance.free()
 
 	var unnamed_registration := ServiceRegistration.create_instance_registration(UnnamedService.new())
-	unnamed_registration.implementation_type = UnrelatedService
+	unnamed_registration.as_type(UnrelatedService)
 	var unnamed_message := RegistrationValidator.format_error(
-			RegistrationValidator.ErrorCode.INCOMPATIBLE_IMPLEMENTATION_TYPE,
+			RegistrationValidator.ErrorCode.INCOMPATIBLE_SERVICE_TYPE,
 			unnamed_registration,
 	)
 	var unnamed_type: Script = unnamed_registration.instance.get_script()
