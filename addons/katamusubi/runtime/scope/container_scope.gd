@@ -111,8 +111,8 @@ func _initialize_scope() -> bool:
 		# 先に親スコープを初期化
 		if not parent_scope._initialize_scope():
 			push_error(
-				"スコープ '%s' (scope_id: '%s') は親スコープ (parent_scope_id: '%s') の初期化に失敗したため初期化できません。"
-				% [name, scope_id, parent_scope_id]
+				"スコープ '%s' は親スコープ (parent_scope_id: '%s') の初期化に失敗したため初期化できません。"
+				% [name, parent_scope_id]
 			)
 			_fail_initialization()
 			return false
