@@ -23,9 +23,9 @@ func _init(
 
 ## 1ノード分の引数を宣言順に解決し、すべて揃った場合だけ注入メソッドを呼ぶ
 func try_inject_arguments(target: Variant) -> bool:
-	var target_diagnostics := InjectionRequestValidator.validate_target(target, _scope_name)
-	if not target_diagnostics.is_empty():
-		_report_diagnostics(target_diagnostics)
+	var target_result := InjectionRequestValidator.validate_target(target, _scope_name)
+	if not target_result.is_valid():
+		push_error(InjectionRequestValidator.format_error(target_result))
 		return false
 	
 	var script := target.get_script() as Script
@@ -44,7 +44,7 @@ func try_inject_arguments(target: Variant) -> bool:
 		override_value,
 	)
 	if not override_result.is_valid():
-		_report_diagnostics(override_result.diagnostics)
+		push_error(InjectionRequestValidator.format_error(override_result))
 		return false
 	var args_override_dict: Dictionary[StringName, Script] = override_result.overrides
 
@@ -100,8 +100,3 @@ func try_inject_arguments(target: Variant) -> bool:
 
 	injection_method.callv(resolved_arguments)
 	return true
-
-
-func _report_diagnostics(diagnostics: PackedStringArray) -> void:
-	for diagnostic in diagnostics:
-		push_error(diagnostic)
