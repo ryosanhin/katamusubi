@@ -63,7 +63,7 @@ func rebuild_all_index() -> void:
 ## [param rebuild]: 全走査フラグ
 func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild: bool) -> void:
 	var existing_paths: Dictionary[String, bool] = {}
-	var failed_paths: PackedStringArray = []
+	var failed_paths: Dictionary[String, bool] = {}
 
 	for path in scene_paths:
 		existing_paths[path] = true
@@ -71,16 +71,16 @@ func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild: bool) -> 
 			continue
 		var scene_uid := ResourceUID.path_to_uid(path)
 		if scene_uid == path:
-			failed_paths.append(path)
+			failed_paths[path] = true
 			continue
 		if not _update_index(scene_uid):
-			failed_paths.append(path)
+			failed_paths[path] = true
 	
 	_remove_index_in_deleted_scenes(existing_paths)
 
 	var tracked_paths: Dictionary[String, bool] = {}
 	for existing_path in existing_paths:
-		if existing_path in failed_paths:
+		if  failed_paths.has(existing_path):
 			continue
 		tracked_paths[existing_path] = true
 
@@ -89,7 +89,7 @@ func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild: bool) -> 
 	if not failed_paths.is_empty():
 		push_warning(
 				"Some scenes could not be scanned; their previous candidates were preserved:\n%s"
-				% "\n".join(failed_paths)
+				% "\n".join(failed_paths.keys())
 		)
 
 
