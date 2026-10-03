@@ -61,7 +61,7 @@ func rebuild_all_index() -> void:
 ## [param rebuild]: 全走査フラグ
 func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild: bool) -> void:
 	var existing_paths: Dictionary[String, bool] = {}
-	var failed: PackedStringArray = []
+	var failed_paths: PackedStringArray = []
 
 	for path in scene_paths:
 		existing_paths[path] = true
@@ -69,18 +69,25 @@ func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild: bool) -> 
 			continue
 		var scene_uid := ResourceUID.path_to_uid(path)
 		if scene_uid == path:
-			failed.append(path)
+			failed_paths.append(path)
 			continue
 		if not _update_index(scene_uid):
-			failed.append(path)
+			failed_paths.append(path)
 	
 	_remove_index_in_deleted_scenes(existing_paths)
-	_tracked_scene_paths = existing_paths
 
-	if not failed.is_empty():
+	var tracked_paths: Dictionary[String, bool] = {}
+	for existing_path in existing_paths:
+		if existing_path in failed_paths:
+			continue
+		tracked_paths[existing_path] = true
+
+	_tracked_scene_paths = tracked_paths
+
+	if not failed_paths.is_empty():
 		push_warning(
 				"Some scenes could not be scanned; their previous candidates were preserved:\n%s"
-				% "\n".join(failed)
+				% "\n".join(failed_paths)
 		)
 
 
@@ -97,7 +104,9 @@ func _update_index(scene_uid: StringName) -> bool:
 
 
 ## 削除されていたシーンUIDに紐づいたインデックスを削除する。[br]
-func _remove_index_in_deleted_scenes(existing_scene_paths: Dictionary[String, bool]) -> void:
+func _remove_index_in_deleted_scenes(
+		existing_scene_paths: Dictionary[String, bool]
+) -> void:
 	var checked_scene_uid_set: Dictionary[StringName, bool] = {}
 	var removed_scene_uid_set: Dictionary[StringName, bool] = {}
 
@@ -126,7 +135,7 @@ func _get_scene_paths(directory: EditorFileSystemDirectory) -> PackedStringArray
 	while not dirs.is_empty():
 		var dir: EditorFileSystemDirectory = dirs.pop_back()
 		for file_index in dir.get_file_count():
-			if dir.get_file(file_index).get_extension() == "tscn":
+			if dir.get_file(file_index).get_extension().to_lower() == "tscn":
 				paths.append(dir.get_file_path(file_index))
 		
 		for sub_dir_index in dir.get_subdir_count():
