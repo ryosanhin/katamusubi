@@ -16,9 +16,6 @@ func _init(
 
 
 func _to_string() -> String:
-	const KEY_NAME := "name"
-	const KEY_CLASS_NAME := "class_name"
-	const KEY_TYPE := "type"
 	return """
 	name: %s
 	class_name: %s

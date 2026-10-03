@@ -18,11 +18,3 @@ func _init(
 	scene_uid = init_scene_uid
 	entries.assign(init_entries)
 	error_message = init_error
-
-
-func get_entries(scope_id: StringName) -> Array[ScopeSnapshot]:
-	var matches: Array[ScopeSnapshot] = []
-	for entry in entries:
-		if entry.scope_id == scope_id:
-			matches.append(entry)
-	return matches
