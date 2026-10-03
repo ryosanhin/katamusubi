@@ -1,5 +1,5 @@
 @tool
-extends Resource
+extends RefCounted
 
 var scope_snapshots: Array[ScopeSnapshot] = []
 
@@ -38,5 +38,4 @@ func replace_scene_snapshots(scene_uid: StringName, snapshots: Array[ScopeSnapsh
 	
 	scope_snapshots.assign(other_scene_snapshots)
 	scope_snapshots.append_array(snapshots)
-	emit_changed()
 	return true
