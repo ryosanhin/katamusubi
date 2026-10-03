@@ -17,9 +17,8 @@ func _init(
 
 func _to_string() -> String:
 	var path := ResourceUID.uid_to_path(scene_uid)
-	if path.is_empty():
-		var erorr_massage := "%s is invalid" % scene_uid
-		push_error(erorr_massage)
-		return erorr_massage
-	
-	return "scene: %s, scope_id: %s" % [path, scope_id,]
+	return (
+			"%s is invalid" % scene_uid
+			if path.is_empty()
+			else "scene: %s, scope_id: %s" % [path, scope_id]
+	)
