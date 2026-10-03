@@ -135,15 +135,7 @@ Parent-child scope relationships are defined by scope IDs rather than the SceneT
 
 In the Inspector, set the child's **Parent Scope ID** to the ID of the scope you want to use as its parent. A scope used as a parent must have a **Scope ID**.
 
-A child scope can resolve services registered in its parent scope. Even when the child has no services to register, it must provide an empty implementation of the abstract `_register_instance()` method:
-
-```gdscript
-extends ContainerScope
-
-
-func _register_instance(_container: InjectionContainer) -> void:
-	pass
-```
+A child scope can resolve services registered in its parent scope.
 
 ### Scope IDs
 
