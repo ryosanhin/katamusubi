@@ -6,8 +6,9 @@ const TscnScanner := preload("../scanning/tscn_scanner.gd")
 
 var _scope_index: ScopeIndex
 var _is_rebuild_pending := false
-# 候補がないシーンも記録し、追加されたシーンだけを読み込む。
-var _known_scene_paths: Dictionary[String, bool] = {}
+## 一度[EditorFileSystem.filesystem_changed]で走査したシーンは同じシグナルで再走査しない。[br]
+## 基本的に[update_scene_index]のタイミングだけで走査・更新する。
+var _tracked_scene_paths: Dictionary[String, bool] = {}
 
 
 func _init(init_scope_index: ScopeIndex) -> void:
@@ -20,7 +21,7 @@ func update_scene_index(path: String) -> void:
 		push_warning("Could not obtain scene UID: %s" % path)
 		return
 	if _update_index(scene_uid):
-		_known_scene_paths[path] = true
+		_tracked_scene_paths[path] = true
 
 
 func synchronize_index_with_filesystem() -> void:
@@ -34,7 +35,7 @@ func synchronize_index_with_filesystem() -> void:
 
 	var root := filesystem.get_filesystem()
 	if root != null:
-		_synchronize_scene_paths(_get_scene_paths(root))
+		_synchronize_scene_paths(_get_scene_paths(root), false)
 
 
 ## プロジェクト内全シーンについて走査しインデックスを再構築する。
@@ -55,14 +56,16 @@ func rebuild_all_index() -> void:
 	_synchronize_scene_paths(_get_scene_paths(root), true)
 
 
-## EditorFileSystemから得た一覧で追加・削除を反映する。全再構築時だけ既存シーンも読む。
-func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild := false) -> void:
-	var current_paths: Dictionary[String, bool] = {}
+## [EditorFileSystem] から得た一覧で追加・削除を反映する。全再構築時だけ既存シーンも読む。[br]
+## [param scene_paths]: 走査対象のシーンパス[br]
+## [param rebuild]: 全走査フラグ
+func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild: bool) -> void:
+	var existing_paths: Dictionary[String, bool] = {}
 	var failed: PackedStringArray = []
 
 	for path in scene_paths:
-		current_paths[path] = true
-		if not rebuild and _known_scene_paths.has(path):
+		existing_paths[path] = true
+		if not rebuild and _tracked_scene_paths.has(path):
 			continue
 		var scene_uid := ResourceUID.path_to_uid(path)
 		if scene_uid == path:
@@ -71,8 +74,8 @@ func _synchronize_scene_paths(scene_paths: PackedStringArray, rebuild := false) 
 		if not _update_index(scene_uid):
 			failed.append(path)
 	
-	_remove_index_in_deleted_scenes(current_paths)
-	_known_scene_paths = current_paths
+	_remove_index_in_deleted_scenes(existing_paths)
+	_tracked_scene_paths = existing_paths
 
 	if not failed.is_empty():
 		push_warning(
@@ -94,7 +97,7 @@ func _update_index(scene_uid: StringName) -> bool:
 
 
 ## 削除されていたシーンUIDに紐づいたインデックスを削除する。[br]
-func _remove_index_in_deleted_scenes(scene_paths: Dictionary[String, bool]) -> void:
+func _remove_index_in_deleted_scenes(existing_scene_paths: Dictionary[String, bool]) -> void:
 	var checked_scene_uid_set: Dictionary[StringName, bool] = {}
 	var removed_scene_uid_set: Dictionary[StringName, bool] = {}
 
@@ -105,7 +108,7 @@ func _remove_index_in_deleted_scenes(scene_paths: Dictionary[String, bool]) -> v
 		checked_scene_uid_set[scene_uid] = true
 
 		var path := ResourceUID.ensure_path(scene_uid)
-		if not scene_paths.has(path):
+		if not existing_scene_paths.has(path):
 			removed_scene_uid_set[scene_uid] = true
 
 	for removed_scene_uid in removed_scene_uid_set:
@@ -113,7 +116,9 @@ func _remove_index_in_deleted_scenes(scene_paths: Dictionary[String, bool]) -> v
 		_scope_index.replace_scene_snapshots(removed_scene_uid, empty)
 
 
-## エディタが保持する一覧を使い、独自のディスク走査を行わずにtscnパスを収集する。
+## エディタが保持する一覧を使い、独自のディスク走査を行わずにtscnパスを収集する。[br]
+## [param directory]: 走査するルートのディレクトリ[br]
+## returns: 走査対象のディレクトリ以下の全tscnファイルのパス
 func _get_scene_paths(directory: EditorFileSystemDirectory) -> PackedStringArray:
 	var paths: PackedStringArray = []
 	var dirs: Array[EditorFileSystemDirectory] = [directory]
