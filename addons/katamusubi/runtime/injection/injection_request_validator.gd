@@ -78,11 +78,11 @@ static func validate_type_overrides(
 	for argument in arguments:
 		declared_arguments_by_name[argument.arg_name] = argument
 
+	var validated_overrides: Dictionary[StringName, Script] = {}
 	for override_key: Variant in override_value:
 		# まず文字列系か確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		if not (override_key is String or override_key is StringName):
-			result.overrides.clear()
 			result.code = ErrorCode.INVALID_OVERRIDE_KEY
 			result.argument_name = override_key
 			result.specified_value = override_value[override_key]
@@ -92,7 +92,6 @@ static func validate_type_overrides(
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var argument_name := StringName(override_key)
 		if not declared_arguments_by_name.has(argument_name):
-			result.overrides.clear()
 			result.code = ErrorCode.UNKNOWN_ARGUMENT
 			result.argument_name = argument_name
 			result.specified_value = override_value[override_key]
@@ -101,7 +100,6 @@ static func validate_type_overrides(
 		# オーバーライド対象がオーバーライド可能なオブジェクト型か確認
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		if not declared_arguments_by_name[argument_name].arg_type == TYPE_OBJECT:
-			result.overrides.clear()
 			result.code = ErrorCode.NON_OBJECT_ARGUMENT
 			result.argument_name = argument_name
 			result.specified_value = override_value[override_key]
@@ -112,7 +110,6 @@ static func validate_type_overrides(
 		# 一個でもルールに沿っていないものが存在したら結果を破棄
 		var specified_type: Variant = override_value[override_key]
 		if not specified_type is Script:
-			result.overrides.clear()
 			result.code = ErrorCode.INVALID_OVERRIDE_SCRIPT
 			result.argument_name = argument_name
 			result.specified_value = specified_type
@@ -125,7 +122,6 @@ static func validate_type_overrides(
 			specified_type,
 			declared_type,
 		):
-			result.overrides.clear()
 			result.code = ErrorCode.INCOMPATIBLE_OVERRIDE_TYPE
 			result.argument_name = argument_name
 			result.specified_value = specified_type
@@ -133,8 +129,9 @@ static func validate_type_overrides(
 			return result
 
 		# 最後まで残った場合、引数名をキー、オーバーライド型を値として登録
-		result.overrides[argument_name] = specified_type
+		validated_overrides[argument_name] = specified_type
 
+	result.overrides = validated_overrides
 	return result
 
 
