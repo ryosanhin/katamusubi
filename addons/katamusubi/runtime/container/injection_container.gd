@@ -28,6 +28,9 @@ func register(registration: ServiceRegistration) -> bool:
 		_has_registration_errors = true
 		return false
 
+	if not _entry_maps_by_service_type.has(registration.service_type):
+		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
+
 	var entry_map := _entry_maps_by_service_type[registration.service_type]
 
 	entry_map.register(registration.key, registration.instance)
@@ -43,9 +46,8 @@ func _validate_registration(registration: ServiceRegistration) -> bool:
 		return false
 
 	# キーの存在確認
-	# キーが存在しないときは重複確認の必要は無いので入れ物だけ作ってtrueで早期リターン
+	# キーが存在しないときは重複確認の必要は無いのでtrueで早期リターン
 	if not _entry_maps_by_service_type.has(registration.service_type):
-		_entry_maps_by_service_type[registration.service_type] = ResolveEntryMap.new()
 		return true
 
 	# 重複確認
