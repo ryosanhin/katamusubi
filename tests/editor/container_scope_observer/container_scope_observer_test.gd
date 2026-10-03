@@ -33,12 +33,12 @@ func _test_add_remove_and_save() -> void:
 	_runner.assert_equal(index.scope_snapshots.size(), 1, "開始時に保存済みシーンから構築する")
 
 	observer.scanned.clear()
-	observer._synchronize_scene_paths([BASIC_SCENE, PAIR_SCENE])
+	observer._synchronize_scene_paths([BASIC_SCENE, PAIR_SCENE], false)
 	_runner.assert_array(observer.scanned, [PAIR_SCENE], "追加シーンだけを読み込む")
 	_runner.assert_equal(index.scope_snapshots.size(), 3, "追加シーンの候補を反映する")
 
 	observer.scanned.clear()
-	observer._synchronize_scene_paths([PAIR_SCENE])
+	observer._synchronize_scene_paths([PAIR_SCENE], false)
 	_runner.assert_equal(observer.scanned.size(), 0, "削除確認で既存シーンを再読込しない")
 	_runner.assert_equal(index.scope_snapshots.size(), 2, "一覧から消えたシーンの候補を削除する")
 
@@ -57,12 +57,12 @@ func _test_empty_scene_and_failed_rebuild() -> void:
 	observer._synchronize_scene_paths([BASIC_SCENE, EMPTY_SCENE], true)
 	_runner.assert_equal(index.scope_snapshots.size(), 1, "候補がないシーンも正常に走査する")
 	observer.scanned.clear()
-	observer._synchronize_scene_paths([BASIC_SCENE, EMPTY_SCENE])
+	observer._synchronize_scene_paths([BASIC_SCENE, EMPTY_SCENE], false)
 	_runner.assert_equal(observer.scanned.size(), 0, "候補がない既知シーンも再読込しない")
 
 	observer.fail_scan = true
 	observer._synchronize_scene_paths([BASIC_SCENE, EMPTY_SCENE], true)
 	_runner.assert_equal(observer.scanned.size(), 2, "明示的な再構築では既存シーンも走査する")
 	_runner.assert_equal(index.scope_snapshots.size(), 1, "走査失敗時はセッション内の前回候補を保持する")
-	observer._synchronize_scene_paths([])
+	observer._synchronize_scene_paths([], false)
 	_runner.assert_equal(index.scope_snapshots.size(), 0, "全シーン削除で候補を空にする")
