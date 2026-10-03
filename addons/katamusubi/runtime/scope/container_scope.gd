@@ -146,5 +146,5 @@ func _inject_dependencies() -> bool:
 
 
 ## 具体コンテナが登録内容を定義します。
-@abstract
-func _register_instance(container: InjectionContainer) -> void
+func _register_instance(container: InjectionContainer) -> void:
+	pass
