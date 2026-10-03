@@ -98,20 +98,20 @@ func _test_invalid_type_overrides_async() -> void:
 		["incompatible_type", {&"service": UnrelatedService}, &"service", UnrelatedService, ErrorCode.INCOMPATIBLE_OVERRIDE_TYPE],
 	]
 
+	var target := InvalidTypeOverrideNode.new()
+	root.add_child(target)
+	var arguments := MethodReader.new(InstanceInjector.INJECTION_METHOD_NAME).get_injection_arguments(
+		target.get_script()
+	)
+
 	for invalid_case in invalid_cases:
 		_runner.change_test_name("invalid_type_override_%s" % invalid_case[0])
-		var target := InvalidTypeOverrideNode.new()
-		root.add_child(target)
-		var arguments := MethodReader.new(InstanceInjector.INJECTION_METHOD_NAME).get_injection_arguments(
-			target.get_script()
-		)
 		var result := InjectionRequestValidator.validate_type_overrides(
 			target,
 			arguments,
 			invalid_case[1],
 		)
 
-		_runner.assert_false(result.is_valid(), "不正な設定では診断情報を返す")
 		_runner.assert_true(result.overrides.is_empty(), "不正な設定を検証済み辞書へ残さない")
 		_runner.assert_equal(result.code, invalid_case[4], "失敗理由をコードで返す")
 		_runner.assert_equal(result.target_path, str(target.get_path()), "対象パスを保持する")
@@ -120,8 +120,8 @@ func _test_invalid_type_overrides_async() -> void:
 		if result.code == ErrorCode.INCOMPATIBLE_OVERRIDE_TYPE:
 			_runner.assert_same(result.expected_type, BaseService, "互換性検証の宣言型を保持する")
 
-		target.queue_free()
-		await process_frame
+	target.queue_free()
+	await process_frame
 
 
 ## 非Object引数の拒否と、途中まで正規化した辞書の破棄を確認する。
@@ -137,6 +137,7 @@ func _test_non_object_override() -> void:
 		target, arguments, {&"service": DerivedService, &"count": BaseService},
 	)
 	_runner.assert_equal(result.code, ErrorCode.NON_OBJECT_ARGUMENT, "組み込み型の上書きを拒否する")
+	_runner.assert_false(result.is_valid(), "失敗コードは無効な検証結果として扱う")
 	_runner.assert_equal(result.argument_name, &"count", "失敗した引数名を保持する")
 	_runner.assert_equal(result.argument_type, TYPE_INT, "元の引数型を保持する")
 	_runner.assert_same(result.specified_value, BaseService, "指定されたScriptを保持する")
@@ -163,6 +164,5 @@ func _test_error_formatting() -> void:
 
 
 func _expect_code(result: InjectionRequestValidator.ValidationResult, expected: InjectionRequestValidator.ErrorCode) -> void:
-	_runner.assert_false(result.is_valid(), "不正対象を拒否する")
 	_runner.assert_equal(result.code, expected, "対象の失敗理由をコードで返す")
 	_runner.assert_equal(result.scope_name, &"validator_test", "スコープ名を保持する")

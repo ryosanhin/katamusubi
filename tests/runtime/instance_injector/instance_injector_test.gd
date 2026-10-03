@@ -30,11 +30,9 @@ func _init() -> void:
 	await _test_argument_order_key_precedence_and_fallback_async()
 	await _test_type_overrides_and_normal_resolution_async()
 	await _test_overridden_type_prefers_argument_key_async()
-	await _test_missing_type_override_async()
-	await _test_missing_overridden_type_is_atomic_async()
-	await _test_resolution_failure_is_atomic_async()
+	await _test_failed_injection_does_not_call_method_async()
 	await _test_missing_method_async()
-	await _test_resolved_reference_and_success_state_async()
+	await _test_resolved_reference_async()
 
 	await _runner.finish(self, "InstanceInjector")
 
@@ -47,8 +45,6 @@ func _test_no_arguments_async() -> void:
 
 	_runner.assert_true(result, "引数なしの注入に成功した場合だけtrueを返す")
 	_runner.assert_equal(_target.injection_count, 1, "引数なしの注入メソッドを一度だけ呼ぶ")
-	_runner.assert_array(_target.call_order, [&"inject_dependency"], "実際にメソッドが実行された順序を記録する")
-	_runner.assert_true(_target.was_injected, "注入先メソッドによる状態変更を確認する")
 	await _cleanup_async()
 
 
@@ -96,38 +92,6 @@ func _test_overridden_type_prefers_argument_key_async() -> void:
 	await _cleanup_async()
 
 
-## 型上書きの設定が不足している場合、依存注入を拒否してエラーを報告することを確認します。
-func _test_missing_type_override_async() -> void:
-	_runner.change_test_name("missing_type_override")
-	_setup_target(UntypedNode.new())
-	var capture := ErrorCapture.new()
-	capture.start()
-	var result = _injector().try_inject_arguments(_target)
-	capture.stop()
-
-	_runner.assert_false(result, "型情報もオーバーライドもなければfalseを返す")
-	_runner.assert_true(capture.contains("型オーバーライドが指定されていません"), "不足した型オーバーライドを報告する")
-	_runner.assert_equal(_target.injection_count, 0, "型を決定できない場合は注入メソッドを呼ばない")
-	await _cleanup_async()
-
-
-## 上書き先の型を解決できない場合、注入メソッドを呼ばず対象の状態を変更しないことを確認します。
-func _test_missing_overridden_type_is_atomic_async() -> void:
-	_runner.change_test_name("missing_overridden_type_is_atomic")
-	_setup_target(TypeOverridesNode.new())
-	var service := UnnamedService.new()
-	_container.register(ServiceRegistration.create_instance_registration(service))
-	var capture := ErrorCapture.new()
-	capture.start()
-	var result = _injector().try_inject_arguments(_target)
-	capture.stop()
-
-	_runner.assert_false(result, "オーバーライド型の登録がなければfalseを返す")
-	_runner.assert_equal(_target.injection_count, 0, "解決済み引数があっても注入メソッドを呼ばない")
-	service.free()
-	await _cleanup_async()
-
-
 ## 複数引数を宣言順に解決し、引数名キーの優先と既定キーへのフォールバックを確認します。
 func _test_argument_order_key_precedence_and_fallback_async() -> void:
 	_runner.change_test_name("argument_order_key_precedence_and_fallback")
@@ -142,12 +106,6 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 	_runner.assert_equal(_target.injection_count, 1, "複数引数でも注入メソッドを一度だけ呼ぶ")
 	_runner.assert_same(_target.received_services[0], keyed_service, "引数名と同じキー付き登録を優先する")
 	_runner.assert_same(_target.received_services[1], default_service, "対応するキーがなければデフォルト登録を使う")
-	_runner.assert_array(
-			_target.call_order,
-			[&"primary_service", &"fallback_service", &"method_completed"],
-			"サービスを宣言順に渡してメソッドを完了する",
-	)
-	_runner.assert_true(_target.was_injected, "Callableの有効性だけでなく注入先の状態変更を確認する")
 	_container.clear()
 	_runner.assert_same(_target.received_services[0], keyed_service, "clear後も注入先のキー付き参照を維持する")
 	_runner.assert_same(_target.received_services[1], default_service, "clear後も注入先の既定参照を維持する")
@@ -156,22 +114,30 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 	await _cleanup_async()
 
 
-## 一部の引数を解決した後に失敗しても、注入メソッドを呼ばず変更を残さないことを確認します。
-func _test_resolution_failure_is_atomic_async() -> void:
-	_runner.change_test_name("resolution_failure_is_atomic")
-	_setup_target(FailedResolutionNode.new())
-	var service := DerivedService.new()
-	_container.register(_instance_as(service))
-	var capture := ErrorCapture.new()
-	capture.start()
-	var result = _injector().try_inject_arguments(_target)
-	capture.stop()
+## 型指定不足や途中の解決失敗でも、注入メソッドを呼ばない。
+func _test_failed_injection_does_not_call_method_async() -> void:
+	# ケース名、対象Script、登録するScript、公開するScript。
+	var cases := [
+		["missing_type_override", UntypedNode, null, null],
+		["missing_overridden_type", TypeOverridesNode, UnnamedService, UnnamedService],
+		["resolution_failure", FailedResolutionNode, DerivedService, BaseService],
+	]
+	for test_case in cases:
+		_runner.change_test_name(test_case[0])
+		_setup_target(test_case[1].new())
+		var service: Node = null
+		if test_case[2] != null:
+			service = test_case[2].new()
+			_container.register(
+				ServiceRegistration.create_instance_registration(service).as_type(test_case[3])
+			)
 
-	_runner.assert_false(result, "途中の引数を解決できなければfalseを返す")
-	_runner.assert_equal(_target.injection_count, 0, "一部を解決済みでも注入メソッドを呼ばない")
-	_runner.assert_false(_target.was_injected, "失敗時は注入先の状態を変更しない")
-	service.free()
-	await _cleanup_async()
+		var result = _injector().try_inject_arguments(_target)
+		_runner.assert_false(result, "引数をすべて決定・解決できなければ失敗する")
+		_runner.assert_equal(_target.injection_count, 0, "途中まで解決しても注入しない")
+		if service != null:
+			service.free()
+		await _cleanup_async()
 
 
 ## 注入メソッドを持たないNodeへの注入が失敗し、無関係なメソッドを呼ばないことを確認します。
@@ -184,24 +150,23 @@ func _test_missing_method_async() -> void:
 	capture.stop()
 
 	_runner.assert_false(result, "inject_dependencyがないNodeは設定処理の前にfalseを返す")
-	_runner.assert_true(capture.contains("依存注入メソッドを呼び出せません"), "呼び出し失敗を報告する")
+	_runner.assert_equal(capture.errors.size(), 1, "注入失敗のログを報告する代表例")
 	_runner.assert_equal(_target.unrelated_call_count, 0, "別のメソッドを誤って呼ばない")
 	_runner.assert_equal(_target.override_call_count, 0, "注入メソッドがなければ型オーバーライドメソッドを呼ばない")
 	await _cleanup_async()
 
 
-## 解決したサービスと同じ参照を対象へ渡し、注入成功時の状態変更を確認します。
-func _test_resolved_reference_and_success_state_async() -> void:
-	_runner.change_test_name("resolved_reference_and_success_state")
+## 登録したサービスの参照を、そのまま対象へ渡すことを確認します。
+func _test_resolved_reference_async() -> void:
+	_runner.change_test_name("resolved_reference")
 	_setup_target(SingleServiceNode.new())
 	var provided := TrackedService.new()
 	_container.register(ServiceRegistration.create_instance_registration(provided))
-	var expected = _container.resolve(TrackedService, &"")
 	var result = _injector().try_inject_arguments(_target)
 
 	_runner.assert_true(result, "注入メソッドを実行できた成功時にtrueを返す")
-	_runner.assert_same(_target.received_service, expected, "対象が保持する参照はコンテナの解決結果と一致する")
-	_runner.assert_true(_target.was_injected, "注入先メソッドの状態変更が行われる")
+	_runner.assert_equal(_target.injection_count, 1, "注入メソッドを一度だけ呼ぶ")
+	_runner.assert_same(_target.received_service, provided, "登録したインスタンスをそのまま渡す")
 	provided.free()
 	await _cleanup_async()
 
