@@ -22,6 +22,8 @@ func update_scene_index(path: String) -> void:
 		return
 	if _update_index(scene_uid):
 		_tracked_scene_paths[path] = true
+	else:
+		_tracked_scene_paths.erase(path)
 
 
 func synchronize_index_with_filesystem() -> void:
