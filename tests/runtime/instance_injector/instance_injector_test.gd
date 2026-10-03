@@ -183,9 +183,10 @@ func _test_missing_method_async() -> void:
 	var result = _injector().try_inject_arguments(_target)
 	capture.stop()
 
-	_runner.assert_false(result, "inject_dependencyがないNodeは呼び出し段階でfalseを返す")
+	_runner.assert_false(result, "inject_dependencyがないNodeは設定処理の前にfalseを返す")
 	_runner.assert_true(capture.contains("依存注入メソッドを呼び出せません"), "呼び出し失敗を報告する")
 	_runner.assert_equal(_target.unrelated_call_count, 0, "別のメソッドを誤って呼ばない")
+	_runner.assert_equal(_target.override_call_count, 0, "注入メソッドがなければ型オーバーライドメソッドを呼ばない")
 	await _cleanup_async()
 
 

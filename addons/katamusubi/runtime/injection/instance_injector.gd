@@ -28,6 +28,14 @@ func try_inject_arguments(target: Variant) -> bool:
 		push_error(InjectionRequestValidator.format_error(target_result))
 		return false
 	
+	var injection_method := Callable(target, INJECTION_METHOD_NAME)
+	if not injection_method.is_valid():
+		push_error(
+				"依存注入メソッドを呼び出せません: 対象=%s, スコープ名=%s"
+				% [target.get_path(), _scope_name]
+		)
+		return false
+
 	var script := target.get_script() as Script
 	var method_reader := MethodReader.new(INJECTION_METHOD_NAME)
 	var arguments := method_reader.get_injection_arguments(script)
@@ -89,14 +97,6 @@ func try_inject_arguments(target: Variant) -> bool:
 			)
 			return false
 		resolved_arguments.append(resolved_service)
-
-	var injection_method := Callable(target, INJECTION_METHOD_NAME)
-	if not injection_method.is_valid():
-		push_error(
-				"依存注入メソッドを呼び出せません: 対象=%s, スコープ名=%s"
-				% [target.get_path(), _scope_name]
-		)
-		return false
 
 	injection_method.callv(resolved_arguments)
 	return true
