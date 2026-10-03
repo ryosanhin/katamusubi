@@ -135,7 +135,7 @@ Parent-child scope relationships are defined by scope IDs rather than the SceneT
 
 In the Inspector, set the child's **Parent Scope ID** to the ID of the scope you want to use as its parent. A scope used as a parent must have a **Scope ID**.
 
-A child scope can resolve services registered in its parent scope.
+A child scope can resolve services registered in itself and its parent scope.
 
 ### Scope IDs
 
