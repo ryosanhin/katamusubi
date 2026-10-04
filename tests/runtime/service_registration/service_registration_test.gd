@@ -13,7 +13,7 @@ var _runner := TestRunner.new(true)
 
 func _init() -> void:
 	_test_create_instance_registration()
-	_test_validation_codes()
+	_test_validation_results()
 	_test_fluent_updates()
 	_test_valid_registration()
 	_test_error_formatting()
@@ -33,8 +33,8 @@ func _test_create_instance_registration() -> void:
 
 
 ## 検証順序の各段階に対応する入力が、それぞれ固有のコードを返すことを確認します。
-func _test_validation_codes() -> void:
-	_runner.change_test_name("validation_codes")
+func _test_validation_results() -> void:
+	_runner.change_test_name("validation_codes_and_results")
 
 	_expect_validation_code(
 			null,
