@@ -75,6 +75,8 @@ In the Inspector for `ExampleContainerScope`, assign `ExampleManager` to `_examp
 
 During scope initialization, katamusubi calls `inject_dependency()` on each node in the **Inject Targets** array.
 
+Each parameter in `inject_dependency()` must use a script class registered with `class_name`. Built-in types, untyped parameters, and script classes without `class_name` are not supported.
+
 ## Register a service under a base type
 
 ```gdscript

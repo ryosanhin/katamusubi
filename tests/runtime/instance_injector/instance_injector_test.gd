@@ -14,8 +14,7 @@ const ServicesNode := preload("fixtures/injection_targets/recording_services_nod
 const SingleServiceNode := preload("fixtures/injection_targets/recording_single_service_node.gd")
 const FailedResolutionNode := preload("fixtures/injection_targets/recording_failed_resolution_node.gd")
 const NoMethodNode := preload("fixtures/injection_targets/no_injection_method.gd")
-const TypeOverridesNode := preload("fixtures/injection_targets/recording_type_overrides_node.gd")
-const KeyedTypeOverrideNode := preload("fixtures/injection_targets/recording_keyed_type_override_node.gd")
+const NonGlobalNode := preload("fixtures/injection_targets/recording_non_global_node.gd")
 const UntypedNode := preload("fixtures/injection_targets/recording_untyped_node.gd")
 
 var _runner := TestRunner.new(true)
@@ -28,8 +27,6 @@ func _init() -> void:
 	await process_frame
 	await _test_no_arguments_async()
 	await _test_argument_order_key_precedence_and_fallback_async()
-	await _test_type_overrides_and_normal_resolution_async()
-	await _test_overridden_type_prefers_argument_key_async()
 	await _test_failed_injection_does_not_call_method_async()
 	await _test_missing_method_async()
 	await _test_resolved_reference_async()
@@ -45,50 +42,6 @@ func _test_no_arguments_async() -> void:
 
 	_runner.assert_true(result, "引数なしの注入に成功した場合だけtrueを返す")
 	_runner.assert_equal(_target.injection_count, 1, "引数なしの注入メソッドを一度だけ呼ぶ")
-	await _cleanup_async()
-
-
-## 型上書きを指定した引数と通常の引数を、それぞれ適切なサービス型で解決することを確認します。
-func _test_type_overrides_and_normal_resolution_async() -> void:
-	_runner.change_test_name("type_overrides_and_normal_resolution")
-	_setup_target(TypeOverridesNode.new())
-	var local_service := UnnamedService.new()
-	var derived_service := DerivedService.new()
-	var base_service := DerivedService.new()
-	_container.register(ServiceRegistration.create_instance_registration(local_service))
-	_container.register(ServiceRegistration.create_instance_registration(derived_service))
-	_container.register(_instance_as(base_service))
-	var result = _injector().try_inject_arguments(_target)
-
-	_runner.assert_true(result, "型オーバーライドを含む複数引数をすべて解決できる")
-	_runner.assert_equal(_target.injection_count, 1, "一部をオーバーライドして注入メソッドを一度だけ呼ぶ")
-	_runner.assert_same(_target.received_local_service, local_service, "非グローバルクラスをScript指定で解決する")
-	_runner.assert_same(_target.received_derived_service, derived_service, "宣言型の派生型で解決する")
-	_runner.assert_same(_target.received_base_service, base_service, "宣言型自身の指定で解決する")
-	_runner.assert_same(_target.received_normal_service, base_service, "辞書にない引数は通常の宣言型で解決する")
-	local_service.free()
-	derived_service.free()
-	base_service.free()
-	await _cleanup_async()
-
-
-## 型上書きされた引数でも引数名のキーを優先してサービスを解決することを確認します。
-func _test_overridden_type_prefers_argument_key_async() -> void:
-	_runner.change_test_name("overridden_type_prefers_argument_key")
-	_setup_target(KeyedTypeOverrideNode.new())
-	var default_service := DerivedService.new()
-	var keyed_service := DerivedService.new()
-	_container.register(ServiceRegistration.create_instance_registration(default_service))
-	_container.register(
-			ServiceRegistration.create_instance_registration(keyed_service)
-					.with_key(&"overridden_service")
-	)
-	var result = _injector().try_inject_arguments(_target)
-
-	_runner.assert_true(result, "オーバーライド後の型を解決できる")
-	_runner.assert_same(_target.received_service, keyed_service, "オーバーライド後も引数名と同じキーを優先する")
-	default_service.free()
-	keyed_service.free()
 	await _cleanup_async()
 
 
@@ -118,8 +71,8 @@ func _test_argument_order_key_precedence_and_fallback_async() -> void:
 func _test_failed_injection_does_not_call_method_async() -> void:
 	# ケース名、対象Script、登録するScript、公開するScript。
 	var cases := [
-		["missing_type_override", UntypedNode, null, null],
-		["missing_overridden_type", TypeOverridesNode, UnnamedService, UnnamedService],
+		["missing_global_type", UntypedNode, null, null],
+		["non_global_type", NonGlobalNode, UnnamedService, UnnamedService],
 		["resolution_failure", FailedResolutionNode, DerivedService, BaseService],
 	]
 	for test_case in cases:
@@ -152,7 +105,6 @@ func _test_missing_method_async() -> void:
 	_runner.assert_false(result, "inject_dependencyがないNodeは設定処理の前にfalseを返す")
 	_runner.assert_equal(capture.errors.size(), 1, "注入失敗のログを報告する代表例")
 	_runner.assert_equal(_target.unrelated_call_count, 0, "別のメソッドを誤って呼ばない")
-	_runner.assert_equal(_target.override_call_count, 0, "注入メソッドがなければ型オーバーライドメソッドを呼ばない")
 	await _cleanup_async()
 
 
