@@ -2,8 +2,6 @@ extends RefCounted
 class_name ServiceRegistration
 ## 登録設定。register()は登録時の型・キー・Node参照を保持します。
 
-const ServiceRegistrationValidator := preload("service_registration_validator.gd")
-
 ## 注入先から参照される公開クラスのスクリプト
 var service_type: Script
 
@@ -38,8 +36,3 @@ func as_type(new_service_type: Script) -> ServiceRegistration:
 func with_key(new_key: StringName) -> ServiceRegistration:
 	key = new_key
 	return self
-
-
-## 登録情報に不備がないか検証し、最初に見つかった問題を返す
-func validate() -> ServiceRegistrationValidator.ErrorCode:
-	return ServiceRegistrationValidator.validate(self)
