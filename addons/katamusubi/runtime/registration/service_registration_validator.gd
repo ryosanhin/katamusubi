@@ -16,7 +16,7 @@ enum ErrorCode {
 ## 最初の失敗理由と、説明文の生成に必要な補足情報。
 class ValidationResult extends RefCounted:
 	var error_code: ErrorCode = ErrorCode.OK
-	var actual_type_name: String
+	var actual_type_name: StringName
 	var service_type_name: StringName
 
 

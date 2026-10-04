@@ -64,14 +64,14 @@ func _test_error_formatting() -> void:
 	_runner.change_test_name("error_formatting")
 	var result := InjectionRequestValidator.ValidationResult.new()
 	_runner.assert_equal(InjectionRequestValidator.format_error(result), "", "OKは説明文を持たない")
-	result.code = ErrorCode.NULL_TARGET
+	result.error_code = ErrorCode.NULL_TARGET
 	result.scope_name = &"format_scope"
 	_runner.assert_true("format_scope" in InjectionRequestValidator.format_error(result), "対象検証の説明にスコープを含める")
-	result.code = ErrorCode.MISSING_TARGET_SCRIPT
+	result.error_code = ErrorCode.MISSING_TARGET_SCRIPT
 	result.target_path = "/root/format_target"
 	_runner.assert_true(result.target_path in InjectionRequestValidator.format_error(result), "説明に対象パスを含める")
 
 
 func _expect_code(result: InjectionRequestValidator.ValidationResult, expected: InjectionRequestValidator.ErrorCode) -> void:
-	_runner.assert_equal(result.code, expected, "対象の失敗理由をコードで返す")
+	_runner.assert_equal(result.error_code, expected, "対象の失敗理由をコードで返す")
 	_runner.assert_equal(result.scope_name, &"validator_test", "スコープ名を保持する")
