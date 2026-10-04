@@ -11,8 +11,6 @@ Suggestions and corrections are welcome!
 ## Environment
 The project is developed using Godot 4.7.x.
 
-The implementation uses `@abstract`.
-
 ## Installation
 
 1. Copy the `addons/katamusubi` directory into your project's `addons` directory. The resulting path should be `res://addons/katamusubi`.
