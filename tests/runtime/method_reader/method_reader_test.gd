@@ -12,9 +12,7 @@ const BaseService := preload("fixtures/services/base_service.gd")
 const DerivedService := preload("fixtures/services/derived_service.gd")
 
 const NoInjectionMethod := preload("fixtures/injection_targets/no_injection_method.gd")
-const NoArgumentMethod := preload("fixtures/injection_targets/no_argument_method.gd")
-const ClassArgumentsMethod := preload("fixtures/injection_targets/class_arguments_method.gd")
-const BuiltinArgumentsMethod := preload("fixtures/injection_targets/builtin_arguments_method.gd")
+const ArgumentsMethod := preload("fixtures/injection_targets/arguments_method.gd")
 
 var _runner := TestRunner.new(true)
 
@@ -37,7 +35,7 @@ func _test_missing_method() -> void:
 ## デフォルト値を含むクラス型引数を宣言順に読み取り、型情報を保持することを確認します。
 func _test_class_arguments_and_defaults() -> void:
 	_runner.change_test_name("class_arguments_and_defaults")
-	var arguments := _read(ClassArgumentsMethod)
+	var arguments := _read(ArgumentsMethod)
 
 	_runner.assert_equal(arguments.size(), 5, "デフォルト引数を含むすべての引数を返す")
 	_runner.assert_array(
