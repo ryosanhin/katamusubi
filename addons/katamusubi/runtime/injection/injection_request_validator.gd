@@ -12,13 +12,13 @@ enum ErrorCode {
 
 ## 最初の失敗理由と、説明文の生成に必要な補足情報。
 class ValidationResult extends RefCounted:
-	var code: ErrorCode = ErrorCode.OK
+	var error_code: ErrorCode = ErrorCode.OK
 	var target_path: String
 	var scope_name: StringName
 
 
 	func is_valid() -> bool:
-		return code == ErrorCode.OK
+		return error_code == ErrorCode.OK
 
 
 ## 注入対象として必要な状態を検証する。
@@ -26,24 +26,24 @@ static func validate_target(target: Variant, scope_name: StringName) -> Validati
 	var result := ValidationResult.new()
 	result.scope_name = scope_name
 	if typeof(target) == TYPE_NIL:
-		result.code = ErrorCode.NULL_TARGET
+		result.error_code = ErrorCode.NULL_TARGET
 		return result
 	if not is_instance_valid(target):
-		result.code = ErrorCode.FREED_TARGET
+		result.error_code = ErrorCode.FREED_TARGET
 		return result
 	if not target.is_inside_tree():
 		result.target_path = str(target.name)
-		result.code = ErrorCode.TARGET_OUTSIDE_TREE
+		result.error_code = ErrorCode.TARGET_OUTSIDE_TREE
 		return result
 	result.target_path = str(target.get_path())
 	if target.get_script() == null:
-		result.code = ErrorCode.MISSING_TARGET_SCRIPT
+		result.error_code = ErrorCode.MISSING_TARGET_SCRIPT
 	return result
 
 
 ## 検証コードを人間向けの説明文へ変換する。検証処理自体は文字列に依存しない。
 static func format_error(result: ValidationResult) -> String:
-	match result.code:
+	match result.error_code:
 		ErrorCode.OK:
 			return ""
 		ErrorCode.NULL_TARGET:

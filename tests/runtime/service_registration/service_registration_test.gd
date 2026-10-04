@@ -84,6 +84,19 @@ func _test_validation_codes() -> void:
 			RegistrationValidator.ErrorCode.INCOMPATIBLE_SERVICE_TYPE,
 			"実装型と公開型の不一致",
 	)
+	var incompatible_result := RegistrationValidator.validate(incompatible_service)
+	var unrelated_script: Script = UnrelatedService
+	_runner.assert_equal(
+			unrelated_script.get_global_name(),
+			incompatible_result.actual_type_name,
+			"実装型名を保持する",
+	)
+	var base_script: Script = BaseService
+	_runner.assert_equal(
+			base_script.get_global_name(),
+			incompatible_result.service_type_name,
+			"公開型名を保持する",
+	)
 	incompatible_service.instance.free()
 
 
