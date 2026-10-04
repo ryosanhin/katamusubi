@@ -13,37 +13,56 @@ enum ErrorCode {
 }
 
 
-## 登録情報に不備がないか検証し、最初に見つかった問題を返す
-static func validate(registration: ServiceRegistration) -> ErrorCode:
+## 最初の失敗理由と、説明文の生成に必要な補足情報。
+class ValidationResult extends RefCounted:
+	var error_code: ErrorCode = ErrorCode.OK
+	var actual_type_name: String
+	var service_type_name: StringName
 
+
+	func is_valid() -> bool:
+		return error_code == ErrorCode.OK
+
+
+## 登録情報に不備がないか検証し、最初に見つかった問題を返す
+static func validate(registration: ServiceRegistration) -> ValidationResult:
+	var result := ValidationResult.new()
 	if registration == null:
-		return ErrorCode.NULL_REGISTRATION
+		result.error_code = ErrorCode.NULL_REGISTRATION
+		return result
 	
 	if registration.instance == null:
-		return ErrorCode.NULL_INSTANCE
+		result.error_code = ErrorCode.NULL_INSTANCE
+		return result
 		
 	if not is_instance_valid(registration.instance):
-		return ErrorCode.INVALID_INSTANCE
+		result.error_code = ErrorCode.INVALID_INSTANCE
+		return result
 	
 	var actual_type: Script = registration.instance.get_script() as Script
 	if actual_type == null:
-		return ErrorCode.MISSING_SCRIPT
+		result.error_code = ErrorCode.MISSING_SCRIPT
+		return result
 	
 	if registration.service_type == null:
-		return ErrorCode.MISSING_SERVICE_TYPE
+		result.error_code = ErrorCode.MISSING_SERVICE_TYPE
+		return result
 
 	if not ScriptTypeCompatibility.is_same_or_derived_from(
 			actual_type,
 			registration.service_type,
 	):
-		return ErrorCode.INCOMPATIBLE_SERVICE_TYPE
+		result.error_code = ErrorCode.INCOMPATIBLE_SERVICE_TYPE
+		result.actual_type_name = _get_displayable_name(actual_type)
+		result.service_type_name = _get_displayable_name(registration.service_type)
+		return result
 
-	return ErrorCode.OK
+	return result
 
 
 ## 検証結果を人間向けの説明文へ変換する
-static func format_error(code: ErrorCode, registration: ServiceRegistration) -> String:
-	match code:
+static func format_error(result: ValidationResult) -> String:
+	match result.error_code:
 		ErrorCode.OK:
 			return ""
 		ErrorCode.NULL_REGISTRATION:
@@ -57,15 +76,9 @@ static func format_error(code: ErrorCode, registration: ServiceRegistration) -> 
 		ErrorCode.MISSING_SERVICE_TYPE:
 			return "公開型が指定されていません。"
 		ErrorCode.INCOMPATIBLE_SERVICE_TYPE:
-			var actual_type: Script = (
-					registration.instance.get_script()
-					if registration != null and is_instance_valid(registration.instance)
-					else null
-			)
-			var service_type := registration.service_type if registration != null else null
 			return "登録インスタンスの型 %s は公開型 %s と同一または派生型ではありません。" % [
-					_get_displayable_name(actual_type),
-					_get_displayable_name(service_type),
+					result.actual_type_name,
+					result.service_type_name,
 			]
 
 	return "不明な登録検証エラーです。"

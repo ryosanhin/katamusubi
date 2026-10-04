@@ -39,9 +39,9 @@ func register(registration: ServiceRegistration) -> bool:
 
 ## 登録情報の検証
 func _validate_registration(registration: ServiceRegistration) -> bool:
-	var error_code := RegistrationValidator.validate(registration)
-	if error_code != RegistrationValidator.ErrorCode.OK:
-		var error_message := RegistrationValidator.format_error(error_code, registration)
+	var result := RegistrationValidator.validate(registration)
+	if not result.is_valid():
+		var error_message := RegistrationValidator.format_error(result)
 		push_error("登録情報が不正です:\n%s" % error_message)
 		return false
 
