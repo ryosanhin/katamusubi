@@ -176,3 +176,9 @@ A child scope may initialize its parent before the parent's own `_ready()` metho
 Injection is not guaranteed to occur before or after the service or target node's `_ready()`. Do not assume that injected dependencies are available in `_ready()`.
 
 If you override `ContainerScope._ready()`, call `super._ready()` to preserve scope initialization.
+
+## Notes
+
+- Node references are injected through parameters typed with global classes registered using `class_name`.
+- Re-adding the same scene instance to the SceneTree does not reinitialize its scopes.
+- **This is an early version. The API may change.**
