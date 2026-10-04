@@ -11,8 +11,6 @@ Suggestions and corrections are welcome!
 ## Environment
 The project is developed using Godot 4.7.x.
 
-The implementation uses `@abstract`.
-
 ## Installation
 
 1. Copy the `addons/katamusubi` directory into your project's `addons` directory. The resulting path should be `res://addons/katamusubi`.
@@ -74,6 +72,8 @@ func inject_dependency(example_manager: ExampleManager) -> void:
 In the Inspector for `ExampleContainerScope`, assign `ExampleManager` to `_example_service` and add `ExampleUser` to **Inject Targets**.
 
 During scope initialization, katamusubi calls `inject_dependency()` on each node in the **Inject Targets** array.
+
+Each parameter in `inject_dependency()` must use a script class registered with `class_name`. Built-in types, untyped parameters, and script classes without `class_name` are not supported.
 
 ## Register a service under a base type
 
@@ -174,3 +174,9 @@ A child scope may initialize its parent before the parent's own `_ready()` metho
 Injection is not guaranteed to occur before or after the service or target node's `_ready()`. Do not assume that injected dependencies are available in `_ready()`.
 
 If you override `ContainerScope._ready()`, call `super._ready()` to preserve scope initialization.
+
+## Notes
+
+- Node references are injected through parameters typed with global classes registered using `class_name`.
+- Re-adding the same scene instance to the SceneTree does not reinitialize its scopes.
+- **This is an early version. The API may change.**

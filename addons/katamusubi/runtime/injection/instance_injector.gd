@@ -7,9 +7,6 @@ const InjectionRequestValidator := preload("injection_request_validator.gd")
 ## 注入対象として固定利用するメソッド名
 const INJECTION_METHOD_NAME := &"inject_dependency"
 
-## 注入する依存クラスの型をオーバーライドするメソッド名
-const OVERRIDE_METHOD_NAME := &"get_inject_type_overrides"
-
 var _scope_name: StringName
 var _container: InjectionContainer
 
@@ -41,36 +38,15 @@ func try_inject_arguments(target: Variant) -> bool:
 	var arguments := method_reader.get_injection_arguments(script)
 	var resolved_arguments: Array = []
 
-	# ここで引数の型のオーバーライドの辞書を取得
-	var override_value: Variant = {}
-	if target.has_method(OVERRIDE_METHOD_NAME):
-		var callable := Callable(target, OVERRIDE_METHOD_NAME)
-		override_value = callable.call()
-	var override_result := InjectionRequestValidator.validate_type_overrides(
-		target,
-		arguments,
-		override_value,
-	)
-	if not override_result.is_valid():
-		push_error(InjectionRequestValidator.format_error(override_result))
-		return false
-	var args_override_dict: Dictionary[StringName, Script] = override_result.overrides
-
 	for argument in arguments:
 		# 実際に渡す型
 		var service_type := argument.service_type
 
 		var key := argument.arg_name
 
-		# 型のオーバーライドが可能なら実行
-		if args_override_dict.has(key):
-			var overrided_type := args_override_dict[key]
-			service_type = overrided_type
-
 		if service_type == null:
 			push_error(
-					"引数の型がグローバルクラスとして宣言されていないか、\
-					型オーバーライドが指定されていません: 対象=%s, 引数=%s, スコープ名=%s"
+					"引数の型はclass_nameで登録されたグローバルクラスである必要があります: 対象=%s, 引数=%s, スコープ名=%s"
 					% [
 							target.get_path(),
 							argument.arg_name,
