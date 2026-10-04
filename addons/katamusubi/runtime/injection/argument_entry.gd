@@ -16,17 +16,16 @@ func _init(
 
 
 func _to_string() -> String:
-	return """
-	name: %s
-	class_name: %s
-	type: %d (%s)
-	""" % [
-		arg_name,
-		(
-				type_string(arg_type)
-				if service_type == null
-				else service_type.get_global_name()
-		),
-		arg_type,
-		type_string(arg_type),
-	]
+	return (
+			"name: %s, class_name: %s, type: %d (%s)"
+			% [
+				arg_name,
+				(
+						type_string(arg_type)
+						if service_type == null
+						else service_type.get_global_name()
+				),
+				arg_type,
+				type_string(arg_type),
+			]
+	)

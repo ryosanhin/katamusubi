@@ -20,16 +20,12 @@ func _find_injection_method(script: Script) -> Dictionary:
 
 ## inject_dependencyの引数情報を解決要求として読み取り
 func _get_arguments(method_data: Dictionary) -> Array[ArgumentEntry]:
-	const KEY_NAME := "name"
-	const KEY_CLASS_NAME := "class_name"
-	const KEY_TYPE := "type"
-
 	var arguments: Array[ArgumentEntry] = []
 
 	for argument_data: Dictionary in method_data.get("args", []):
-		var arg_name := StringName(argument_data.get(KEY_NAME, ""))
-		var arg_class_name := StringName(argument_data.get(KEY_CLASS_NAME, ""))
-		var arg_variant_type := int(argument_data.get(KEY_TYPE, TYPE_NIL))
+		var arg_name := StringName(argument_data.get("name", ""))
+		var arg_class_name := StringName(argument_data.get("class_name", ""))
+		var arg_variant_type := int(argument_data.get("type", TYPE_NIL))
 		var service_type := _get_global_class_script(arg_class_name)
 
 		arguments.append(

@@ -1,9 +1,12 @@
 extends RefCounted
 
 
-# 末尾のデフォルト引数を含め、クラス型引数の宣言順を確認します。
+# 末尾のデフォルト引数を含め宣言順を確認します。
 func inject_dependency(
-	base_service: MethodReaderTestBaseService,
-	derived_service: MethodReaderTestDerivedService = null,
+	_base_service: MethodReaderTestBaseService,
+	_count: int,
+	_display_name: String,
+	_position: Vector2 = Vector2(1.0, 1.0),
+	_derived_service: MethodReaderTestDerivedService = null,
 ) -> void:
 	pass
