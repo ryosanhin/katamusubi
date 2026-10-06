@@ -6,6 +6,7 @@ const BaseTarget := preload("fixtures/base_target.gd")
 const InheritedTarget := preload("fixtures/inherited_target.gd")
 const OverriddenTarget := preload("fixtures/overridden_target.gd")
 const DefaultOverrideTarget := preload("fixtures/default_override_target.gd")
+const ContinuedTarget := preload("fixtures/continued_target.gd")
 
 var _runner := TestRunner.new(true)
 
@@ -14,6 +15,8 @@ var _runner := TestRunner.new(true)
 func _init() -> void:
 	_test_declarations()
 	_test_source_notation()
+	_test_line_continuations()
+	_test_method_name_search()
 	_test_failures()
 	await _runner.finish(self, "MethodSourceReader")
 
@@ -58,6 +61,53 @@ func _test_source_notation() -> void:
 	_runner.assert_true(empty.is_valid() and empty.arguments.is_empty(), "引数なしは成功した空配列として返す")
 	var builtin := _read_source("extends Node\nfunc inject_dependency(value: int):\n\tpass\n")
 	_runner.assert_true(builtin.is_valid(), "単一識別子のサービス型検証は後続処理に委ねる")
+
+
+## 有効な行継続と、マスク後に正規化することを確認する。
+func _test_line_continuations() -> void:
+	_runner.change_test_name("line_continuations")
+	var continued_script: Script = ContinuedTarget
+	var result := Reader.read(continued_script, &"inject_dependency")
+	_runner.assert_true(result.is_valid(), "行継続を持つ宣言を解析する")
+	_runner.assert_same(result.declaring_script, ContinuedTarget, "行継続を持つ子の定義を優先する")
+	_runner.assert_equal(result.arguments.size(), 2, "行継続を持つ全引数を取得する")
+	if result.arguments.size() == 2:
+		_runner.assert_equal(result.arguments[0].arg_name, &"manager", "引数名とコロンの間の行継続を許可する")
+		_runner.assert_equal(result.arguments[0].type_name, "Manager", "コロンと型名の間の行継続を許可する")
+	var crlf := _read_source(continued_script.source_code.replace("\n", "\r\n"))
+	_runner.assert_true(crlf.is_valid() and crlf.arguments.size() == 2, "CRLFの行継続にも対応する")
+
+	var source := "extends Node\n"
+	source += "const TEXT = \"func \\\n inject_dependency(fake: Wrong):\"\n"
+	source += "class Inner:\n\tfunc \\\n\t\tinject_dependency(fake: Wrong):\n\t\tpass\n"
+	source += "# コメント末尾のバックスラッシュ \\\n"
+	source += "func inject_dependency(value: Service):\n\tpass\n"
+	var masked := _read_source(source)
+	_runner.assert_true(masked.is_valid() and masked.arguments.size() == 1, "文字列・コメント・内部クラスの行継続を誤検出しない")
+	if masked.arguments.size() == 1:
+		_runner.assert_equal(masked.arguments[0].arg_name, &"value", "コメントの次の行の宣言を保持する")
+	for declaration in [
+		"fu\\\nnc inject_dependency",
+		"func inject_depen\\\ndency",
+		"func\ninject_dependency",
+	]:
+		var split := _read_source("extends Node\n%s(value: Service):\n\tpass\n" % declaration)
+		_runner.assert_equal(split.error_code, Result.ErrorCode.MISSING_METHOD, "無効な分割による宣言を採用しない")
+	var split_type := _read_source("extends Node\nfunc inject_dependency(value: Ser\\\nvice):\n\tpass\n")
+	_runner.assert_equal(split_type.error_code, Result.ErrorCode.UNSUPPORTED_TYPE_NOTATION, "分割した型名を結合しない")
+
+
+## 渡したメソッド名だけを検索し、正規表現として解釈しないことを確認する。
+func _test_method_name_search() -> void:
+	_runner.change_test_name("method_name_search")
+	var script := GDScript.new()
+	script.source_code = "extends Node\nfunc inject_dependency_extra(wrong: Other):\n\tpass\n"
+	script.source_code += "static func custom_inject(value: Service):\n\tpass\n"
+	var custom := Reader.read(script, &"custom_inject")
+	_runner.assert_true(custom.is_valid() and custom.arguments.size() == 1, "指定名のstaticメソッドを検索する")
+	_runner.assert_equal(Reader.read(script, &"inject_dependency").error_code, Result.ErrorCode.MISSING_METHOD, "名前の前方一致では採用しない")
+	for method_name: StringName in [&"", &".*", &"custom_inject|other", &"custom_inject("]:
+		_runner.assert_equal(Reader.read(script, method_name).error_code, Result.ErrorCode.MISSING_METHOD, "識別子以外を検索パターンとして扱わない")
 
 
 ## 失敗コードと部分結果を公開しないことを確認する。

@@ -15,9 +15,15 @@ static func read(script: Script, method_name: StringName) -> MethodSourceResult:
 	if script == null:
 		result.error_code = MethodSourceResult.ErrorCode.MISSING_SCRIPT
 		return result
+	# 識別子以外をパターンとして解釈しない。
+	if not String(method_name).is_valid_identifier():
+		result.error_code = MethodSourceResult.ErrorCode.MISSING_METHOD
+		return result
 
 	var declaration_pattern := RegEx.new()
-	declaration_pattern.compile("(?m)^(?:static[ \\t]+)?func[ \\t]+([\\p{L}_][\\p{L}\\p{N}_]*)[ \\t]*\\(")
+	declaration_pattern.compile(
+			r"(?m)^(?:static[ \t]+)?func[ \t]+%s[ \t]*\(" % String(method_name)
+	)
 	var current := script
 	while current != null:
 		result.inspected_script = current
@@ -29,9 +35,10 @@ static func read(script: Script, method_name: StringName) -> MethodSourceResult:
 			return result
 
 		var source := _mask_comments_and_strings(current.source_code)
-		for declaration in declaration_pattern.search_all(source):
-			if declaration.get_string(1) != String(method_name):
-				continue
+		# マスク後に行継続を空白にし、単語の途中の分割を結合しない。
+		source = source.replace("\\\r\n", " ").replace("\\\n", " ")
+		var declaration := declaration_pattern.search(source)
+		if declaration != null:
 			result.declaring_script = current
 			_parse_arguments(source, declaration.get_end(), result)
 			return result
@@ -77,7 +84,7 @@ static func _mask_comments_and_strings(source: String) -> String:
 
 
 ## 引数部分のみを解析し、全成功時に結果へ代入する。[br]
-## [param source]: コメントと文字列をマスクしたソース[br]
+## [param source]: マスクと行継続の正規化を行ったソース[br]
 ## [param start]: 開き括弧の直後の位置[br]
 ## [param result]: 宣言元と失敗理由を保持する結果
 static func _parse_arguments(source: String, start: int, result: MethodSourceResult) -> void:
@@ -89,7 +96,7 @@ static func _parse_arguments(source: String, start: int, result: MethodSourceRes
 	if text.is_empty():
 		return
 
-	var identifier := "[\\p{L}_][\\p{L}\\p{N}_]*"
+	var identifier := r"[\p{L}_][\p{L}\p{N}_]*"
 	var name_pattern := RegEx.new()
 	name_pattern.compile("^" + identifier + "$")
 	var arguments: Array[MethodSourceArgument] = []
