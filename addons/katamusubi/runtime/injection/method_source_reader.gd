@@ -16,7 +16,7 @@ static func read(script: Script, method_name: StringName) -> MethodSourceResult:
 		result.error_code = MethodSourceResult.ErrorCode.MISSING_SCRIPT
 		return result
 	# 識別子以外をパターンとして解釈しない。
-	if not String(method_name).is_valid_identifier():
+	if not String(method_name).is_valid_ascii_identifier():
 		result.error_code = MethodSourceResult.ErrorCode.MISSING_METHOD
 		return result
 
